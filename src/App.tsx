@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { UserProvider } from "@/contexts/UserContext";
+import { SupabaseAuthProvider } from "@/contexts/SupabaseAuthContext";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import { UserProtectedRoute } from "@/components/UserProtectedRoute";
 import LandingPage from "./pages/LandingPage";
@@ -14,6 +15,7 @@ import FieldPage from "./pages/FieldPage";
 import AudioPlayerPage from "./pages/AudioPlayerPage";
 import DemoPage from "./pages/DemoPage";
 import UserLoginPage from "./pages/UserLoginPage";
+import AuthPage from "./pages/AuthPage";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLandingPage from "./pages/admin/AdminLandingPage";
@@ -28,8 +30,9 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AdminProvider>
-      <UserProvider>
+    <SupabaseAuthProvider>
+      <AdminProvider>
+        <UserProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -41,6 +44,7 @@ const App = () => (
               
               {/* User Routes */}
               <Route path="/login" element={<UserLoginPage />} />
+              <Route path="/auth" element={<AuthPage />} />
               <Route path="/dashboard" element={
                 <UserProtectedRoute>
                   <Dashboard />
@@ -100,8 +104,9 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
-      </UserProvider>
-    </AdminProvider>
+        </UserProvider>
+      </AdminProvider>
+    </SupabaseAuthProvider>
   </QueryClientProvider>
 );
 
