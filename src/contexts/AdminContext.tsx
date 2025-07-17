@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AdminUser, AuthService } from '@/services/authService';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { ContentService, LandingPageContent, EditableField, EditableAudio } from '@/services/contentService';
+import type { AuthUser } from '@/services/supabase/authService';
 
 interface AdminContextType {
   // Auth state
-  user: AdminUser | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  isLoading: boolean;
+  logout: () => Promise<void>;
   
   // Content state
   landingContent: LandingPageContent;
@@ -30,9 +31,8 @@ interface AdminProviderProps {
 }
 
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
-  // Auth state
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Use Supabase Auth for authentication
+  const { user, isAuthenticated, isLoading, signOut } = useSupabaseAuth();
   
   // Content state
   const [landingContent, setLandingContent] = useState<LandingPageContent>(() => 
@@ -45,30 +45,13 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     ContentService.getAudios()
   );
 
-  // Initialize auth state
-  useEffect(() => {
-    const currentUser = AuthService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      setIsAuthenticated(true);
+  // Auth actions - delegate to Supabase
+  const logout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      console.error('Erro ao fazer logout:', error);
+      throw new Error(error);
     }
-  }, []);
-
-  // Auth actions
-  const login = async (email: string, password: string) => {
-    try {
-      const adminUser = await AuthService.login({ email, password });
-      setUser(adminUser);
-      setIsAuthenticated(true);
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const logout = () => {
-    AuthService.logout();
-    setUser(null);
-    setIsAuthenticated(false);
   };
 
   // Content actions
@@ -106,8 +89,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const value: AdminContextType = {
     // Auth
     user,
-    isAuthenticated,
-    login,
+    isAuthenticated: isAuthenticated && user?.role === 'admin',
+    isLoading,
     logout,
     
     // Content

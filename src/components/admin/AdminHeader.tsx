@@ -12,9 +12,13 @@ export const AdminHeader = ({ title = "Painel Administrativo" }: AdminHeaderProp
   const { user, logout } = useAdmin();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/admin/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/admin/login");
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   return (
@@ -30,7 +34,7 @@ export const AdminHeader = ({ title = "Painel Administrativo" }: AdminHeaderProp
           
           <div className="flex items-center gap-2 text-sm">
             <User className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">{user?.name}</span>
+            <span className="text-muted-foreground">{user?.display_name || user?.email}</span>
           </div>
           
           <Button

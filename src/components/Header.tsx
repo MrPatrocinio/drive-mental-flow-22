@@ -23,9 +23,13 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
     navigate("/login");
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   return (
@@ -54,7 +58,7 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
             <>
               <div className="flex items-center gap-2 text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{user?.name}</span>
+                <span className="text-muted-foreground">{user?.display_name || user?.email || "Usuário"}</span>
               </div>
               <Button
                 variant="ghost"

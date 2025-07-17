@@ -34,10 +34,14 @@ export default function UserLoginPage() {
     }
 
     try {
-      await userContext.login({ email, password });
-      navigate(from, { replace: true });
+      const { error } = await userContext.login({ email, password });
+      if (error) {
+        setError(error);
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
-      setError("Credenciais inválidas. Verifique seu email e senha.");
+      setError("Erro interno no login.");
     } finally {
       setIsLoading(false);
     }

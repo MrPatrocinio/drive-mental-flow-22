@@ -1,11 +1,12 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { UserAuthService, User, UserLoginCredentials } from "@/services/userAuthService";
+import { createContext, useContext } from "react";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
+import type { AuthUser, LoginCredentials } from "@/services/supabase/authService";
 
 export interface UserContextType {
-  user: User | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (credentials: UserLoginCredentials) => Promise<void>;
-  logout: () => void;
+  login: (credentials: LoginCredentials) => Promise<{ error: string | null }>;
+  logout: () => Promise<{ error: string | null }>;
   isLoading: boolean;
 }
 
@@ -20,28 +21,19 @@ export const useUser = () => {
 };
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isAuthenticated, isLoading, signIn, signOut } = useSupabaseAuth();
 
-  useEffect(() => {
-    const currentUser = UserAuthService.getCurrentUser();
-    setUser(currentUser);
-    setIsLoading(false);
-  }, []);
-
-  const login = async (credentials: UserLoginCredentials) => {
-    const loggedUser = await UserAuthService.login(credentials);
-    setUser(loggedUser);
+  const login = async (credentials: LoginCredentials) => {
+    return await signIn(credentials);
   };
 
-  const logout = () => {
-    UserAuthService.logout();
-    setUser(null);
+  const logout = async () => {
+    return await signOut();
   };
 
-  const value = {
+  const value: UserContextType = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: isAuthenticated && user?.role === 'user',
     login,
     logout,
     isLoading

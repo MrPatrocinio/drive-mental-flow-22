@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAdmin } from "@/contexts/AdminContext";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Shield, AlertCircle } from "lucide-react";
 
@@ -15,7 +15,7 @@ export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { login } = useAdmin();
+  const { signIn } = useSupabaseAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,10 +27,14 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      await login(email, password);
-      navigate(from, { replace: true });
+      const { error } = await signIn({ email, password });
+      if (error) {
+        setError(error);
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
-      setError("Credenciais inválidas. Verifique seu email e senha.");
+      setError("Erro interno no login.");
     } finally {
       setIsLoading(false);
     }
