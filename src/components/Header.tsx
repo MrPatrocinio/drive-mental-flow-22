@@ -5,6 +5,7 @@ import { Logo } from "@/components/Logo";
 import { useContext } from "react";
 import { UserContext, UserContextType } from "@/contexts/UserContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -58,6 +59,7 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <>
+              <NotificationBell />
               <Button
                 variant="outline"
                 size="sm"

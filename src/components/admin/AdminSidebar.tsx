@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, FileText, Music, Users, DollarSign, BarChart3, Shield } from "lucide-react";
+import { Home, FileText, Music, Users, DollarSign, BarChart3, Shield, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 
@@ -33,6 +33,11 @@ const navigationItems = [
     label: "Estatísticas",
     href: "/admin/stats",
     icon: BarChart3,
+  },
+  {
+    label: "Analytics",
+    href: "/admin/analytics",
+    icon: TrendingUp,
   },
   {
     label: "Validação",
