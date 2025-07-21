@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -5,31 +6,72 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { CreditCard, Shield, Check } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { CreditCard, Shield, Check, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function PaymentPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: "",
+    name: ""
+  });
+  const [error, setError] = useState("");
   const { toast } = useToast();
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
-    // Simula processamento de pagamento
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Pagamento realizado com sucesso!",
-        description: "Bem-vindo ao Drive Mental. Redirecionando para o dashboard...",
+    try {
+      if (!formData.email || !formData.name) {
+        throw new Error("Por favor, preencha todos os campos obrigatórios");
+      }
+
+      console.log("Iniciando pagamento para:", formData);
+
+      // Call the create-payment edge function
+      const { data, error: functionError } = await supabase.functions.invoke('create-payment', {
+        body: {
+          email: formData.email,
+          name: formData.name
+        }
       });
+
+      if (functionError) {
+        throw new Error(functionError.message || "Erro ao criar sessão de pagamento");
+      }
+
+      if (!data?.url) {
+        throw new Error("URL de pagamento não recebida");
+      }
+
+      console.log("Redirecionando para:", data.url);
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
       
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
-    }, 3000);
+    } catch (error) {
+      console.error("Erro no pagamento:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro interno do servidor";
+      setError(errorMessage);
+      toast({
+        title: "Erro no pagamento",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const benefits = [
@@ -65,62 +107,56 @@ export default function PaymentPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Dados de Pagamento
+                  Dados para Pagamento
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {error && (
+                  <Alert variant="destructive" className="mb-6">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
                 <form onSubmit={handlePayment} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">Email *</Label>
                     <Input 
-                      id="email" 
+                      id="email"
+                      name="email"
                       type="email" 
                       placeholder="seu@email.com"
+                      value={formData.email}
+                      onChange={handleInputChange}
                       required
+                      disabled={isLoading}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nome Completo</Label>
+                    <Label htmlFor="name">Nome Completo *</Label>
                     <Input 
-                      id="name" 
+                      id="name"
+                      name="name"
                       type="text" 
                       placeholder="Seu nome completo"
+                      value={formData.name}
+                      onChange={handleInputChange}
                       required
+                      disabled={isLoading}
                     />
                   </div>
 
                   <Separator />
 
-                  <div className="space-y-2">
-                    <Label htmlFor="cardNumber">Número do Cartão</Label>
-                    <Input 
-                      id="cardNumber" 
-                      type="text" 
-                      placeholder="1234 5678 9012 3456"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="expiry">Validade</Label>
-                      <Input 
-                        id="expiry" 
-                        type="text" 
-                        placeholder="MM/AA"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cvv">CVV</Label>
-                      <Input 
-                        id="cvv" 
-                        type="text" 
-                        placeholder="123"
-                        required
-                      />
-                    </div>
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      <Shield className="h-4 w-4 inline mr-1" />
+                      Pagamento processado pelo Stripe
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Você será redirecionado para a página segura do Stripe para inserir os dados do cartão
+                    </p>
                   </div>
 
                   <div className="pt-4">
@@ -132,9 +168,9 @@ export default function PaymentPage() {
                       disabled={isLoading}
                     >
                       {isLoading ? (
-                        "Processando pagamento..."
+                        "Redirecionando para pagamento..."
                       ) : (
-                        "Finalizar Compra - R$ 97"
+                        "Prosseguir para Pagamento - R$ 97"
                       )}
                     </Button>
                   </div>

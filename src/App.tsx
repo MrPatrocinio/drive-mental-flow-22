@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +11,8 @@ import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import { UserProtectedRoute } from "@/components/UserProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import PaymentPage from "./pages/PaymentPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import PaymentCancelPage from "./pages/PaymentCancelPage";
 import Dashboard from "./pages/Dashboard";
 import FieldPage from "./pages/FieldPage";
 import AudioPlayerPage from "./pages/AudioPlayerPage";
@@ -40,6 +43,8 @@ const App = () => (
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/pagamento" element={<PaymentPage />} />
+              <Route path="/pagamento/sucesso" element={<PaymentSuccessPage />} />
+              <Route path="/pagamento/cancelado" element={<PaymentCancelPage />} />
               <Route path="/demo" element={<DemoPage />} />
               
               {/* User Routes */}
