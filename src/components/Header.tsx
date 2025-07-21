@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogIn, User, LogOut } from "lucide-react";
+import { ArrowLeft, LogIn, User, LogOut, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { useContext } from "react";
 import { UserContext, UserContextType } from "@/contexts/UserContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -18,6 +19,7 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
   const isAuthenticated = userContext?.isAuthenticated || false;
   const user = userContext?.user || null;
   const logout = userContext?.logout || (() => {});
+  const { subscribed } = useSubscription();
 
   const handleLogin = () => {
     navigate("/login");
@@ -56,6 +58,17 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/assinatura")}
+                className={`hover:bg-primary/10 hover:text-primary ${
+                  subscribed ? 'border-primary text-primary' : ''
+                }`}
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                {subscribed ? 'Minha Assinatura' : 'Assinar'}
+              </Button>
               <div className="flex items-center gap-2 text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">{user?.display_name || user?.email || "Usuário"}</span>
@@ -71,15 +84,26 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
               </Button>
             </>
           ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogin}
-              className="hover:bg-primary/10 hover:text-primary"
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Entrar
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/assinatura")}
+                className="hover:bg-primary/10 hover:text-primary"
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Assinar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogin}
+                className="hover:bg-primary/10 hover:text-primary"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Entrar
+              </Button>
+            </>
           )}
         </div>
       </div>

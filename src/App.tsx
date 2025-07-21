@@ -13,6 +13,7 @@ import LandingPage from "./pages/LandingPage";
 import PaymentPage from "./pages/PaymentPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentCancelPage from "./pages/PaymentCancelPage";
+import { SubscriptionPage } from "./pages/SubscriptionPage";
 import Dashboard from "./pages/Dashboard";
 import FieldPage from "./pages/FieldPage";
 import AudioPlayerPage from "./pages/AudioPlayerPage";
@@ -42,10 +43,11 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/pagamento" element={<PaymentPage />} />
-              <Route path="/pagamento/sucesso" element={<PaymentSuccessPage />} />
-              <Route path="/pagamento/cancelado" element={<PaymentCancelPage />} />
-              <Route path="/demo" element={<DemoPage />} />
+        <Route path="/pagamento" element={<PaymentPage />} />
+        <Route path="/pagamento/sucesso" element={<PaymentSuccessPage />} />
+        <Route path="/pagamento/cancelado" element={<PaymentCancelPage />} />
+        <Route path="/assinatura" element={<SubscriptionPage />} />
+        <Route path="/demo" element={<DemoPage />} />
               
               {/* User Routes */}
               <Route path="/login" element={<UserLoginPage />} />
