@@ -31,25 +31,21 @@ serve(async (req) => {
     }
 
     // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      throw new Error("STRIPE_SECRET_KEY não configurada");
+    }
+    
+    console.log("[CREATE-PAYMENT] Stripe key found, initializing...");
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
 
-    // Check if a Stripe customer record exists for this email
-    const customers = await stripe.customers.list({ email, limit: 1 });
-    let customerId;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-      console.log("[CREATE-PAYMENT] Existing customer found:", customerId);
-    } else {
-      console.log("[CREATE-PAYMENT] Creating new customer");
-    }
-
-    // Create a one-time payment session
+    // Create a one-time payment session without checking existing customers
+    console.log("[CREATE-PAYMENT] Creating checkout session...");
     const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : email,
-      customer_creation: customerId ? undefined : "always",
+      customer_email: email,
+      customer_creation: "always",
       line_items: [
         {
           price_data: {
@@ -72,7 +68,7 @@ serve(async (req) => {
       },
     });
 
-    console.log("[CREATE-PAYMENT] Checkout session created:", session.id);
+    console.log("[CREATE-PAYMENT] Checkout session created successfully:", session.id);
 
     return new Response(JSON.stringify({ 
       url: session.url,
