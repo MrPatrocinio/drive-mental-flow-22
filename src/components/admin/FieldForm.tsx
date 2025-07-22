@@ -12,11 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EditableField } from "@/services/contentService";
+import { Field, FieldInsert, FieldUpdate } from "@/services/supabase/fieldService";
 
 interface FieldFormProps {
-  field?: EditableField | null;
-  onSave: (field: Omit<EditableField, 'id' | 'audioCount' | 'audios'>) => void;
+  field?: Field | null;
+  onSave: (field: FieldInsert | (FieldUpdate & { id: string })) => void;
   onClose: () => void;
 }
 
@@ -36,7 +36,7 @@ const iconOptions = [
 export function FieldForm({ field, onSave, onClose }: FieldFormProps) {
   const [formData, setFormData] = useState({
     title: "",
-    iconName: "",
+    icon_name: "",
     description: "",
   });
 
@@ -44,7 +44,7 @@ export function FieldForm({ field, onSave, onClose }: FieldFormProps) {
     if (field) {
       setFormData({
         title: field.title,
-        iconName: field.iconName,
+        icon_name: field.icon_name,
         description: field.description,
       });
     }
@@ -53,11 +53,15 @@ export function FieldForm({ field, onSave, onClose }: FieldFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title.trim() || !formData.iconName || !formData.description.trim()) {
+    if (!formData.title.trim() || !formData.icon_name || !formData.description.trim()) {
       return;
     }
 
-    onSave(formData);
+    if (field) {
+      onSave({ ...formData, id: field.id });
+    } else {
+      onSave(formData);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -90,7 +94,7 @@ export function FieldForm({ field, onSave, onClose }: FieldFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="icon">Ícone</Label>
-            <Select value={formData.iconName} onValueChange={(value) => handleChange('iconName', value)}>
+            <Select value={formData.icon_name} onValueChange={(value) => handleChange('icon_name', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um ícone" />
               </SelectTrigger>

@@ -23,8 +23,8 @@ import AuthPage from "./pages/AuthPage";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLandingPage from "./pages/admin/AdminLandingPage";
-import AdminAudiosPage from "./pages/admin/AdminAudiosPage";
-import AdminFieldsPage from "./pages/admin/AdminFieldsPage";
+import AdminAudiosPageNew from "./pages/admin/AdminAudiosPageNew";
+import AdminFieldsPageNew from "./pages/admin/AdminFieldsPageNew";
 import AdminPricingPage from "./pages/admin/AdminPricingPage";
 import { AdminStatsPage } from "./pages/admin/AdminStatsPage";
 import { AdminValidationPage } from "./pages/admin/AdminValidationPage";
@@ -83,12 +83,12 @@ const App = () => (
               } />
               <Route path="/admin/audios" element={
                 <AdminProtectedRoute>
-                  <AdminAudiosPage />
+                  <AdminAudiosPageNew />
                 </AdminProtectedRoute>
               } />
               <Route path="/admin/fields" element={
                 <AdminProtectedRoute>
-                  <AdminFieldsPage />
+                  <AdminFieldsPageNew />
                 </AdminProtectedRoute>
               } />
               <Route path="/admin/pricing" element={

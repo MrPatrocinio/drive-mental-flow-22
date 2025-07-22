@@ -12,13 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { AudioFormData } from "@/services/audioManagementService";
-import { ContentService, EditableAudio } from "@/services/contentService";
-import { SyncService } from "@/services/syncService";
+import { Audio, AudioUpdate } from "@/services/supabase/audioService";
+import { Field } from "@/services/supabase/fieldService";
 
 interface AudioFormProps {
-  audio?: EditableAudio;
-  onSubmit: (audioData: AudioFormData) => void;
+  audio?: Audio;
+  fields: Field[];
+  onSubmit: (audioData: AudioUpdate & { id?: string }) => void;
   onCancel: () => void;
   isLoading?: boolean;
   errors?: string[];
@@ -26,27 +26,26 @@ interface AudioFormProps {
 
 export const AudioForm = ({ 
   audio, 
+  fields,
   onSubmit, 
   onCancel, 
   isLoading = false,
   errors = []
 }: AudioFormProps) => {
-  const [formData, setFormData] = useState<AudioFormData>({
+  const [formData, setFormData] = useState<AudioUpdate & { id?: string }>({
     title: audio?.title || "",
     duration: audio?.duration || "",
     url: audio?.url || "",
-    description: audio?.description || "",
-    fieldId: audio?.fieldId || ""
+    field_id: audio?.field_id || "",
+    id: audio?.id
   });
-
-  const fields = ContentService.getEditableFields();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
   };
 
-  const handleChange = (field: keyof AudioFormData, value: string) => {
+  const handleChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -108,10 +107,10 @@ export const AudioForm = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="fieldId">Campo</Label>
+            <Label htmlFor="field_id">Campo</Label>
             <Select 
-              value={formData.fieldId} 
-              onValueChange={(value) => handleChange("fieldId", value)}
+              value={formData.field_id} 
+              onValueChange={(value) => handleChange("field_id", value)}
               disabled={isLoading}
             >
               <SelectTrigger>
@@ -125,18 +124,6 @@ export const AudioForm = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleChange("description", e.target.value)}
-              placeholder="Descreva o conteúdo do áudio"
-              rows={3}
-              disabled={isLoading}
-            />
           </div>
 
           <div className="flex gap-2 pt-4">

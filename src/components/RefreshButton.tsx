@@ -16,13 +16,15 @@ interface RefreshButtonProps {
   size?: "default" | "sm" | "lg" | "icon";
   showText?: boolean;
   className?: string;
+  onRefresh?: () => void | Promise<void>;
 }
 
 export const RefreshButton = ({ 
   variant = "outline", 
   size = "default",
   showText = true,
-  className = ""
+  className = "",
+  onRefresh
 }: RefreshButtonProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
@@ -31,11 +33,15 @@ export const RefreshButton = ({
     setIsRefreshing(true);
     
     try {
-      // Simula delay de rede para UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Força sincronização
-      SyncService.forceSync();
+      if (onRefresh) {
+        await onRefresh();
+      } else {
+        // Simula delay de rede para UX
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Força sincronização
+        SyncService.forceSync();
+      }
       
       toast({
         title: "Atualizado",
