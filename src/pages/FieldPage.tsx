@@ -2,13 +2,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/RefreshButton";
-import { ContentService } from "@/services/contentService";
 import { Play, Clock, ArrowRight, Settings } from "lucide-react";
 import { AddToPlaylistButton } from "@/components/playlist/AddToPlaylistButton";
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useSync } from "@/hooks/useSync";
 import { DriveMentalConfigPanel } from "@/components/DriveMentalConfigPanel";
-import { DriveMentalProgrammingService, DriveMentalConfig } from "@/services/driveMentalProgrammingService";
+import { DriveMentalConfig } from "@/services/driveMentalProgrammingService";
+import { FieldService, Field } from "@/services/supabase/fieldService";
+import { AudioService, Audio } from "@/services/supabase/audioService";
+import { AudioCard } from "@/components/AudioCard";
+import { TagFilter } from "@/components/TagFilter";
+import { useToast } from "@/hooks/use-toast";
 import * as Icons from "lucide-react";
 
 export default function FieldPage() {
@@ -16,36 +19,93 @@ export default function FieldPage() {
   const navigate = useNavigate();
   const [selectedAudio, setSelectedAudio] = useState<string | null>(null);
   const [showConfigPanel, setShowConfigPanel] = useState<string | null>(null);
-  const [field, setField] = useState(() => {
-    if (!fieldId) return null;
-    const editableField = ContentService.getEditableFields().find(f => f.id === fieldId);
-    if (!editableField) return null;
-    
-    const audios = ContentService.getAudiosByField(fieldId);
-    return {
-      ...editableField,
-      icon: (Icons as any)[editableField.iconName] || Icons.Circle,
-      audios
-    };
-  });
+  const [field, setField] = useState<Field | null>(null);
+  const [audios, setAudios] = useState<Audio[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const handleSyncEvent = useCallback(() => {
-    if (!fieldId) return;
-    const editableField = ContentService.getEditableFields().find(f => f.id === fieldId);
-    if (!editableField) {
-      setField(null);
-      return;
+  useEffect(() => {
+    if (fieldId) {
+      loadFieldData();
     }
-    
-    const audios = ContentService.getAudiosByField(fieldId);
-    setField({
-      ...editableField,
-      icon: (Icons as any)[editableField.iconName] || Icons.Circle,
-      audios
-    });
   }, [fieldId]);
 
-  useSync(handleSyncEvent, ['audios_updated', 'fields_updated']);
+  const loadFieldData = async () => {
+    if (!fieldId) return;
+    
+    setIsLoading(true);
+    try {
+      const [fieldData, audiosData] = await Promise.all([
+        FieldService.getById(fieldId),
+        AudioService.getByField(fieldId)
+      ]);
+
+      if (!fieldData) {
+        setField(null);
+        return;
+      }
+
+      setField(fieldData);
+      setAudios(audiosData);
+
+      // Extrair todas as tags únicas dos áudios
+      const allTags = audiosData
+        .flatMap(audio => audio.tags || [])
+        .filter((tag, index, arr) => arr.indexOf(tag) === index)
+        .sort();
+      setAvailableTags(allTags);
+
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados do campo",
+        variant: "destructive",
+      });
+      setField(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filtrar áudios por tags selecionadas
+  const filteredAudios = useMemo(() => {
+    if (selectedTags.length === 0) return audios;
+    
+    return audios.filter(audio => 
+      audio.tags && selectedTags.some(tag => audio.tags.includes(tag))
+    );
+  }, [audios, selectedTags]);
+
+  // Calcular duração total
+  const totalDuration = useMemo(() => {
+    if (!audios.length) return "0h 0min";
+    // Parsear durações no formato "MM:SS" para calcular total
+    const totalSeconds = audios.reduce((total, audio) => {
+      const [minutes, seconds] = audio.duration.split(':').map(Number);
+      return total + (minutes * 60) + (seconds || 0);
+    }, 0);
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+  }, [audios]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen hero-gradient">
+        <Header showBackButton />
+        <div className="container mx-auto px-4 py-12 text-center">
+          <div className="animate-pulse">
+            <div className="w-20 h-20 bg-muted rounded-2xl mx-auto mb-6"></div>
+            <div className="h-8 bg-muted rounded w-64 mx-auto mb-4"></div>
+            <div className="h-4 bg-muted rounded w-96 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!field) {
     return (
@@ -61,18 +121,8 @@ export default function FieldPage() {
     );
   }
 
-  // Calcular duração total de forma estável
-  const totalDuration = useMemo(() => {
-    if (!field?.audios) return "0h 0min";
-    const totalMinutes = field.audios.length * 25; // Assumindo 25min por áudio
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours}h ${minutes}min`;
-  }, [field?.audios?.length]);
-
-  const handlePlayAudio = (audioId: string) => {
-    setSelectedAudio(audioId);
-    navigate(`/campo/${fieldId}/audio/${audioId}`);
+  const handlePlayAudio = (audio: Audio) => {
+    navigate(`/campo/${fieldId}/audio/${audio.id}`);
   };
 
   const handleConfigureAudio = (audioId: string) => {
@@ -86,6 +136,8 @@ export default function FieldPage() {
     });
   };
 
+  const FieldIcon = (Icons as any)[field.icon_name] || Icons.Circle;
+
   return (
     <div className="min-h-screen hero-gradient">
       <Header showBackButton title={field.title} />
@@ -94,7 +146,7 @@ export default function FieldPage() {
         {/* Header do Campo */}
         <div className="text-center mb-12">
           <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-6">
-            <field.icon className="h-10 w-10 text-primary" />
+            <FieldIcon className="h-10 w-10 text-primary" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">{field.title}</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
@@ -103,95 +155,90 @@ export default function FieldPage() {
           <div className="flex items-center justify-center gap-6 mt-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Play className="h-4 w-4" />
-              <span>{field.audioCount} áudios</span>
+              <span>{audios.length} áudios</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               <span>Duração total: {totalDuration}</span>
             </div>
-            <RefreshButton variant="ghost" size="sm" showText={false} />
+            <RefreshButton onRefresh={loadFieldData} variant="ghost" size="sm" showText={false} />
           </div>
         </div>
 
-        {/* Lista de Áudios */}
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold mb-8">Áudios Disponíveis</h2>
-          
-          <div className="space-y-4">
-            {field.audios.map((audio, index) => (
-              <div 
-                key={audio.id} 
-                className="field-card group cursor-pointer animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-                onClick={() => handlePlayAudio(audio.id)}
-              >
-                  <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 smooth-transition">
-                      <Play className="h-5 w-5 text-primary" />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{audio.title}</h3>
-                      <p className="text-muted-foreground text-sm mb-2 line-clamp-2">
-                        {audio.description}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {audio.duration}
-                        </span>
-                        <span>#{index + 1}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 smooth-transition">
-                    <AddToPlaylistButton
-                      audio={{
-                        id: audio.id,
-                        title: audio.title,
-                        description: audio.description,
-                        duration: audio.duration,
-                        fieldId: fieldId!,
-                        fieldTitle: field.title
-                      }}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleConfigureAudio(audio.id);
-                      }}
-                      className="p-2"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                </div>
+        {/* Filtros e Lista de Áudios */}
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar com Filtros */}
+            <div className="lg:w-72 space-y-6">
+              <div className="bg-card rounded-lg p-6 border">
+                <TagFilter
+                  availableTags={availableTags}
+                  selectedTags={selectedTags}
+                  onTagsChange={setSelectedTags}
+                />
               </div>
-            ))}
+            </div>
+
+            {/* Lista de Áudios */}
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">
+                  Áudios Disponíveis
+                  {selectedTags.length > 0 && (
+                    <span className="text-sm text-muted-foreground ml-2">
+                      ({filteredAudios.length} de {audios.length})
+                    </span>
+                  )}
+                </h2>
+              </div>
+              
+              {filteredAudios.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">
+                    {selectedTags.length > 0 
+                      ? "Nenhum áudio encontrado com as tags selecionadas" 
+                      : "Nenhum áudio disponível neste campo"}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredAudios.map((audio, index) => (
+                    <div 
+                      key={audio.id}
+                      className="animate-fade-in"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <AudioCard
+                        audio={audio}
+                        onPlay={handlePlayAudio}
+                        showTags={true}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Call to Action */}
-        <div className="card-gradient rounded-2xl p-8 text-center max-w-2xl mx-auto mt-12">
-          <h3 className="text-2xl font-bold mb-4">
-            Pronto para começar sua transformação?
-          </h3>
-          <p className="text-muted-foreground mb-6">
-            Selecione um áudio acima e comece sua sessão de reprogramação mental
-          </p>
-          <Button 
-            variant="premium" 
-            size="lg"
-            onClick={() => field.audios.length > 0 && handlePlayAudio(field.audios[0].id)}
-          >
-            Começar com o Primeiro Áudio
-          </Button>
-        </div>
+        {audios.length > 0 && (
+          <div className="card-gradient rounded-2xl p-8 text-center max-w-2xl mx-auto mt-12">
+            <h3 className="text-2xl font-bold mb-4">
+              Pronto para começar sua transformação?
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Selecione um áudio acima e comece sua sessão de reprogramação mental
+            </p>
+            <Button 
+              variant="default"
+              size="lg"
+              onClick={() => handlePlayAudio(audios[0])}
+            >
+              Começar com o Primeiro Áudio
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Panel de Configuração de Drive Mental */}
@@ -200,7 +247,7 @@ export default function FieldPage() {
           <DriveMentalConfigPanel
             audioId={showConfigPanel}
             fieldId={fieldId!}
-            audioTitle={field.audios.find(a => a.id === showConfigPanel)?.title || ''}
+            audioTitle={audios.find(a => a.id === showConfigPanel)?.title || ''}
             onStartSession={handleStartSession}
             onClose={() => setShowConfigPanel(null)}
           />

@@ -47,12 +47,40 @@ export type Database = {
         }
         Relationships: []
       }
+      audio_history: {
+        Row: {
+          audio_id: string
+          completed: boolean | null
+          id: string
+          played_at: string
+          progress_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          audio_id: string
+          completed?: boolean | null
+          id?: string
+          played_at?: string
+          progress_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          audio_id?: string
+          completed?: boolean | null
+          id?: string
+          played_at?: string
+          progress_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       audios: {
         Row: {
           created_at: string
           duration: string
           field_id: string
           id: string
+          tags: string[] | null
           title: string
           updated_at: string
           url: string
@@ -62,6 +90,7 @@ export type Database = {
           duration: string
           field_id: string
           id?: string
+          tags?: string[] | null
           title: string
           updated_at?: string
           url: string
@@ -71,6 +100,7 @@ export type Database = {
           duration?: string
           field_id?: string
           id?: string
+          tags?: string[] | null
           title?: string
           updated_at?: string
           url?: string
@@ -84,6 +114,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      favorites: {
+        Row: {
+          audio_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          audio_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          audio_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       fields: {
         Row: {
