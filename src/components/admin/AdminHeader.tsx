@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/RefreshButton";
+import { RealtimeStatusIndicator } from "@/components/admin/RealtimeStatusIndicator";
 import { useAdmin } from "@/contexts/AdminContext";
 import { LogOut, Settings, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -30,6 +31,7 @@ export const AdminHeader = ({ title = "Painel Administrativo" }: AdminHeaderProp
         </div>
 
         <div className="flex items-center gap-4">
+          <RealtimeStatusIndicator />
           <RefreshButton variant="ghost" size="sm" />
           
           <div className="flex items-center gap-2 text-sm">

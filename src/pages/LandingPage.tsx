@@ -1,21 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { ArrowRight, Brain, Heart, Target, DollarSign, Activity, Sparkles, Play, Users, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { ContentService, LandingPageContent } from "@/services/contentService";
+import { SupabaseContentService, LandingPageContent } from "@/services/supabase/contentService";
+import { FieldService } from "@/services/supabase/fieldService";
+import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import * as Icons from "lucide-react";
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [content, setContent] = useState<LandingPageContent>(() => 
-    ContentService.getLandingPageContent()
-  );
-
-  useEffect(() => {
-    // Refresh content when component mounts
-    setContent(ContentService.getLandingPageContent());
-  }, []);
+  const [content, setContent] = useState<LandingPageContent | null>(null);
+  const [fields, setFields] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Get dynamic icon component
   const getIconComponent = (iconName: string) => {
@@ -23,11 +20,46 @@ export default function LandingPage() {
     return IconComponent || Brain; // Fallback to Brain icon
   };
 
-  const fields = ContentService.getEditableFields().map(field => ({
-    icon: getIconComponent(field.iconName),
-    title: field.title,
-    count: `${field.audioCount} áudio${field.audioCount !== 1 ? 's' : ''}`
-  }));
+  const loadContent = useCallback(async () => {
+    try {
+      const [landingContent, fieldsData] = await Promise.all([
+        SupabaseContentService.getLandingPageContent(),
+        FieldService.getAll()
+      ]);
+      
+      setContent(landingContent);
+      setFields(fieldsData.map(field => ({
+        icon: getIconComponent(field.icon_name),
+        title: field.title,
+        count: `${field.audio_count} áudio${field.audio_count !== 1 ? 's' : ''}`
+      })));
+    } catch (error) {
+      console.error('Error loading content:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
+
+  // Setup real-time updates
+  useRealtimeUpdates({
+    onFieldsChange: loadContent,
+    onLandingContentChange: loadContent
+  });
+
+  if (loading || !content) {
+    return (
+      <div className="min-h-screen hero-gradient flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <p className="mt-4 text-lg text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen hero-gradient">

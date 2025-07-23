@@ -12,6 +12,7 @@ import { AudioService, Audio } from "@/services/supabase/audioService";
 import { AudioCard } from "@/components/AudioCard";
 import { TagFilter } from "@/components/TagFilter";
 import { useToast } from "@/hooks/use-toast";
+import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import * as Icons from "lucide-react";
 
 export default function FieldPage() {
@@ -68,6 +69,12 @@ export default function FieldPage() {
       setIsLoading(false);
     }
   };
+
+  // Setup real-time updates
+  useRealtimeUpdates({
+    onFieldsChange: loadFieldData,
+    onAudiosChange: loadFieldData
+  });
 
   // Filtrar áudios por tags selecionadas
   const filteredAudios = useMemo(() => {
