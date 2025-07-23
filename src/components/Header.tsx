@@ -88,15 +88,6 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
           ) : (
             <>
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/assinatura")}
-                className="hover:bg-primary/10 hover:text-primary"
-              >
-                <Crown className="h-4 w-4 mr-2" />
-                Assinar
-              </Button>
-              <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLogin}
