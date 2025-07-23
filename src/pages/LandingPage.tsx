@@ -164,7 +164,7 @@ export default function LandingPage() {
       <footer className="border-t border-border/50 py-8 px-4">
         <div className="container mx-auto text-center">
           <p className="text-muted-foreground">
-            {content.footer.copyright}
+            © 2025 Drive Mental. Todos os direitos reservados.
           </p>
         </div>
       </footer>
