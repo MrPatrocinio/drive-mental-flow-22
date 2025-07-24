@@ -9,16 +9,16 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Audio, AudioUpdate } from "@/services/supabase/audioService";
+import { Audio, AudioUpdate, AudioWithFile } from "@/services/supabase/audioService";
 import { Field } from "@/services/supabase/fieldService";
+import { Upload, X, Music } from "lucide-react";
 
 interface AudioFormProps {
   audio?: Audio;
   fields: Field[];
-  onSubmit: (audioData: AudioUpdate & { id?: string }) => void;
+  onSubmit: (audioData: AudioWithFile & { id?: string }) => void;
   onCancel: () => void;
   isLoading?: boolean;
   errors?: string[];
@@ -32,17 +32,20 @@ export const AudioForm = ({
   isLoading = false,
   errors = []
 }: AudioFormProps) => {
-  const [formData, setFormData] = useState<AudioUpdate & { id?: string }>({
+  const [formData, setFormData] = useState({
     title: audio?.title || "",
     duration: audio?.duration || "",
-    url: audio?.url || "",
     field_id: audio?.field_id || "",
     id: audio?.id
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      file: selectedFile || undefined
+    });
   };
 
   const handleChange = (field: string, value: string) => {
@@ -50,6 +53,37 @@ export const AudioForm = ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar tipo de arquivo
+      const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/aac'];
+      if (!validTypes.includes(file.type)) {
+        alert('Por favor, selecione um arquivo de áudio válido (MP3, WAV, OGG, MP4, AAC)');
+        return;
+      }
+      
+      // Validar tamanho (50MB max)
+      const maxSize = 50 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('O arquivo deve ter no máximo 50MB');
+        return;
+      }
+
+      setSelectedFile(file);
+      
+      // Auto-preencher título se estiver vazio
+      if (!formData.title) {
+        const fileName = file.name.replace(/\.[^/.]+$/, "");
+        setFormData(prev => ({ ...prev, title: fileName }));
+      }
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
   };
 
   return (
@@ -95,15 +129,60 @@ export const AudioForm = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="url">URL do Áudio</Label>
-            <Input
-              id="url"
-              type="url"
-              value={formData.url}
-              onChange={(e) => handleChange("url", e.target.value)}
-              placeholder="https://exemplo.com/audio.mp3"
-              disabled={isLoading}
-            />
+            <Label>Arquivo de Áudio</Label>
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+              {!selectedFile ? (
+                <div>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="audio-upload"
+                    disabled={isLoading}
+                  />
+                  <label
+                    htmlFor="audio-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <div className="text-sm text-muted-foreground">
+                      <span className="text-primary hover:text-primary/80">
+                        Clique para selecionar
+                      </span>
+                      {" "}um arquivo de áudio
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      MP3, WAV, OGG, MP4, AAC - Máximo 50MB
+                    </div>
+                  </label>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 bg-muted rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Music className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">{selectedFile.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({(selectedFile.size / 1024 / 1024).toFixed(1)} MB)
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeFile}
+                    disabled={isLoading}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            {audio?.url && !selectedFile && (
+              <div className="text-xs text-muted-foreground">
+                Arquivo atual: {audio.url.split('/').pop()}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
