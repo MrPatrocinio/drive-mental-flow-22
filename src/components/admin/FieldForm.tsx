@@ -64,10 +64,10 @@ export function FieldForm({ field, onSave, onClose }: FieldFormProps) {
     }
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (fieldName: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [fieldName]: value
     }));
   };
 
