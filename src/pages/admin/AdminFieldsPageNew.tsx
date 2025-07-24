@@ -46,10 +46,12 @@ export default function AdminFieldsPageNew() {
   };
 
   const handleSaveField = async (fieldData: FieldInsert | (FieldUpdate & { id: string })) => {
+    console.log("AdminFieldsPageNew: handleSaveField chamado", fieldData);
     setIsLoading(true);
     try {
       if ('id' in fieldData) {
         // Editando campo existente
+        console.log("AdminFieldsPageNew: Atualizando campo", fieldData.id, fieldData);
         await FieldService.update(fieldData.id, fieldData);
         toast({
           title: "Sucesso",
@@ -57,6 +59,7 @@ export default function AdminFieldsPageNew() {
         });
       } else {
         // Criando novo campo
+        console.log("AdminFieldsPageNew: Criando novo campo", fieldData);
         await FieldService.create(fieldData);
         toast({
           title: "Sucesso",
@@ -67,6 +70,7 @@ export default function AdminFieldsPageNew() {
       handleCloseForm();
       await loadFields();
     } catch (error) {
+      console.error("AdminFieldsPageNew: Erro ao salvar campo", error);
       const message = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
         title: "Erro",

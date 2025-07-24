@@ -53,13 +53,19 @@ export function FieldForm({ field, onSave, onClose }: FieldFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("FieldForm: handleSubmit chamado", { formData, field });
+    
     if (!formData.title.trim() || !formData.icon_name || !formData.description.trim()) {
+      console.log("FieldForm: Validação falhou", formData);
       return;
     }
 
+    console.log("FieldForm: Validação passou, chamando onSave");
     if (field) {
+      console.log("FieldForm: Editando campo existente", { ...formData, id: field.id });
       onSave({ ...formData, id: field.id });
     } else {
+      console.log("FieldForm: Criando novo campo", formData);
       onSave(formData);
     }
   };

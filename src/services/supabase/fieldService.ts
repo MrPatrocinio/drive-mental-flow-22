@@ -70,6 +70,8 @@ export class FieldService {
    * Atualizar campo existente
    */
   static async update(id: string, fieldData: FieldUpdate): Promise<Field> {
+    console.log("FieldService.update chamado", { id, fieldData });
+    
     const { data, error } = await supabase
       .from("fields")
       .update(fieldData)
@@ -78,10 +80,11 @@ export class FieldService {
       .single();
 
     if (error) {
-      console.error("Erro ao atualizar campo:", error);
+      console.error("FieldService.update erro:", error);
       throw new Error("Falha ao atualizar campo");
     }
 
+    console.log("FieldService.update sucesso:", data);
     return data;
   }
 
