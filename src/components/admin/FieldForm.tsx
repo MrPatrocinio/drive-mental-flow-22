@@ -23,6 +23,7 @@ interface FieldFormProps {
 const iconOptions = [
   { value: "Heart", label: "Coração" },
   { value: "Target", label: "Alvo" },
+  { value: "Shield", label: "Escudo" },
   { value: "DollarSign", label: "Dinheiro" },
   { value: "Activity", label: "Atividade" },
   { value: "Sparkles", label: "Estrelas" },
@@ -31,6 +32,10 @@ const iconOptions = [
   { value: "Award", label: "Prêmio" },
   { value: "Zap", label: "Raio" },
   { value: "Star", label: "Estrela" },
+  { value: "Moon", label: "Lua" },
+  { value: "Lightbulb", label: "Lâmpada" },
+  { value: "Crown", label: "Coroa" },
+  { value: "Compass", label: "Bússola" },
 ];
 
 export function FieldForm({ field, onSave, onClose }: FieldFormProps) {
@@ -42,10 +47,18 @@ export function FieldForm({ field, onSave, onClose }: FieldFormProps) {
 
   useEffect(() => {
     if (field) {
+      console.log("FieldForm: useEffect populando dados", field);
       setFormData({
-        title: field.title,
-        icon_name: field.icon_name,
-        description: field.description,
+        title: field.title || "",
+        icon_name: field.icon_name || "",
+        description: field.description || "",
+      });
+    } else {
+      console.log("FieldForm: useEffect resetando formulário");
+      setFormData({
+        title: "",
+        icon_name: "",
+        description: "",
       });
     }
   }, [field]);
