@@ -25,7 +25,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLandingPage from "./pages/admin/AdminLandingPage";
 import AdminAudiosPageNew from "./pages/admin/AdminAudiosPageNew";
 import AdminFieldsPageNew from "./pages/admin/AdminFieldsPageNew";
-import AdminPricingPage from "./pages/admin/AdminPricingPage";
+import { AdminPricingPage } from "./pages/admin/AdminPricingPage";
 import { AdminStatsPage } from "./pages/admin/AdminStatsPage";
 import { AdminValidationPage } from "./pages/admin/AdminValidationPage";
 import { AdminAnalyticsPage } from "./pages/admin/AdminAnalyticsPage";
@@ -81,6 +81,11 @@ const App = () => (
                   <AdminLandingPage />
                 </AdminProtectedRoute>
               } />
+              <Route path="/admin/pricing" element={
+                <AdminProtectedRoute>
+                  <AdminPricingPage />
+                </AdminProtectedRoute>
+              } />
               <Route path="/admin/audios" element={
                 <AdminProtectedRoute>
                   <AdminAudiosPageNew />
@@ -89,11 +94,6 @@ const App = () => (
               <Route path="/admin/fields" element={
                 <AdminProtectedRoute>
                   <AdminFieldsPageNew />
-                </AdminProtectedRoute>
-              } />
-              <Route path="/admin/pricing" element={
-                <AdminProtectedRoute>
-                  <AdminPricingPage />
                 </AdminProtectedRoute>
               } />
               <Route path="/admin/stats" element={

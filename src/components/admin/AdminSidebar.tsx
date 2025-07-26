@@ -15,6 +15,11 @@ const navigationItems = [
     icon: FileText,
   },
   {
+    label: "Preços",
+    href: "/admin/pricing",
+    icon: DollarSign,
+  },
+  {
     label: "Campos",
     href: "/admin/fields",
     icon: Users,
@@ -23,11 +28,6 @@ const navigationItems = [
     label: "Áudios",
     href: "/admin/audios",
     icon: Music,
-  },
-  {
-    label: "Preços",
-    href: "/admin/pricing",
-    icon: DollarSign,
   },
   {
     label: "Estatísticas",

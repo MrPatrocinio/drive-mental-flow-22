@@ -5,6 +5,7 @@ import { ContentService, LandingPageContent, EditableField, EditableAudio } from
 import { SupabaseContentService } from '@/services/supabase/contentService';
 import { FieldService } from '@/services/supabase/fieldService';
 import { AudioService } from '@/services/supabase/audioService';
+import { PricingService, PricingInfo, PricingInsert } from '@/services/supabase/pricingService';
 import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 import { RealtimeService } from '@/services/realtimeService';
 import type { AuthUser } from '@/services/supabase/authService';
@@ -20,6 +21,7 @@ interface AdminContextType {
   landingContent: LandingPageContent;
   fields: EditableField[];
   audios: EditableAudio[];
+  pricing: PricingInfo | null;
   
   // Content actions
   updateLandingContent: (content: LandingPageContent) => Promise<void>;
@@ -27,6 +29,7 @@ interface AdminContextType {
   deleteField: (fieldId: string) => Promise<void>;
   updateAudio: (audio: EditableAudio) => Promise<void>;
   deleteAudio: (audioId: string) => Promise<void>;
+  updatePricing: (pricing: PricingInsert) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -50,6 +53,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const [audios, setAudios] = useState<EditableAudio[]>(() => 
     ContentService.getAudios()
   );
+  const [pricing, setPricing] = useState<PricingInfo | null>(null);
 
   // Setup real-time updates
   useRealtimeUpdates({
@@ -161,13 +165,27 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     }
   };
 
+  const updatePricing = async (pricingData: PricingInsert) => {
+    console.log('AdminContext: Salvando pricing', pricingData);
+    try {
+      const savedPricing = await PricingService.save(pricingData);
+      setPricing(savedPricing);
+      // Force refresh for other components
+      RealtimeService.forceRefresh();
+    } catch (error) {
+      console.error('AdminContext: Erro ao salvar pricing:', error);
+      throw error;
+    }
+  };
+
   const refreshData = async () => {
     console.log('AdminContext: Atualizando todos os dados');
     try {
-      const [landingContentData, fieldsData, audiosData] = await Promise.all([
+      const [landingContentData, fieldsData, audiosData, pricingData] = await Promise.all([
         SupabaseContentService.getLandingPageContent(),
         FieldService.getAll(),
-        AudioService.getAll()
+        AudioService.getAll(),
+        PricingService.get()
       ]);
 
       // Update ContentService cache
@@ -197,6 +215,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       setLandingContent(landingContentData);
       setFields(editableFields);
       setAudios(editableAudios);
+      setPricing(pricingData);
 
       console.log('AdminContext: Dados atualizados com sucesso');
     } catch (error) {
@@ -222,6 +241,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     landingContent,
     fields,
     audios,
+    pricing,
     
     // Actions
     updateLandingContent,
@@ -229,6 +249,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     deleteField,
     updateAudio,
     deleteAudio,
+    updatePricing,
     refreshData,
   };
 

@@ -17,7 +17,10 @@ export interface LandingPageContent {
   pricing: {
     price: number;
     currency: string;
+    payment_type: string;
+    access_type: string;
     benefits: string[];
+    button_text: string;
   };
   footer: {
     copyright: string;
@@ -77,14 +80,14 @@ export class ContentService {
       pricing: {
         price: 97,
         currency: "R$",
+        payment_type: "Pagamento único",
+        access_type: "Acesso vitalício",
         benefits: [
-          "Acesso a mais de 44 áudios exclusivos",
-          "6 campos completos de desenvolvimento",
-          "Player avançado com repetição automática",
-          "Atualizações mensais de conteúdo",
-          "Suporte prioritário",
-          "Garantia de 30 dias"
-        ]
+          "Acesso completo aos áudios especializados",
+          "Suporte especializado 24/7",
+          "Atualizações constantes de conteúdo"
+        ],
+        button_text: "Começar Agora"
       },
       footer: {
         copyright: "© 2024 Drive Mental. Todos os direitos reservados."
