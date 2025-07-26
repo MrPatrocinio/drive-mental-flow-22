@@ -1,4 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
+import { realtimeService } from '@/services/realtimeService';
 
 export interface LandingPageContent {
   hero: {
@@ -26,6 +28,7 @@ export interface LandingPageContent {
 export class SupabaseContentService {
   static async getLandingPageContent(): Promise<LandingPageContent> {
     try {
+      console.log('SupabaseContentService: Buscando conteúdo da landing page');
       const { data, error } = await supabase
         .from('landing_content')
         .select('*');
@@ -47,59 +50,25 @@ export class SupabaseContentService {
         }
       });
 
-      // Return with defaults if any section is missing
-      return {
-        hero: content.hero || {
-          title: "Transforme Sua Mente Através da Repetição",
-          subtitle: "Desenvolva todo seu potencial com áudios especializados em desenvolvimento pessoal. Reprogramação mental através de técnicas comprovadas.",
-          ctaText: "Começar Agora",
-          demoText: "Ver Demo"
-        },
-        features: content.features || [
-          {
-            id: "f1",
-            icon: "Brain",
-            title: "Desenvolvimento Mental",
-            description: "Técnicas avançadas de programação mental através de repetição auditiva"
-          },
-          {
-            id: "f2",
-            icon: "Users",
-            title: "Comunidade Exclusiva",
-            description: "Acesso a uma comunidade de pessoas focadas em crescimento pessoal"
-          },
-          {
-            id: "f3",
-            icon: "Award",
-            title: "Resultados Comprovados",
-            description: "Metodologia testada e aprovada por milhares de usuários"
-          }
-        ],
-        pricing: content.pricing || {
-          price: 97,
-          currency: "R$",
-          benefits: [
-            "Acesso a mais de 44 áudios exclusivos",
-            "6 campos completos de desenvolvimento",
-            "Player avançado com repetição automática",
-            "Atualizações mensais de conteúdo",
-            "Suporte prioritário",
-            "Garantia de 30 dias"
-          ]
-        },
-        footer: content.footer || {
-          copyright: "© 2025 Drive Mental. Todos os direitos reservados."
-        }
+      const finalContent = {
+        hero: content.hero || this.getDefaultContent().hero,
+        features: content.features || this.getDefaultContent().features,
+        pricing: content.pricing || this.getDefaultContent().pricing,
+        footer: content.footer || this.getDefaultContent().footer
       };
+
+      console.log('SupabaseContentService: Conteúdo carregado com sucesso');
+      return finalContent;
     } catch (error) {
-      console.error('Error fetching landing content:', error);
-      // Return default content on error
+      console.error('SupabaseContentService: Erro ao buscar conteúdo:', error);
       return this.getDefaultContent();
     }
   }
 
   static async saveLandingPageContent(content: LandingPageContent): Promise<void> {
     try {
+      console.log('SupabaseContentService: Salvando conteúdo da landing page');
+      
       // Upsert each section separately
       const sections = [
         { section: 'hero', content: content.hero },
@@ -118,8 +87,15 @@ export class SupabaseContentService {
 
         if (error) throw error;
       }
+
+      console.log('SupabaseContentService: Conteúdo salvo com sucesso');
+      
+      // Notificar sistema de tempo real
+      setTimeout(() => {
+        realtimeService.forceRefresh();
+      }, 100);
     } catch (error) {
-      console.error('Error saving landing content:', error);
+      console.error('SupabaseContentService: Erro ao salvar conteúdo:', error);
       throw error;
     }
   }

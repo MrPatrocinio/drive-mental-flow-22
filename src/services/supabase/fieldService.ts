@@ -1,118 +1,131 @@
-/**
- * Field Service - Gerenciamento de campos no Supabase
- * Responsabilidade: CRUD de campos na base de dados
- * Princípio SRP: Apenas operações de campo
- * Princípio SSOT: Fonte única da verdade para campos
- */
 
-import { supabase } from "@/integrations/supabase/client";
-import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { supabase } from '@/integrations/supabase/client';
+import { realtimeService } from '@/services/realtimeService';
 
-export type Field = Tables<"fields">;
-export type FieldInsert = TablesInsert<"fields">;
-export type FieldUpdate = TablesUpdate<"fields">;
+export interface Field {
+  id: string;
+  title: string;
+  description: string | null;
+  icon_name: string;
+  audio_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FieldInsert {
+  title: string;
+  description?: string;
+  icon_name: string;
+}
+
+export interface FieldUpdate {
+  title?: string;
+  description?: string;
+  icon_name?: string;
+}
 
 export class FieldService {
-  /**
-   * Buscar todos os campos
-   */
   static async getAll(): Promise<Field[]> {
+    console.log('FieldService: Buscando todos os campos');
     const { data, error } = await supabase
-      .from("fields")
-      .select("*")
-      .order("created_at", { ascending: true });
+      .from('fields')
+      .select('*')
+      .order('created_at', { ascending: true });
 
     if (error) {
-      console.error("Erro ao buscar campos:", error);
-      throw new Error("Falha ao carregar campos");
+      console.error('FieldService: Erro ao buscar campos:', error);
+      throw error;
     }
 
+    console.log('FieldService: Campos encontrados:', data?.length || 0);
     return data || [];
   }
 
-  /**
-   * Buscar campo por ID
-   */
   static async getById(id: string): Promise<Field | null> {
+    console.log('FieldService: Buscando campo por ID:', id);
     const { data, error } = await supabase
-      .from("fields")
-      .select("*")
-      .eq("id", id)
+      .from('fields')
+      .select('*')
+      .eq('id', id)
       .single();
 
     if (error) {
-      console.error("Erro ao buscar campo:", error);
-      return null;
+      if (error.code === 'PGRST116') {
+        console.log('FieldService: Campo não encontrado:', id);
+        return null;
+      }
+      console.error('FieldService: Erro ao buscar campo:', error);
+      throw error;
     }
 
+    console.log('FieldService: Campo encontrado:', data.title);
     return data;
   }
 
-  /**
-   * Criar novo campo
-   */
-  static async create(fieldData: FieldInsert): Promise<Field> {
+  static async create(field: FieldInsert): Promise<Field> {
+    console.log('FieldService: Criando campo:', field);
     const { data, error } = await supabase
-      .from("fields")
-      .insert(fieldData)
+      .from('fields')
+      .insert(field)
       .select()
       .single();
 
     if (error) {
-      console.error("Erro ao criar campo:", error);
-      throw new Error("Falha ao criar campo");
+      console.error('FieldService: Erro ao criar campo:', error);
+      throw error;
     }
 
-    return data;
-  }
-
-  /**
-   * Atualizar campo existente
-   */
-  static async update(id: string, fieldData: FieldUpdate): Promise<Field> {
-    console.log("FieldService.update chamado", { id, fieldData });
+    console.log('FieldService: Campo criado com sucesso:', data.title);
     
+    // Notificar sistema de tempo real
+    setTimeout(() => {
+      realtimeService.forceRefresh();
+    }, 100);
+
+    return data;
+  }
+
+  static async update(id: string, field: FieldUpdate): Promise<Field> {
+    console.log('FieldService: Atualizando campo:', id, field);
     const { data, error } = await supabase
-      .from("fields")
-      .update(fieldData)
-      .eq("id", id)
+      .from('fields')
+      .update(field)
+      .eq('id', id)
       .select()
       .single();
 
     if (error) {
-      console.error("FieldService.update erro:", error);
-      throw new Error("Falha ao atualizar campo");
+      console.error('FieldService: Erro ao atualizar campo:', error);
+      throw error;
     }
 
-    console.log("FieldService.update sucesso:", data);
+    console.log('FieldService: Campo atualizado com sucesso:', data.title);
+    
+    // Notificar sistema de tempo real
+    setTimeout(() => {
+      realtimeService.forceRefresh();
+    }, 100);
+
     return data;
   }
 
-  /**
-   * Deletar campo
-   */
   static async delete(id: string): Promise<void> {
+    console.log('FieldService: Deletando campo:', id);
     const { error } = await supabase
-      .from("fields")
+      .from('fields')
       .delete()
-      .eq("id", id);
+      .eq('id', id);
 
     if (error) {
-      console.error("Erro ao deletar campo:", error);
-      throw new Error("Falha ao deletar campo");
+      console.error('FieldService: Erro ao deletar campo:', error);
+      throw error;
     }
-  }
 
-  /**
-   * Verificar se campo existe
-   */
-  static async exists(id: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from("fields")
-      .select("id")
-      .eq("id", id)
-      .single();
-
-    return !error && !!data;
+    console.log('FieldService: Campo deletado com sucesso');
+    
+    // Notificar sistema de tempo real
+    setTimeout(() => {
+      realtimeService.forceRefresh();
+    }, 100);
   }
 }
