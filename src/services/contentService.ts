@@ -30,6 +30,7 @@ export interface EditableField extends Omit<Field, 'icon'> {
 
 export interface EditableAudio extends Audio {
   fieldId: string;
+  tags?: string[];
 }
 
 export class ContentService {

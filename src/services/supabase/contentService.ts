@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { realtimeService } from '@/services/realtimeService';
+import { RealtimeService } from '@/services/realtimeService';
 
 export interface LandingPageContent {
   hero: {
@@ -92,7 +92,7 @@ export class SupabaseContentService {
       
       // Notificar sistema de tempo real
       setTimeout(() => {
-        realtimeService.forceRefresh();
+        RealtimeService.forceRefresh();
       }, 100);
     } catch (error) {
       console.error('SupabaseContentService: Erro ao salvar conteúdo:', error);

@@ -6,7 +6,7 @@ import { SupabaseContentService } from '@/services/supabase/contentService';
 import { FieldService } from '@/services/supabase/fieldService';
 import { AudioService } from '@/services/supabase/audioService';
 import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
-import { realtimeService } from '@/services/realtimeService';
+import { RealtimeService } from '@/services/realtimeService';
 import type { AuthUser } from '@/services/supabase/authService';
 
 interface AdminContextType {
@@ -84,7 +84,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       ContentService.saveLandingPageContent(content);
       setLandingContent(content);
       // Force refresh for other components
-      realtimeService.forceRefresh();
+      RealtimeService.forceRefresh();
     } catch (error) {
       console.error('AdminContext: Erro ao salvar landing content:', error);
       throw error;
@@ -97,14 +97,14 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       if (field.id) {
         await FieldService.update(field.id, {
           title: field.title,
-          icon_name: field.icon,
+          icon_name: field.iconName,
           description: field.description || ''
         });
       }
       ContentService.saveField(field);
       await refreshData();
       // Force refresh for other components
-      realtimeService.forceRefresh();
+      RealtimeService.forceRefresh();
     } catch (error) {
       console.error('AdminContext: Erro ao salvar field:', error);
       throw error;
@@ -118,7 +118,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       ContentService.deleteField(fieldId);
       await refreshData();
       // Force refresh for other components
-      realtimeService.forceRefresh();
+      RealtimeService.forceRefresh();
     } catch (error) {
       console.error('AdminContext: Erro ao deletar field:', error);
       throw error;
@@ -140,7 +140,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       ContentService.saveAudio(audio);
       await refreshData();
       // Force refresh for other components
-      realtimeService.forceRefresh();
+      RealtimeService.forceRefresh();
     } catch (error) {
       console.error('AdminContext: Erro ao salvar audio:', error);
       throw error;
@@ -154,7 +154,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       ContentService.deleteAudio(audioId);
       await refreshData();
       // Force refresh for other components
-      realtimeService.forceRefresh();
+      RealtimeService.forceRefresh();
     } catch (error) {
       console.error('AdminContext: Erro ao deletar audio:', error);
       throw error;
@@ -177,9 +177,10 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       const editableFields = fieldsData.map(field => ({
         id: field.id,
         title: field.title,
-        icon: field.icon_name,
+        iconName: field.icon_name,
         description: field.description || '',
-        audioCount: field.audio_count
+        audioCount: field.audio_count,
+        audios: []
       }));
 
       // Convert Supabase audios to EditableAudios
@@ -189,7 +190,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         fieldId: audio.field_id,
         duration: audio.duration,
         url: audio.url,
-        tags: audio.tags || []
+        tags: audio.tags || [],
+        description: ''
       }));
 
       setLandingContent(landingContentData);

@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { realtimeService } from '@/services/realtimeService';
+import { RealtimeService } from '@/services/realtimeService';
 
 export interface Audio {
   id: string;
@@ -27,6 +27,16 @@ export interface AudioUpdate {
   duration?: string;
   field_id?: string;
   tags?: string[];
+}
+
+export interface AudioWithFile {
+  id?: string;
+  title: string;
+  duration: string;
+  field_id: string;
+  tags?: string[];
+  url?: string;
+  file?: File;
 }
 
 export class AudioService {
@@ -101,7 +111,7 @@ export class AudioService {
     
     // Notificar sistema de tempo real
     setTimeout(() => {
-      realtimeService.forceRefresh();
+      RealtimeService.forceRefresh();
     }, 100);
 
     return data;
@@ -125,7 +135,7 @@ export class AudioService {
     
     // Notificar sistema de tempo real
     setTimeout(() => {
-      realtimeService.forceRefresh();
+      RealtimeService.forceRefresh();
     }, 100);
 
     return data;
@@ -147,7 +157,7 @@ export class AudioService {
     
     // Notificar sistema de tempo real
     setTimeout(() => {
-      realtimeService.forceRefresh();
+      RealtimeService.forceRefresh();
     }, 100);
   }
 }

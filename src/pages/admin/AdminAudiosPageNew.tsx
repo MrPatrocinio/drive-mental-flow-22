@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AudioService, Audio, AudioWithFile, AudioUpdate } from "@/services/supabase/audioService";
+import { AudioService, Audio, AudioWithFile, AudioUpdate, AudioInsert } from "@/services/supabase/audioService";
 import { FieldService, Field } from "@/services/supabase/fieldService";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshButton } from "@/components/RefreshButton";
@@ -60,7 +60,15 @@ export default function AdminAudiosPageNew() {
     setFormErrors([]);
     
     try {
-      await AudioService.create(audioData);
+      // Convert AudioWithFile to AudioInsert
+      const audioInsert: AudioInsert = {
+        title: audioData.title,
+        duration: audioData.duration,
+        field_id: audioData.field_id,
+        tags: audioData.tags,
+        url: audioData.url || '' // Provide default empty string if url is not set
+      };
+      await AudioService.create(audioInsert);
       toast({
         title: "Sucesso",
         description: "Áudio criado com sucesso!",
