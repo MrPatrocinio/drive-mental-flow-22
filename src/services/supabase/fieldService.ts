@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeService } from '@/services/realtimeService';
 
 export interface Field {
   id: string;
@@ -77,10 +76,10 @@ export class FieldService {
 
     console.log('FieldService: Campo criado com sucesso:', data.title);
     
-    // Notificar sistema de tempo real
-    setTimeout(() => {
-      RealtimeService.forceRefresh();
-    }, 100);
+    // Notificar mudança via DataSync
+    import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('fields_changed', { event: 'INSERT', new: data });
+    });
 
     return data;
   }
@@ -101,10 +100,10 @@ export class FieldService {
 
     console.log('FieldService: Campo atualizado com sucesso:', data.title);
     
-    // Notificar sistema de tempo real
-    setTimeout(() => {
-      RealtimeService.forceRefresh();
-    }, 100);
+    // Notificar mudança via DataSync
+    import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('fields_changed', { event: 'UPDATE', new: data });
+    });
 
     return data;
   }
@@ -123,9 +122,9 @@ export class FieldService {
 
     console.log('FieldService: Campo deletado com sucesso');
     
-    // Notificar sistema de tempo real
-    setTimeout(() => {
-      RealtimeService.forceRefresh();
-    }, 100);
+    // Notificar mudança via DataSync
+    import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('fields_changed', { event: 'DELETE', old: { id } });
+    });
   }
 }

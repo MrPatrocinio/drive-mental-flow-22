@@ -5,7 +5,7 @@ import { ArrowRight, Brain, Heart, Target, DollarSign, Activity, Sparkles, Play,
 import { useNavigate } from "react-router-dom";
 import { SupabaseContentService, LandingPageContent } from "@/services/supabase/contentService";
 import { FieldService } from "@/services/supabase/fieldService";
-import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
+import { useDataSync } from "@/hooks/useDataSync";
 import { PricingDisplay } from "@/components/PricingDisplay";
 import * as Icons from "lucide-react";
 
@@ -45,10 +45,10 @@ export default function LandingPage() {
     loadContent();
   }, [loadContent]);
 
-  // Setup real-time updates
-  useRealtimeUpdates({
+  // Setup data sync
+  useDataSync({
     onFieldsChange: loadContent,
-    onLandingContentChange: loadContent
+    onContentChange: loadContent
   });
 
   if (loading || !content) {

@@ -6,8 +6,7 @@ import { SupabaseContentService } from '@/services/supabase/contentService';
 import { FieldService } from '@/services/supabase/fieldService';
 import { AudioService } from '@/services/supabase/audioService';
 import { PricingService, PricingInfo, PricingInsert } from '@/services/supabase/pricingService';
-import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
-import { RealtimeService } from '@/services/realtimeService';
+import { useDataSync } from '@/hooks/useDataSync';
 import type { AuthUser } from '@/services/supabase/authService';
 
 interface AdminContextType {
@@ -55,8 +54,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   );
   const [pricing, setPricing] = useState<PricingInfo | null>(null);
 
-  // Setup real-time updates
-  useRealtimeUpdates({
+  // Setup data sync
+  useDataSync({
     onFieldsChange: () => {
       console.log('AdminContext: Recebeu notificação de mudança nos fields');
       refreshData();
@@ -65,7 +64,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       console.log('AdminContext: Recebeu notificação de mudança nos audios');
       refreshData();
     },
-    onLandingContentChange: () => {
+    onContentChange: () => {
       console.log('AdminContext: Recebeu notificação de mudança no landing content');
       refreshData();
     }
@@ -88,7 +87,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       ContentService.saveLandingPageContent(content);
       setLandingContent(content);
       // Force refresh for other components
-      RealtimeService.forceRefresh();
+      import('@/services/dataSync').then(({ DataSyncService }) => {
+        DataSyncService.forceNotification('content_changed');
+      });
     } catch (error) {
       console.error('AdminContext: Erro ao salvar landing content:', error);
       throw error;
@@ -108,7 +109,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       ContentService.saveField(field);
       await refreshData();
       // Force refresh for other components
-      RealtimeService.forceRefresh();
+      import('@/services/dataSync').then(({ DataSyncService }) => {
+        DataSyncService.forceNotification('fields_changed');
+      });
     } catch (error) {
       console.error('AdminContext: Erro ao salvar field:', error);
       throw error;
@@ -122,7 +125,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       ContentService.deleteField(fieldId);
       await refreshData();
       // Force refresh for other components
-      RealtimeService.forceRefresh();
+      import('@/services/dataSync').then(({ DataSyncService }) => {
+        DataSyncService.forceNotification('fields_changed');
+      });
     } catch (error) {
       console.error('AdminContext: Erro ao deletar field:', error);
       throw error;
@@ -144,7 +149,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       ContentService.saveAudio(audio);
       await refreshData();
       // Force refresh for other components
-      RealtimeService.forceRefresh();
+      import('@/services/dataSync').then(({ DataSyncService }) => {
+        DataSyncService.forceNotification('audios_changed');
+      });
     } catch (error) {
       console.error('AdminContext: Erro ao salvar audio:', error);
       throw error;
@@ -158,7 +165,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       ContentService.deleteAudio(audioId);
       await refreshData();
       // Force refresh for other components
-      RealtimeService.forceRefresh();
+      import('@/services/dataSync').then(({ DataSyncService }) => {
+        DataSyncService.forceNotification('audios_changed');
+      });
     } catch (error) {
       console.error('AdminContext: Erro ao deletar audio:', error);
       throw error;
@@ -171,7 +180,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       const savedPricing = await PricingService.save(pricingData);
       setPricing(savedPricing);
       // Force refresh for other components
-      RealtimeService.forceRefresh();
+      import('@/services/dataSync').then(({ DataSyncService }) => {
+        DataSyncService.forceNotification('content_changed');
+      });
     } catch (error) {
       console.error('AdminContext: Erro ao salvar pricing:', error);
       throw error;

@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeService } from '@/services/realtimeService';
 
 export interface Audio {
   id: string;
@@ -109,10 +108,10 @@ export class AudioService {
 
     console.log('AudioService: Áudio criado com sucesso:', data.title);
     
-    // Notificar sistema de tempo real
-    setTimeout(() => {
-      RealtimeService.forceRefresh();
-    }, 100);
+    // Notificar mudança via DataSync
+    import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('audios_changed', { event: 'INSERT', new: data });
+    });
 
     return data;
   }
@@ -133,10 +132,10 @@ export class AudioService {
 
     console.log('AudioService: Áudio atualizado com sucesso:', data.title);
     
-    // Notificar sistema de tempo real
-    setTimeout(() => {
-      RealtimeService.forceRefresh();
-    }, 100);
+    // Notificar mudança via DataSync
+    import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('audios_changed', { event: 'UPDATE', new: data });
+    });
 
     return data;
   }
@@ -155,9 +154,9 @@ export class AudioService {
 
     console.log('AudioService: Áudio deletado com sucesso');
     
-    // Notificar sistema de tempo real
-    setTimeout(() => {
-      RealtimeService.forceRefresh();
-    }, 100);
+    // Notificar mudança via DataSync
+    import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('audios_changed', { event: 'DELETE', old: { id } });
+    });
   }
 }

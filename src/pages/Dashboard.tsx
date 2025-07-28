@@ -6,7 +6,7 @@ import { RefreshButton } from "@/components/RefreshButton";
 import { Search, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useCallback } from "react";
-import { useSync } from "@/hooks/useSync";
+import { useDataSync } from "@/hooks/useDataSync";
 import { PlaylistSection } from "@/components/playlist/PlaylistSection";
 import * as Icons from "lucide-react";
 
@@ -28,7 +28,10 @@ export default function Dashboard() {
     })));
   }, []);
 
-  useSync(handleSyncEvent, ['audios_updated', 'fields_updated']);
+  useDataSync({
+    onFieldsChange: handleSyncEvent,
+    onAudiosChange: handleSyncEvent
+  });
   
   const filteredFields = fields.filter(field =>
     field.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

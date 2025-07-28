@@ -6,7 +6,7 @@
  */
 
 import { ContentService, EditableAudio } from "./contentService";
-import { SyncService } from "./syncService";
+import { DataSyncService } from "./dataSync";
 
 export interface AudioFormData {
   title: string;
@@ -41,7 +41,7 @@ export class AudioManagementService {
     };
 
     ContentService.saveAudio(newAudio);
-    SyncService.notifyAudiosUpdated();
+    DataSyncService.forceNotification('audios_changed');
     return newAudio;
   }
 
@@ -60,7 +60,7 @@ export class AudioManagementService {
     };
 
     ContentService.saveAudio(updatedAudio);
-    SyncService.notifyAudiosUpdated();
+    DataSyncService.forceNotification('audios_changed');
     return updatedAudio;
   }
 
@@ -74,7 +74,7 @@ export class AudioManagementService {
     }
 
     ContentService.deleteAudio(audioId);
-    SyncService.notifyAudiosUpdated();
+    DataSyncService.forceNotification('audios_changed');
     return true;
   }
 

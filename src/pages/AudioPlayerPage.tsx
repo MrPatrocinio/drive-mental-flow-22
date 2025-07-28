@@ -7,7 +7,7 @@ import { RefreshButton } from "@/components/RefreshButton";
 import { SkipForward, SkipBack, List } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useSync } from "@/hooks/useSync";
+import { useDataSync } from "@/hooks/useDataSync";
 import * as Icons from "lucide-react";
 
 export default function AudioPlayerPage() {
@@ -47,7 +47,10 @@ export default function AudioPlayerPage() {
     });
   }, [fieldId]);
 
-  useSync(handleSyncEvent, ['audios_updated', 'fields_updated']);
+  useDataSync({
+    onAudiosChange: handleSyncEvent,
+    onFieldsChange: handleSyncEvent
+  });
   
   if (!field || !audio) {
     return (

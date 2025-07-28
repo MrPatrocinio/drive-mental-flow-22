@@ -12,7 +12,7 @@ import { AudioService, Audio } from "@/services/supabase/audioService";
 import { AudioCard } from "@/components/AudioCard";
 import { TagFilter } from "@/components/TagFilter";
 import { useToast } from "@/hooks/use-toast";
-import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
+import { useDataSync } from "@/hooks/useDataSync";
 import * as Icons from "lucide-react";
 
 export default function FieldPage() {
@@ -70,8 +70,8 @@ export default function FieldPage() {
     }
   };
 
-  // Setup real-time updates
-  useRealtimeUpdates({
+  // Setup data sync
+  useDataSync({
     onFieldsChange: loadFieldData,
     onAudiosChange: loadFieldData
   });

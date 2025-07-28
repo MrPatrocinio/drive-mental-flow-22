@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeService } from '@/services/realtimeService';
 
 export interface PricingInfo {
   id?: string;
@@ -78,10 +77,10 @@ export class PricingService {
 
       console.log('PricingService: Preços atualizados com sucesso');
       
-      // Notificar sistema de tempo real
-      setTimeout(() => {
-        RealtimeService.forceRefresh();
-      }, 100);
+      // Notificar mudança via DataSync
+      import('@/services/dataSync').then(({ DataSyncService }) => {
+        DataSyncService.forceNotification('content_changed', { event: 'UPDATE', new: { pricing } });
+      });
 
       return data.content as unknown as PricingInfo;
     } else {
@@ -102,10 +101,10 @@ export class PricingService {
 
       console.log('PricingService: Preços criados com sucesso');
       
-      // Notificar sistema de tempo real
-      setTimeout(() => {
-        RealtimeService.forceRefresh();
-      }, 100);
+      // Notificar mudança via DataSync
+      import('@/services/dataSync').then(({ DataSyncService }) => {
+        DataSyncService.forceNotification('content_changed', { event: 'INSERT', new: { pricing } });
+      });
 
       return data.content as unknown as PricingInfo;
     }

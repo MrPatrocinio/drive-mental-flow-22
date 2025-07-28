@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { SyncService } from "@/services/syncService";
+import { DataSyncService } from "@/services/dataSync";
 import { useToast } from "@/hooks/use-toast";
 
 interface RefreshButtonProps {
@@ -39,8 +39,10 @@ export const RefreshButton = ({
         // Simula delay de rede para UX
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Força sincronização
-        SyncService.forceSync();
+        // Força notificação de sincronização
+        DataSyncService.forceNotification('fields_changed');
+        DataSyncService.forceNotification('audios_changed');
+        DataSyncService.forceNotification('content_changed');
       }
       
       toast({
