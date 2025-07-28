@@ -16,13 +16,14 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
 
   // Estados para login
-  const [signInEmail, setSignInEmail] = useState("usuario@gmail.com");
+  const [signInEmail, setSignInEmail] = useState("usuario@teste.com");
   const [signInPassword, setSignInPassword] = useState("123456");
 
   // Estados para cadastro
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpDisplayName, setSignUpDisplayName] = useState("");
+  const [isCreatingTestUser, setIsCreatingTestUser] = useState(false);
 
   const { signIn, signUp, isAuthenticated } = useSupabaseAuth();
   const navigate = useNavigate();
@@ -53,6 +54,44 @@ export default function AuthPage() {
       setError("Erro interno. Tente novamente.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCreateTestUser = async () => {
+    setIsCreatingTestUser(true);
+    setError("");
+
+    try {
+      const response = await fetch(`https://ipdzkzlrcyrcfwvhiulc.supabase.co/functions/v1/create-test-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZHpremxyY3lyY2Z3dmhpdWxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MTU4NDAsImV4cCI6MjA2ODI5MTg0MH0.Hwao9dFvdMEy8QDUzVosDtCEDWjqty5R8ZVkMPMUIAI'}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setError("");
+        // Agora tenta fazer login com as credenciais de teste
+        const { error: loginError } = await signIn({ 
+          email: "usuario@teste.com", 
+          password: "123456" 
+        });
+        
+        if (loginError) {
+          setError("Usuário criado com sucesso! Agora você pode fazer login.");
+        } else {
+          navigate(from, { replace: true });
+        }
+      } else {
+        setError(result.error || "Erro ao criar usuário de teste");
+      }
+    } catch (err) {
+      setError("Erro ao criar usuário de teste. Tente novamente.");
+    } finally {
+      setIsCreatingTestUser(false);
     }
   };
 
@@ -166,12 +205,25 @@ export default function AuthPage() {
                 </Button>
               </form>
 
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2">Credenciais de Teste:</h4>
-                <p className="text-xs text-muted-foreground">
-                  <strong>Email:</strong> usuario@gmail.com<br />
-                  <strong>Senha:</strong> 123456
-                </p>
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg space-y-3">
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Credenciais de Teste:</h4>
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Email:</strong> usuario@teste.com<br />
+                    <strong>Senha:</strong> 123456
+                  </p>
+                </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={handleCreateTestUser}
+                  disabled={isCreatingTestUser || isLoading}
+                >
+                  {isCreatingTestUser ? "Criando usuário..." : "Criar Usuário de Teste"}
+                </Button>
               </div>
             </TabsContent>
 
