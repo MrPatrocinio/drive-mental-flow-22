@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, LogIn, UserPlus, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -62,17 +63,18 @@ export default function AuthPage() {
     setError("");
 
     try {
-      const response = await fetch(`https://ipdzkzlrcyrcfwvhiulc.supabase.co/functions/v1/create-test-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZHpremxyY3lyY2Z3dmhpdWxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MTU4NDAsImV4cCI6MjA2ODI5MTg0MH0.Hwao9dFvdMEy8QDUzVosDtCEDWjqty5R8ZVkMPMUIAI'}`
-        }
+      // Usar supabase.functions.invoke em vez de fetch direto
+      const { data, error: functionError } = await supabase.functions.invoke('create-test-user', {
+        body: {}
       });
-
-      const result = await response.json();
       
-      if (result.success) {
+      if (functionError) {
+        console.error('Erro na edge function:', functionError);
+        setError(`Erro ao criar usuário: ${functionError.message}`);
+        return;
+      }
+      
+      if (data?.success) {
         setError("");
         // Agora tenta fazer login com as credenciais de teste
         const { error: loginError } = await signIn({ 
@@ -86,9 +88,10 @@ export default function AuthPage() {
           navigate(from, { replace: true });
         }
       } else {
-        setError(result.error || "Erro ao criar usuário de teste");
+        setError(data?.error || "Erro ao criar usuário de teste");
       }
     } catch (err) {
+      console.error('Erro geral:', err);
       setError("Erro ao criar usuário de teste. Tente novamente.");
     } finally {
       setIsCreatingTestUser(false);
