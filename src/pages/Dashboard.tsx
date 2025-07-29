@@ -1,32 +1,51 @@
 import { Header } from "@/components/Header";
 import { FieldCard } from "@/components/FieldCard";
-import { ContentService } from "@/services/contentService";
+import { FieldService } from "@/services/supabase/fieldService";
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/RefreshButton";
 import { Search, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDataSync } from "@/hooks/useDataSync";
 import { PlaylistSection } from "@/components/playlist/PlaylistSection";
 import * as Icons from "lucide-react";
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [fields, setFields] = useState(() => {
-    const editableFields = ContentService.getEditableFields();
-    return editableFields.map(field => ({
-      ...field,
-      icon: (Icons as any)[field.iconName] || Icons.Circle
-    }));
-  });
+  const [fields, setFields] = useState<Array<{
+    id: string;
+    title: string;
+    description: string;
+    audio_count: number;
+    icon: any;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
   
-  const handleSyncEvent = useCallback(() => {
-    const editableFields = ContentService.getEditableFields();
-    setFields(editableFields.map(field => ({
-      ...field,
-      icon: (Icons as any)[field.iconName] || Icons.Circle
-    })));
+  const loadFields = useCallback(async () => {
+    try {
+      setLoading(true);
+      const supabaseFields = await FieldService.getAll();
+      setFields(supabaseFields.map(field => ({
+        id: field.id,
+        title: field.title,
+        description: field.description || '',
+        audio_count: field.audio_count,
+        icon: (Icons as any)[field.icon_name] || Icons.Circle
+      })));
+    } catch (error) {
+      console.error('Erro ao carregar campos:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadFields();
+  }, [loadFields]);
+
+  const handleSyncEvent = useCallback(() => {
+    loadFields();
+  }, [loadFields]);
 
   useDataSync({
     onFieldsChange: handleSyncEvent,
@@ -87,7 +106,7 @@ export default function Dashboard() {
                   <FieldCard
                     title={field.title}
                     icon={field.icon}
-                    audioCount={field.audioCount}
+                    audioCount={field.audio_count}
                     fieldId={field.id}
                   />
                 </div>
@@ -113,7 +132,7 @@ export default function Dashboard() {
         <div className="grid sm:grid-cols-3 gap-6 mb-12">
           <div className="field-card text-center">
             <div className="text-3xl font-bold text-primary mb-2">
-              {fields.reduce((total, field) => total + field.audioCount, 0)}
+              {fields.reduce((total, field) => total + field.audio_count, 0)}
             </div>
             <p className="text-muted-foreground">Áudios Disponíveis</p>
           </div>
