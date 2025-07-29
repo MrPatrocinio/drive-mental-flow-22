@@ -1,39 +1,36 @@
-import { Field, Audio } from "@/data/mockData";
-import { ContentService, EditableField, EditableAudio } from "./contentService";
+import { FieldService } from "./supabase/fieldService";
+import { AudioService as SupabaseAudioService } from "./supabase/audioService";
 import * as Icons from "lucide-react";
 
 export class AudioService {
-  // Convert EditableField to Field with proper icon
-  private static convertToField(editableField: EditableField): Field {
-    const IconComponent = (Icons as any)[editableField.iconName] || (Icons as any).Brain;
+  static async getAllFields() {
+    const fields = await FieldService.getAll();
+    return fields.map(field => ({
+      ...field,
+      icon: (Icons as any)[field.icon_name] || Icons.Circle,
+      audios: [] // Will be loaded separately when needed
+    }));
+  }
+
+  static async getFieldById(fieldId: string) {
+    const field = await FieldService.getById(fieldId);
+    if (!field) return undefined;
     
     return {
-      ...editableField,
-      icon: IconComponent,
-      audios: ContentService.getAudiosByField(editableField.id)
+      ...field,
+      icon: (Icons as any)[field.icon_name] || Icons.Circle,
+      audios: [] // Will be loaded separately when needed
     };
   }
 
-  static getAllFields(): Field[] {
-    const editableFields = ContentService.getEditableFields();
-    return editableFields.map(field => this.convertToField(field));
+  static async getAudioById(fieldId: string, audioId: string) {
+    return await SupabaseAudioService.getById(audioId);
   }
 
-  static getFieldById(fieldId: string): Field | undefined {
-    const editableField = ContentService.getEditableFields().find(field => field.id === fieldId);
-    return editableField ? this.convertToField(editableField) : undefined;
-  }
-
-  static getAudioById(fieldId: string, audioId: string): Audio | undefined {
-    const audios = ContentService.getAudiosByField(fieldId);
-    return audios.find(audio => audio.id === audioId);
-  }
-
-  static searchAudios(query: string): Audio[] {
-    const allAudios = ContentService.getAudios();
+  static async searchAudios(query: string) {
+    const allAudios = await SupabaseAudioService.getAll();
     return allAudios.filter(audio => 
-      audio.title.toLowerCase().includes(query.toLowerCase()) ||
-      audio.description.toLowerCase().includes(query.toLowerCase())
+      audio.title.toLowerCase().includes(query.toLowerCase())
     );
   }
 

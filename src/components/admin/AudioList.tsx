@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import { EditableAudio } from "@/services/contentService";
+import { Audio as EditableAudio } from "@/services/supabase/audioService";
 import { Search, MoreVertical, Edit, Trash2, Play, RefreshCw } from "lucide-react";
 
 interface AudioListProps {
@@ -65,8 +65,7 @@ export const AudioList = ({
 
   const filteredAudios = audios.filter(audio =>
     audio.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    audio.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    getFieldTitle(audio.fieldId).toLowerCase().includes(searchQuery.toLowerCase())
+    getFieldTitle(audio.field_id).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleDeleteClick = (audio: EditableAudio) => {
@@ -133,12 +132,12 @@ export const AudioList = ({
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">
-                        {getFieldTitle(audio.fieldId)}
+                        {getFieldTitle(audio.field_id)}
                       </Badge>
                     </TableCell>
                     <TableCell>{audio.duration}</TableCell>
                     <TableCell className="max-w-xs truncate">
-                      {audio.description}
+                      -
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

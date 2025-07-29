@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, Music } from "lucide-react";
-import { EditableField } from "@/services/contentService";
+import { Field as EditableField } from "@/services/supabase/fieldService";
 import * as Icons from "lucide-react";
 
 interface FieldListProps {
@@ -42,7 +42,7 @@ export function FieldList({ fields, onEdit, onDelete }: FieldListProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {fields.map((field) => {
-        const IconComponent = getIcon(field.iconName);
+        const IconComponent = getIcon(field.icon_name);
         
         return (
           <Card key={field.id} className="relative">
@@ -53,7 +53,7 @@ export function FieldList({ fields, onEdit, onDelete }: FieldListProps) {
                   <CardTitle className="text-lg">{field.title}</CardTitle>
                 </div>
                 <Badge variant="secondary">
-                  {field.audioCount} áudio{field.audioCount !== 1 ? 's' : ''}
+                  {field.audio_count} áudio{field.audio_count !== 1 ? 's' : ''}
                 </Badge>
               </div>
               <CardDescription className="line-clamp-2">

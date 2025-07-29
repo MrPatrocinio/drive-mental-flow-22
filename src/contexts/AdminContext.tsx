@@ -1,10 +1,10 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { ContentService, LandingPageContent, EditableField, EditableAudio } from '@/services/contentService';
+import { ContentService, LandingPageContent } from '@/services/contentService';
+import { Field as EditableField, FieldService } from '@/services/supabase/fieldService';
+import { Audio as EditableAudio, AudioService } from '@/services/supabase/audioService';
 import { SupabaseContentService } from '@/services/supabase/contentService';
-import { FieldService } from '@/services/supabase/fieldService';
-import { AudioService } from '@/services/supabase/audioService';
 import { PricingService, PricingInfo, PricingInsert } from '@/services/supabase/pricingService';
 import { useDataSync } from '@/hooks/useDataSync';
 import type { AuthUser } from '@/services/supabase/authService';
@@ -46,12 +46,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const [landingContent, setLandingContent] = useState<LandingPageContent>(() => 
     ContentService.getLandingPageContent()
   );
-  const [fields, setFields] = useState<EditableField[]>(() => 
-    ContentService.getEditableFields()
-  );
-  const [audios, setAudios] = useState<EditableAudio[]>(() => 
-    ContentService.getAudios()
-  );
+  const [fields, setFields] = useState<EditableField[]>([]);
+  const [audios, setAudios] = useState<EditableAudio[]>([]);
   const [pricing, setPricing] = useState<PricingInfo | null>(null);
 
   // Setup data sync
@@ -102,11 +98,10 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       if (field.id) {
         await FieldService.update(field.id, {
           title: field.title,
-          icon_name: field.iconName,
+          icon_name: field.icon_name,
           description: field.description || ''
         });
       }
-      ContentService.saveField(field);
       await refreshData();
       // Force refresh for other components
       import('@/services/dataSync').then(({ DataSyncService }) => {
@@ -122,7 +117,6 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     console.log('AdminContext: Deletando field', fieldId);
     try {
       await FieldService.delete(fieldId);
-      ContentService.deleteField(fieldId);
       await refreshData();
       // Force refresh for other components
       import('@/services/dataSync').then(({ DataSyncService }) => {
@@ -140,13 +134,12 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       if (audio.id) {
         await AudioService.update(audio.id, {
           title: audio.title,
-          field_id: audio.fieldId,
+          field_id: audio.field_id,
           duration: audio.duration,
           tags: audio.tags || [],
           url: audio.url
         });
       }
-      ContentService.saveAudio(audio);
       await refreshData();
       // Force refresh for other components
       import('@/services/dataSync').then(({ DataSyncService }) => {
@@ -162,7 +155,6 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     console.log('AdminContext: Deletando audio', audioId);
     try {
       await AudioService.delete(audioId);
-      ContentService.deleteAudio(audioId);
       await refreshData();
       // Force refresh for other components
       import('@/services/dataSync').then(({ DataSyncService }) => {
@@ -202,30 +194,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       // Update ContentService cache
       ContentService.saveLandingPageContent(landingContentData);
       
-      // Convert Supabase fields to EditableFields
-      const editableFields = fieldsData.map(field => ({
-        id: field.id,
-        title: field.title,
-        iconName: field.icon_name,
-        description: field.description || '',
-        audioCount: field.audio_count,
-        audios: []
-      }));
-
-      // Convert Supabase audios to EditableAudios
-      const editableAudios = audiosData.map(audio => ({
-        id: audio.id,
-        title: audio.title,
-        fieldId: audio.field_id,
-        duration: audio.duration,
-        url: audio.url,
-        tags: audio.tags || [],
-        description: ''
-      }));
-
       setLandingContent(landingContentData);
-      setFields(editableFields);
-      setAudios(editableAudios);
+      setFields(fieldsData);
+      setAudios(audiosData);
       setPricing(pricingData);
 
       console.log('AdminContext: Dados atualizados com sucesso');

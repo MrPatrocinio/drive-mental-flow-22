@@ -5,7 +5,8 @@
  * Princípio SSOT: Interface única para manipulação de áudios
  */
 
-import { ContentService, EditableAudio } from "./contentService";
+import { AudioService, Audio as EditableAudio } from "./supabase/audioService";
+import { FieldService } from "./supabase/fieldService";
 import { DataSyncService } from "./dataSync";
 
 export interface AudioFormData {
@@ -20,81 +21,64 @@ export class AudioManagementService {
   /**
    * Obtém todos os áudios para administração
    */
-  static getAllAudios(): EditableAudio[] {
-    return ContentService.getAudios();
+  static async getAllAudios(): Promise<EditableAudio[]> {
+    return await AudioService.getAll();
   }
 
-  /**
-   * Obtém áudio por ID
-   */
-  static getAudioById(audioId: string): EditableAudio | undefined {
-    return ContentService.getAudios().find(audio => audio.id === audioId);
+  static async getAudioById(audioId: string): Promise<EditableAudio | null> {
+    return await AudioService.getById(audioId);
   }
 
-  /**
-   * Cria novo áudio
-   */
-  static createAudio(audioData: AudioFormData): EditableAudio {
-    const newAudio: EditableAudio = {
-      id: ContentService.generateId(),
-      ...audioData
-    };
-
-    ContentService.saveAudio(newAudio);
+  static async createAudio(audioData: AudioFormData): Promise<EditableAudio> {
+    const newAudio = await AudioService.create({
+      title: audioData.title,
+      duration: audioData.duration,
+      url: audioData.url,
+      field_id: audioData.fieldId,
+      tags: []
+    });
+    
     DataSyncService.forceNotification('audios_changed');
     return newAudio;
   }
 
-  /**
-   * Atualiza áudio existente
-   */
-  static updateAudio(audioId: string, audioData: AudioFormData): EditableAudio | null {
-    const existingAudio = this.getAudioById(audioId);
-    if (!existingAudio) {
+  static async updateAudio(audioId: string, audioData: AudioFormData): Promise<EditableAudio | null> {
+    try {
+      const updatedAudio = await AudioService.update(audioId, {
+        title: audioData.title,
+        duration: audioData.duration,
+        url: audioData.url,
+        field_id: audioData.fieldId,
+        tags: []
+      });
+      
+      DataSyncService.forceNotification('audios_changed');
+      return updatedAudio;
+    } catch (error) {
       return null;
     }
-
-    const updatedAudio: EditableAudio = {
-      ...existingAudio,
-      ...audioData
-    };
-
-    ContentService.saveAudio(updatedAudio);
-    DataSyncService.forceNotification('audios_changed');
-    return updatedAudio;
   }
 
-  /**
-   * Remove áudio
-   */
-  static deleteAudio(audioId: string): boolean {
-    const audio = this.getAudioById(audioId);
-    if (!audio) {
+  static async deleteAudio(audioId: string): Promise<boolean> {
+    try {
+      await AudioService.delete(audioId);
+      DataSyncService.forceNotification('audios_changed');
+      return true;
+    } catch (error) {
       return false;
     }
-
-    ContentService.deleteAudio(audioId);
-    DataSyncService.forceNotification('audios_changed');
-    return true;
   }
 
-  /**
-   * Obtém áudios por campo
-   */
-  static getAudiosByField(fieldId: string): EditableAudio[] {
-    return ContentService.getAudiosByField(fieldId);
+  static async getAudiosByField(fieldId: string): Promise<EditableAudio[]> {
+    return await AudioService.getByField(fieldId);
   }
 
-  /**
-   * Busca áudios por texto
-   */
-  static searchAudios(query: string): EditableAudio[] {
-    const allAudios = this.getAllAudios();
+  static async searchAudios(query: string): Promise<EditableAudio[]> {
+    const allAudios = await AudioService.getAll();
     const searchTerm = query.toLowerCase();
     
     return allAudios.filter(audio => 
-      audio.title.toLowerCase().includes(searchTerm) ||
-      audio.description.toLowerCase().includes(searchTerm)
+      audio.title.toLowerCase().includes(searchTerm)
     );
   }
 
@@ -146,9 +130,9 @@ export class AudioManagementService {
   /**
    * Obtém estatísticas dos áudios
    */
-  static getAudioStats() {
-    const audios = this.getAllAudios();
-    const fields = ContentService.getEditableFields();
+  static async getAudioStats() {
+    const audios = await this.getAllAudios();
+    const fields = await FieldService.getAll();
     
     return {
       totalAudios: audios.length,
@@ -156,7 +140,7 @@ export class AudioManagementService {
       audiosByField: fields.map(field => ({
         fieldId: field.id,
         fieldTitle: field.title,
-        audioCount: this.getAudiosByField(field.id).length
+        audioCount: field.audio_count
       }))
     };
   }
