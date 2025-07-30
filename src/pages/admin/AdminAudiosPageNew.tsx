@@ -127,14 +127,59 @@ export default function AdminAudiosPageNew() {
     }
   };
 
-  const handleUpdateAudio = async (audioData: AudioUpdate & { id?: string }) => {
+  const handleUpdateAudio = async (audioData: AudioWithFile & { id?: string }) => {
     if (!audioData.id) return;
     
     setIsLoading(true);
     setFormErrors([]);
     
     try {
-      await AudioService.update(audioData.id, audioData);
+      let audioUrl = audioData.url || '';
+      
+      // Se há um arquivo novo, fazer upload para o Supabase Storage
+      if (audioData.file) {
+        console.log('Iniciando upload do novo arquivo:', audioData.file.name);
+        
+        // Gerar nome único para o arquivo
+        const fileExtension = audioData.file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+        
+        // Upload para o bucket 'audios'
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('audios')
+          .upload(fileName, audioData.file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          throw new Error(`Erro no upload: ${uploadError.message}`);
+        }
+        
+        console.log('Upload realizado com sucesso:', uploadData.path);
+        
+        // Obter URL pública do arquivo
+        const { data: urlData } = supabase.storage
+          .from('audios')
+          .getPublicUrl(uploadData.path);
+        
+        audioUrl = urlData.publicUrl;
+        console.log('URL pública gerada:', audioUrl);
+      }
+      
+      // Convert AudioWithFile to AudioUpdate
+      const audioUpdate: AudioUpdate = {
+        title: audioData.title,
+        duration: audioData.duration,
+        field_id: audioData.field_id,
+        tags: audioData.tags || [],
+        url: audioUrl
+      };
+      
+      console.log('Atualizando áudio no banco:', audioUpdate);
+      await AudioService.update(audioData.id, audioUpdate);
+      
       toast({
         title: "Sucesso",
         description: "Áudio atualizado com sucesso!",
@@ -142,6 +187,7 @@ export default function AdminAudiosPageNew() {
       setViewMode("list");
       await loadData();
     } catch (error) {
+      console.error('Erro completo:', error);
       const message = error instanceof Error ? error.message : "Erro desconhecido";
       setFormErrors([message]);
       toast({
