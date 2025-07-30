@@ -15,6 +15,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AudioService, Audio, AudioWithFile, AudioUpdate, AudioInsert } from "@/services/supabase/audioService";
+import { supabase } from "@/integrations/supabase/client";
 import { FieldService, Field } from "@/services/supabase/fieldService";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshButton } from "@/components/RefreshButton";
@@ -60,15 +61,52 @@ export default function AdminAudiosPageNew() {
     setFormErrors([]);
     
     try {
+      let audioUrl = audioData.url || '';
+      
+      // Se há um arquivo, fazer upload para o Supabase Storage
+      if (audioData.file) {
+        console.log('Iniciando upload do arquivo:', audioData.file.name);
+        
+        // Gerar nome único para o arquivo
+        const fileExtension = audioData.file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+        
+        // Upload para o bucket 'audios'
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('audios')
+          .upload(fileName, audioData.file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          throw new Error(`Erro no upload: ${uploadError.message}`);
+        }
+        
+        console.log('Upload realizado com sucesso:', uploadData.path);
+        
+        // Obter URL pública do arquivo
+        const { data: urlData } = supabase.storage
+          .from('audios')
+          .getPublicUrl(uploadData.path);
+        
+        audioUrl = urlData.publicUrl;
+        console.log('URL pública gerada:', audioUrl);
+      }
+      
       // Convert AudioWithFile to AudioInsert
       const audioInsert: AudioInsert = {
         title: audioData.title,
         duration: audioData.duration,
         field_id: audioData.field_id,
-        tags: audioData.tags,
-        url: audioData.url || '' // Provide default empty string if url is not set
+        tags: audioData.tags || [],
+        url: audioUrl
       };
+      
+      console.log('Criando áudio no banco:', audioInsert);
       await AudioService.create(audioInsert);
+      
       toast({
         title: "Sucesso",
         description: "Áudio criado com sucesso!",
@@ -76,6 +114,7 @@ export default function AdminAudiosPageNew() {
       setViewMode("list");
       await loadData();
     } catch (error) {
+      console.error('Erro completo:', error);
       const message = error instanceof Error ? error.message : "Erro desconhecido";
       setFormErrors([message]);
       toast({
