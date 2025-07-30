@@ -1,5 +1,5 @@
-import { ContentService } from "./contentService";
-import { Audio, Field } from "@/data/mockData";
+import { FieldService, Field } from "./supabase/fieldService";
+import { AudioService, Audio } from "./supabase/audioService";
 
 export interface StatsData {
   totalUsers: number;
@@ -67,9 +67,11 @@ export class StatsService {
   /**
    * Calcula estatísticas gerais do sistema
    */
-  static getGeneralStats(): Pick<StatsData, 'totalUsers' | 'totalAudios' | 'totalFields' | 'totalPlaytime'> {
-    const fields = ContentService.getEditableFields();
-    const allAudios = ContentService.getAudios();
+  static async getGeneralStats(): Promise<Pick<StatsData, 'totalUsers' | 'totalAudios' | 'totalFields' | 'totalPlaytime'>> {
+    const [fields, allAudios] = await Promise.all([
+      FieldService.getAll(),
+      AudioService.getAll()
+    ]);
     
     // Simula dados de usuários e tempo de reprodução
     const totalUsers = 1247; // Mock data
@@ -86,14 +88,16 @@ export class StatsService {
   /**
    * Calcula estatísticas por campo
    */
-  static getFieldStats(): FieldStats[] {
-    const fields = ContentService.getEditableFields();
-    const totalAudios = ContentService.getAudios().length;
+  static async getFieldStats(): Promise<FieldStats[]> {
+    const [fields, allAudios] = await Promise.all([
+      FieldService.getAll(),
+      AudioService.getAll()
+    ]);
     
     return fields.map(field => {
-      const fieldAudios = ContentService.getAudiosByField(field.id);
+      const fieldAudios = allAudios.filter(audio => audio.field_id === field.id);
       const totalDuration = this.calculateFieldDuration(fieldAudios);
-      const usagePercentage = totalAudios > 0 ? (fieldAudios.length / totalAudios) * 100 : 0;
+      const usagePercentage = allAudios.length > 0 ? (fieldAudios.length / allAudios.length) * 100 : 0;
       
       return {
         fieldId: field.id,
@@ -108,8 +112,8 @@ export class StatsService {
   /**
    * Retorna o campo mais popular
    */
-  static getMostPopularField(): FieldStats {
-    const fieldStats = this.getFieldStats();
+  static async getMostPopularField(): Promise<FieldStats> {
+    const fieldStats = await this.getFieldStats();
     return fieldStats.reduce((prev, current) => 
       prev.audioCount > current.audioCount ? prev : current
     );
@@ -132,15 +136,17 @@ export class StatsService {
   /**
    * Gera dados de uso de áudios (mock)
    */
-  static getAudioUsageData(): AudioUsageData[] {
-    const allAudios = ContentService.getAudios();
-    const fields = ContentService.getEditableFields();
+  static async getAudioUsageData(): Promise<AudioUsageData[]> {
+    const [allAudios, fields] = await Promise.all([
+      AudioService.getAll(),
+      FieldService.getAll()
+    ]);
     
     // Simula dados de reprodução
     const mockPlays = [520, 480, 450, 420, 380, 350, 320, 300];
     
     return allAudios.slice(0, 8).map((audio, index) => {
-      const field = fields.find(f => f.id === audio.fieldId);
+      const field = fields.find(f => f.id === audio.field_id);
       
       return {
         audioId: audio.id,
@@ -192,13 +198,15 @@ export class StatsService {
   /**
    * Gera dados dos áudios mais ouvidos
    */
-  static getTopAudiosData(): TopAudioData[] {
-    const allAudios = ContentService.getAudios();
-    const fields = ContentService.getEditableFields();
+  static async getTopAudiosData(): Promise<TopAudioData[]> {
+    const [allAudios, fields] = await Promise.all([
+      AudioService.getAll(),
+      FieldService.getAll()
+    ]);
     const mockPlays = [850, 720, 680, 620, 580, 540, 520, 480];
 
     return allAudios.slice(0, 8).map((audio, index) => {
-      const field = fields.find(f => f.id === audio.fieldId);
+      const field = fields.find(f => f.id === audio.field_id);
       const shortTitle = audio.title.length > 20 
         ? audio.title.substring(0, 20) + "..." 
         : audio.title;
@@ -226,15 +234,18 @@ export class StatsService {
   /**
    * Retorna todas as estatísticas consolidadas
    */
-  static getAllStats(): StatsData {
-    const generalStats = this.getGeneralStats();
-    const fieldStats = this.getFieldStats();
-    const mostPopularField = this.getMostPopularField();
+  static async getAllStats(): Promise<StatsData> {
+    const [generalStats, fieldStats, mostPopularField, audioUsage, topAudios] = await Promise.all([
+      this.getGeneralStats(),
+      this.getFieldStats(),
+      this.getMostPopularField(),
+      this.getAudioUsageData(),
+      this.getTopAudiosData()
+    ]);
+
     const userGrowth = this.getUserGrowthData();
-    const audioUsage = this.getAudioUsageData();
     const activeUsers = this.getActiveUsersData();
     const usageByTime = this.getUsageTimeData();
-    const topAudios = this.getTopAudiosData();
     const platformUsage = this.getPlatformUsageData();
 
     return {

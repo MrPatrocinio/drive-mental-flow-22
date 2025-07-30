@@ -52,7 +52,7 @@ export class MigrationService {
     const errors: string[] = [];
     
     try {
-      const localFields = ContentService.getEditableFields();
+      const localFields: any[] = []; // Migration service deprecated - no more local fields
       
       for (const localField of localFields) {
         const { error } = await SupabaseDataService.createField({
@@ -94,7 +94,7 @@ export class MigrationService {
       }
 
       // Mapear fields locais para IDs do Supabase
-      const localFields = ContentService.getEditableFields();
+      const localFields: any[] = []; // Migration service deprecated - no more local fields
       
       for (const localField of localFields) {
         const supabaseField = supabaseFields.find(sf => sf.title === localField.title);
@@ -105,7 +105,7 @@ export class MigrationService {
         }
 
         // Buscar áudios locais deste campo
-        const localAudios = ContentService.getAudiosByField(localField.id);
+        const localAudios: any[] = []; // Migration service deprecated - no more local audios
         
         for (const localAudio of localAudios) {
           const { error } = await SupabaseDataService.createAudio({

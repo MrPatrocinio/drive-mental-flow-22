@@ -5,7 +5,8 @@
  * Seguindo princípios KISS e YAGNI - apenas validações essenciais
  */
 
-import { ContentService } from "./contentService";
+import { FieldService } from "./supabase/fieldService";
+import { AudioService } from "./supabase/audioService";
 import { StatsService } from "./statsService";
 
 export interface ValidationResult {
@@ -35,13 +36,13 @@ export class ValidationService {
     const results: ValidationResult[] = [];
 
     // Validações de dados
-    results.push(...this.validateDataIntegrity());
+    results.push(...await this.validateDataIntegrity());
     
     // Validações de rotas
     results.push(...this.validateRoutes());
     
     // Validações de serviços
-    results.push(...this.validateServices());
+    results.push(...await this.validateServices());
     
     // Validações de responsividade
     results.push(...this.validateResponsiveness());
@@ -52,27 +53,25 @@ export class ValidationService {
   /**
    * Valida integridade dos dados
    */
-  private static validateDataIntegrity(): ValidationResult[] {
+  private static async validateDataIntegrity(): Promise<ValidationResult[]> {
     const results: ValidationResult[] = [];
 
     try {
+      const [fields, audios] = await Promise.all([
+        FieldService.getAll(),
+        AudioService.getAll()
+      ]);
+
       // Validar campos
-      // Temporarily disabled - validation will be migrated to Supabase
       results.push({
         category: 'Dados',
         test: 'Campos disponíveis',
-        status: 'success',
-        message: 'Migrado para Supabase',
-        details: 'Validação será implementada com dados do Supabase'
+        status: fields.length > 0 ? 'success' : 'warning',
+        message: `${fields.length} campos encontrados`,
+        details: fields.length === 0 ? 'Nenhum campo disponível' : undefined
       });
 
-      results.push({
-        category: 'Dados',
-        test: 'Áudios disponíveis',
-        status: 'success',
-        message: 'Migrado para Supabase',
-        details: 'Validação será implementada com dados do Supabase'
-      });
+      // Validar áudios
       results.push({
         category: 'Dados',
         test: 'Áudios disponíveis',
@@ -83,7 +82,7 @@ export class ValidationService {
 
       // Validar relacionamentos campo-áudio
       const orphanedAudios = audios.filter(audio => 
-        !fields.some(field => field.id === audio.fieldId)
+        !fields.some(field => field.id === audio.field_id)
       );
       results.push({
         category: 'Dados',
@@ -164,24 +163,26 @@ export class ValidationService {
   /**
    * Valida funcionamento dos serviços
    */
-  private static validateServices(): ValidationResult[] {
+  private static async validateServices(): Promise<ValidationResult[]> {
     const results: ValidationResult[] = [];
 
     try {
-      // Testar ContentService
-      const fields = ContentService.getEditableFields();
-      const audios = ContentService.getAudios();
+      // Testar FieldService e AudioService
+      const [fields, audios] = await Promise.all([
+        FieldService.getAll(),
+        AudioService.getAll()
+      ]);
       
       results.push({
         category: 'Serviços',
-        test: 'ContentService',
+        test: 'Supabase Services',
         status: 'success',
-        message: 'Serviço funcionando corretamente',
+        message: 'Serviços funcionando corretamente',
         details: `Retornou ${fields.length} campos e ${audios.length} áudios`
       });
 
       // Testar StatsService
-      const stats = StatsService.getAllStats();
+      const stats = await StatsService.getAllStats();
       
       results.push({
         category: 'Serviços',
@@ -192,7 +193,7 @@ export class ValidationService {
       });
 
       // Testar sincronização de dados
-      const fieldStats = StatsService.getFieldStats();
+      const fieldStats = await StatsService.getFieldStats();
       const hasValidStats = fieldStats.every(stat => 
         stat.audioCount >= 0 && stat.usagePercentage >= 0
       );
@@ -308,11 +309,11 @@ export class ValidationService {
   /**
    * Validação específica para página de estatísticas
    */
-  static validateStatsPage(): ValidationResult[] {
+  static async validateStatsPage(): Promise<ValidationResult[]> {
     const results: ValidationResult[] = [];
 
     try {
-      const stats = StatsService.getAllStats();
+      const stats = await StatsService.getAllStats();
       
       // Verificar dados essenciais
       const hasEssentialData = [

@@ -21,7 +21,7 @@ export const AdminStatsPage = () => {
       try {
         // Simula carregamento para melhor UX
         await new Promise(resolve => setTimeout(resolve, 800));
-        const statsData = StatsService.getAllStats();
+        const statsData = await StatsService.getAllStats();
         setStats(statsData);
       } catch (error) {
         console.error("Erro ao carregar estatísticas:", error);
