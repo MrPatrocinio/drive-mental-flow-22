@@ -1,9 +1,13 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { AudioPreferencesPanel } from "@/components/AudioPreferencesPanel";
 import { AudioPreferences, audioPreferencesService } from "@/services/audioPreferencesService";
+import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { AudioErrorDisplay } from "@/components/audio/AudioErrorDisplay";
+import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator";
+import { useToast } from "@/hooks/use-toast";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -12,84 +16,44 @@ interface AudioPlayerProps {
 }
 
 export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
-  const [repeatCount, setRepeatCount] = useState(0);
   const [preferences, setPreferences] = useState<AudioPreferences>(audioPreferencesService.getPreferences());
   const [showPreferences, setShowPreferences] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+  const handleError = (error: string) => {
+    console.error('Erro no player de áudio:', error);
+    toast({
+      variant: "destructive",
+      title: "Erro no áudio",
+      description: error,
+    });
+  };
 
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-    
-    const handleEnded = () => {
-      const newRepeatCount = repeatCount + 1;
-      setRepeatCount(newRepeatCount);
-      onRepeatComplete?.();
-      
-      // Check if we should continue repeating
-      const shouldContinue = preferences.repeatCount === 0 || newRepeatCount < preferences.repeatCount;
-      
-      if (shouldContinue) {
-        audio.currentTime = 0;
-        audio.play();
-      } else {
-        setIsPlaying(false);
-      }
-    };
+  const {
+    audioRef,
+    playerState,
+    repeatCount,
+    togglePlay,
+    reset,
+    seek,
+    setMuted: setPlayerMuted
+  } = useAudioPlayer(audioUrl, preferences, onRepeatComplete, handleError);
 
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
-    audio.addEventListener('ended', handleEnded);
-
-    return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
-      audio.removeEventListener('ended', handleEnded);
-    };
-  }, [onRepeatComplete]);
-
-  useEffect(() => {
+  const handleRetry = () => {
     if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : preferences.volume / 100;
+      audioRef.current.load();
     }
-  }, [preferences.volume, isMuted]);
-
-  useEffect(() => {
-    // Auto-play functionality
-    if (preferences.autoPlay && audioRef.current && !isPlaying) {
-      audioRef.current.play();
-      setIsPlaying(true);
-    }
-  }, [audioUrl, preferences.autoPlay]);
+  };
 
   const handlePreferencesChange = (newPreferences: AudioPreferences) => {
     setPreferences(newPreferences);
   };
 
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const resetAudio = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      setCurrentTime(0);
-      setRepeatCount(0);
-    }
+  const handleMuteToggle = () => {
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+    setPlayerMuted(newMuted);
   };
 
   const formatTime = (time: number) => {
@@ -99,10 +63,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
   };
 
   const handleSeek = (value: number[]) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = value[0];
-      setCurrentTime(value[0]);
-    }
+    seek(value[0]);
   };
 
   return (
@@ -116,19 +77,31 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       </div>
 
+      {/* Loading State */}
+      {playerState.isLoading && <AudioLoadingIndicator />}
+
+      {/* Error State */}
+      {playerState.hasError && playerState.errorMessage && (
+        <AudioErrorDisplay 
+          error={playerState.errorMessage} 
+          onRetry={handleRetry}
+        />
+      )}
+
       {/* Progress Bar */}
-      {preferences.showProgress && (
+      {preferences.showProgress && !playerState.hasError && (
         <div className="space-y-2">
           <Slider
-            value={[currentTime]}
-            max={duration || 100}
+            value={[playerState.currentTime]}
+            max={playerState.duration || 100}
             step={1}
             onValueChange={handleSeek}
             className="w-full"
+            disabled={!playerState.canPlay}
           />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+            <span>{formatTime(playerState.currentTime)}</span>
+            <span>{formatTime(playerState.duration)}</span>
           </div>
         </div>
       )}
@@ -138,7 +111,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         <Button
           variant="audio"
           size="audio"
-          onClick={resetAudio}
+          onClick={reset}
+          disabled={playerState.hasError || !playerState.canPlay}
         >
           <RotateCcw className="h-5 w-5" />
         </Button>
@@ -148,8 +122,9 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           size="audio"
           onClick={togglePlay}
           className="w-16 h-16"
+          disabled={playerState.hasError || !playerState.canPlay}
         >
-          {isPlaying ? (
+          {playerState.isPlaying ? (
             <Pause className="h-6 w-6" />
           ) : (
             <Play className="h-6 w-6 ml-1" />
@@ -159,7 +134,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         <Button
           variant="audio"
           size="audio"
-          onClick={() => setIsMuted(!isMuted)}
+          onClick={handleMuteToggle}
+          disabled={playerState.hasError}
         >
           {isMuted ? (
             <VolumeX className="h-5 w-5" />

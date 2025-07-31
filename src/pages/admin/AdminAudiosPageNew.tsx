@@ -19,9 +19,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { FieldService, Field } from "@/services/supabase/fieldService";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshButton } from "@/components/RefreshButton";
-import { Plus, Music, Upload, Edit, BarChart3 } from "lucide-react";
+import { AudioDiagnostics } from "@/components/admin/AudioDiagnostics";
+import { Plus, Music, Upload, Edit, BarChart3, Activity } from "lucide-react";
 
-type ViewMode = "list" | "upload" | "edit";
+type ViewMode = "list" | "upload" | "edit" | "diagnostics";
 
 export default function AdminAudiosPageNew() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -345,6 +346,14 @@ export default function AdminAudiosPageNew() {
               <>
                 <Button 
                   variant="outline" 
+                  onClick={() => setViewMode("diagnostics")}
+                  disabled={isLoading}
+                >
+                  <Activity className="w-4 h-4 mr-2" />
+                  Diagnóstico
+                </Button>
+                <Button 
+                  variant="outline" 
                   onClick={() => setViewMode("upload")}
                   disabled={isLoading}
                 >
@@ -366,7 +375,11 @@ export default function AdminAudiosPageNew() {
         </div>
 
         {/* Content */}
-        {renderContent()}
+        {viewMode === "diagnostics" ? (
+          <AudioDiagnostics />
+        ) : (
+          renderContent()
+        )}
       </div>
     </AdminLayout>
   );
