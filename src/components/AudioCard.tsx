@@ -61,7 +61,7 @@ export function AudioCard({ audio, onPlay, showTags = true }: AudioCardProps) {
           </div>
 
           <div className="flex flex-col gap-2">
-            <FavoriteButton audioId={audio.id} size="sm" />
+            <FavoriteButton audioId={audio.id} audioTitle={audio.title} size="sm" />
             
             <Button
               size="sm"
