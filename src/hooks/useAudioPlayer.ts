@@ -28,20 +28,29 @@ export const useAudioPlayer = (
   useEffect(() => {
     if (!audioRef.current) return;
 
+    setRepeatCount(0); // Reset count on new audio
+
     const service = new AudioPlayerService({
       onStateChange: setPlayerState,
       onRepeatComplete: () => {
-        const newRepeatCount = repeatCount + 1;
-        setRepeatCount(newRepeatCount);
-        onRepeatComplete?.();
-        
-        // Verifica se deve continuar repetindo
-        const shouldContinue = preferences.repeatCount === 0 || newRepeatCount < preferences.repeatCount;
-        
-        if (shouldContinue && audioRef.current) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play();
-        }
+        setRepeatCount(current => {
+          const newCount = current + 1;
+          onRepeatComplete?.();
+          
+          // Verifica se deve continuar repetindo
+          const shouldContinue = preferences.repeatCount === 0 || newCount < preferences.repeatCount;
+          
+          if (shouldContinue && audioRef.current) {
+            setTimeout(() => {
+              if (audioRef.current) {
+                audioRef.current.currentTime = 0;
+                audioRef.current.play();
+              }
+            }, 100);
+          }
+          
+          return newCount;
+        });
       },
       onError
     });
@@ -49,10 +58,13 @@ export const useAudioPlayer = (
     service.initialize(audioRef.current);
     playerServiceRef.current = service;
 
+    // Aplica configurações iniciais
+    service.setVolume(preferences.volume);
+
     return () => {
       service.cleanup();
     };
-  }, [audioUrl]);
+  }, [audioUrl, preferences.repeatCount]);
 
   // Atualiza preferências de volume
   useEffect(() => {
@@ -63,10 +75,12 @@ export const useAudioPlayer = (
 
   // Auto-play functionality
   useEffect(() => {
-    if (preferences.autoPlay && audioRef.current && !playerState.isPlaying && playerState.canPlay) {
-      playerServiceRef.current?.togglePlay();
+    if (preferences.autoPlay && audioRef.current && !playerState.isPlaying && playerState.canPlay && !playerState.hasError) {
+      setTimeout(() => {
+        playerServiceRef.current?.togglePlay();
+      }, 200);
     }
-  }, [audioUrl, preferences.autoPlay, playerState.canPlay]);
+  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError]);
 
   const togglePlay = () => {
     playerServiceRef.current?.togglePlay();
