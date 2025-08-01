@@ -68,6 +68,11 @@ const App = () => (
                   <AudioPlayerPage />
                 </UserProtectedRoute>
               } />
+              <Route path="/audio/:audioId" element={
+                <UserProtectedRoute>
+                  <AudioPlayerPage />
+                </UserProtectedRoute>
+              } />
               
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLoginPage />} />

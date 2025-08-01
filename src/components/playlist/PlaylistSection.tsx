@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PlaylistCard } from "./PlaylistCard";
 import { CreatePlaylistDialog } from "./CreatePlaylistDialog";
 import { EditPlaylistDialog } from "./EditPlaylistDialog";
@@ -13,14 +14,25 @@ export function PlaylistSection() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { playlists, deletePlaylist, refreshPlaylists } = usePlaylistManager();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handlePlay = (playlist: Playlist) => {
     if (playlist.audios.length === 0) return;
     
-    // Por enquanto apenas mostra um toast, depois pode integrar com player
+    // Navega para o primeiro áudio da playlist
+    const firstAudio = playlist.audios[0];
+    
     toast({
       title: "Reproduzindo playlist",
       description: `Iniciando reprodução de "${playlist.name}" com ${playlist.audios.length} áudios.`
+    });
+
+    // Navega para a página de reprodução do primeiro áudio
+    navigate(`/audio/${firstAudio.id}`, {
+      state: {
+        playlist: playlist,
+        currentIndex: 0
+      }
     });
   };
 
