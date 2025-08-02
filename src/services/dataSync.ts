@@ -6,6 +6,7 @@
  */
 
 import { realtimeConnection } from './realtimeConnection';
+import { syncDiagnostics } from './syncDiagnostics';
 
 export type DataChangeEvent = 'fields_changed' | 'audios_changed' | 'content_changed' | 'videos_changed';
 
@@ -30,28 +31,38 @@ export class DataSyncService {
 
   initialize(): void {
     if (this.isInitialized) {
+      syncDiagnostics.log('sync_already_initialized', 'warning');
       return;
     }
+
+    syncDiagnostics.log('sync_initializing', 'success');
 
     // Conectar ao realtime
     realtimeConnection.connect();
 
     // Configurar listeners para mudanças de status da conexão
     realtimeConnection.onStatusChange((status) => {
+      syncDiagnostics.log('realtime_status_change', 'success', { status });
+      
       if (status === 'connected') {
         this.setupDatabaseListeners();
+      } else if (status === 'error' || status === 'disconnected') {
+        syncDiagnostics.log('realtime_connection_issue', 'error', { status });
       }
     });
 
     this.isInitialized = true;
+    syncDiagnostics.log('sync_initialized', 'success');
   }
 
   private setupDatabaseListeners(): void {
     const channel = realtimeConnection.getChannel();
     if (!channel) {
-      console.error('DataSyncService: No channel available');
+      syncDiagnostics.log('channel_not_available', 'error');
       return;
     }
+
+    syncDiagnostics.log('setting_up_database_listeners', 'success');
 
     // Listener para tabela fields
     channel.on(
@@ -62,7 +73,7 @@ export class DataSyncService {
         table: 'fields'
       },
       (payload) => {
-        console.log('DataSyncService: Fields changed', payload);
+        syncDiagnostics.log('fields_changed', 'success', payload);
         this.notifyListeners('fields_changed', payload);
       }
     );
@@ -76,7 +87,7 @@ export class DataSyncService {
         table: 'audios'
       },
       (payload) => {
-        console.log('DataSyncService: Audios changed', payload);
+        syncDiagnostics.log('audios_changed', 'success', payload);
         this.notifyListeners('audios_changed', payload);
       }
     );
@@ -90,7 +101,7 @@ export class DataSyncService {
         table: 'landing_content'
       },
       (payload) => {
-        console.log('DataSyncService: Content changed', payload);
+        syncDiagnostics.log('content_changed', 'success', payload);
         this.notifyListeners('content_changed', payload);
       }
     );
@@ -105,7 +116,7 @@ export class DataSyncService {
         filter: 'section=eq.videos'
       },
       (payload) => {
-        console.log('DataSyncService: Videos changed', payload);
+        syncDiagnostics.log('videos_changed', 'success', payload);
         this.notifyListeners('videos_changed', payload);
       }
     );
@@ -128,11 +139,16 @@ export class DataSyncService {
   }
 
   private notifyListeners(event: DataChangeEvent, payload?: any): void {
+    syncDiagnostics.log('notifying_listeners', 'success', { 
+      event, 
+      listenerCount: this.listeners.size 
+    });
+
     this.listeners.forEach(listener => {
       try {
         listener(event, payload);
       } catch (error) {
-        console.error('DataSyncService: Error in listener:', error);
+        syncDiagnostics.log('listener_error', 'error', { event, error });
       }
     });
   }

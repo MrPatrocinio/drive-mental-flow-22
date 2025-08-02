@@ -4,12 +4,16 @@ import { VideoManager } from "@/components/admin/VideoManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/RefreshButton";
+import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
+import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
+import { useAdmin } from "@/contexts/AdminContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Save, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminLandingPage() {
   const { toast } = useToast();
+  const { refreshData } = useAdmin();
 
   const handlePreview = () => {
     window.open("/", "_blank");
@@ -37,7 +41,11 @@ export default function AdminLandingPage() {
           </div>
           
           <div className="flex items-center gap-3">
-            <RefreshButton />
+            <SyncStatusIndicator />
+            <EnhancedRefreshButton 
+              onRefresh={refreshData}
+              enableFallback={true}
+            />
             <Button variant="outline" onClick={handlePreview}>
               <Eye className="h-4 w-4 mr-2" />
               Visualizar Site

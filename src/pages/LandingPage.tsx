@@ -8,6 +8,8 @@ import { VideoService, Video } from "@/services/supabase/videoService";
 import { FieldService } from "@/services/supabase/fieldService";
 import { useDataSync } from "@/hooks/useDataSync";
 import { PricingDisplay } from "@/components/PricingDisplay";
+import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
+import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
 import * as Icons from "lucide-react";
 
 export default function LandingPage() {
@@ -72,6 +74,18 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen hero-gradient">
       <Header />
+      
+      {/* Status de Sincronização - apenas para debug em desenvolvimento */}
+      <div className="fixed top-4 right-4 z-50 flex gap-2">
+        <SyncStatusIndicator />
+        <EnhancedRefreshButton
+          size="sm"
+          showText={false}
+          onRefresh={loadContent}
+          enableFallback={true}
+          className="opacity-70 hover:opacity-100"
+        />
+      </div>
       
       {/* Hero Section */}
       <section className="py-20 px-4">
