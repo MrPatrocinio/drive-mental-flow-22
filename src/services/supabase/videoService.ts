@@ -184,6 +184,7 @@ export class VideoService {
 
     // Notificar mudança via DataSync
     import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('videos_changed', { event: 'UPDATE', new: videoSection });
       DataSyncService.forceNotification('content_changed', { event: 'UPDATE', new: videoSection });
     });
   }

@@ -12,6 +12,7 @@ interface DataSyncCallbacks {
   onFieldsChange?: () => void;
   onAudiosChange?: () => void;
   onContentChange?: () => void;
+  onVideosChange?: () => void;
 }
 
 export const useDataSync = (callbacks: DataSyncCallbacks) => {
@@ -26,8 +27,11 @@ export const useDataSync = (callbacks: DataSyncCallbacks) => {
       case 'content_changed':
         callbacks.onContentChange?.();
         break;
+      case 'videos_changed':
+        callbacks.onVideosChange?.();
+        break;
     }
-  }, [callbacks.onFieldsChange, callbacks.onAudiosChange, callbacks.onContentChange]);
+  }, [callbacks.onFieldsChange, callbacks.onAudiosChange, callbacks.onContentChange, callbacks.onVideosChange]);
 
   useEffect(() => {
     const unsubscribe = dataSyncService.subscribe(handleDataChange);

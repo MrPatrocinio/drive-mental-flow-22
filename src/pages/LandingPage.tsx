@@ -52,7 +52,8 @@ export default function LandingPage() {
   // Setup data sync
   useDataSync({
     onFieldsChange: loadContent,
-    onContentChange: loadContent
+    onContentChange: loadContent,
+    onVideosChange: loadContent
   });
 
   if (loading || !content) {

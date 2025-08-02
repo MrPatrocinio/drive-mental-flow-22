@@ -7,7 +7,7 @@
 
 import { realtimeConnection } from './realtimeConnection';
 
-export type DataChangeEvent = 'fields_changed' | 'audios_changed' | 'content_changed';
+export type DataChangeEvent = 'fields_changed' | 'audios_changed' | 'content_changed' | 'videos_changed';
 
 interface DataChangeListener {
   (event: DataChangeEvent, payload?: any): void;
@@ -92,6 +92,21 @@ export class DataSyncService {
       (payload) => {
         console.log('DataSyncService: Content changed', payload);
         this.notifyListeners('content_changed', payload);
+      }
+    );
+
+    // Listener para mudanças em vídeos (detecta mudanças na seção videos do landing_content)
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'landing_content',
+        filter: 'section=eq.videos'
+      },
+      (payload) => {
+        console.log('DataSyncService: Videos changed', payload);
+        this.notifyListeners('videos_changed', payload);
       }
     );
   }

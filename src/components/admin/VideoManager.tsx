@@ -38,7 +38,20 @@ export const VideoManager: React.FC = () => {
     try {
       setLoading(true);
       const videoData = await VideoService.getVideos();
-      setVideos(videoData);
+      
+      // Auto-ativar o primeiro vídeo se nenhum estiver ativo e existirem vídeos
+      if (!videoData.active_video_id && videoData.videos.length > 0) {
+        await VideoService.setActiveVideo(videoData.videos[0].id);
+        const updatedData = await VideoService.getVideos();
+        setVideos(updatedData);
+        toast({
+          title: 'Vídeo Ativado',
+          description: 'O primeiro vídeo foi automaticamente ativado na landing page',
+          variant: 'default'
+        });
+      } else {
+        setVideos(videoData);
+      }
     } catch (error) {
       toast({
         title: 'Erro',
@@ -182,6 +195,14 @@ export const VideoManager: React.FC = () => {
           <p className="text-muted-foreground">
             Controle os vídeos exibidos na página inicial
           </p>
+          {videos.active_video_id && (
+            <div className="mt-2">
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                <Play className="h-3 w-3 mr-1" />
+                Vídeo ativo na landing page
+              </Badge>
+            </div>
+          )}
         </div>
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -262,8 +283,12 @@ export const VideoManager: React.FC = () => {
         {videos.videos.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">
-                Nenhum vídeo cadastrado ainda.
+              <div className="mb-4">
+                <Play className="h-16 w-16 mx-auto text-muted-foreground/50" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Nenhum vídeo cadastrado</h3>
+              <p className="text-muted-foreground mb-4">
+                Adicione vídeos do YouTube para exibir na página inicial do seu site.
               </p>
               <Button className="mt-4" onClick={handleAddVideo}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -272,7 +297,23 @@ export const VideoManager: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          videos.videos.map((video) => (
+          <>
+            {!videos.active_video_id && (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                      <Eye className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-amber-800">Nenhum vídeo ativo</p>
+                      <p className="text-sm text-amber-600">Clique em "Ativar" em um dos vídeos abaixo para exibi-lo na landing page.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {videos.videos.map((video) => (
             <Card key={video.id} className="relative">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -282,9 +323,9 @@ export const VideoManager: React.FC = () => {
                         {video.title}
                       </CardTitle>
                       {videos.active_video_id === video.id && (
-                        <Badge variant="default" className="bg-green-500">
+                        <Badge variant="default" className="bg-green-600 hover:bg-green-700">
                           <Play className="h-3 w-3 mr-1" />
-                          Ativo
+                          Na Landing Page
                         </Badge>
                       )}
                     </div>
@@ -297,15 +338,21 @@ export const VideoManager: React.FC = () => {
                   
                   <div className="flex items-center gap-2 ml-4">
                     <Button
-                      variant="ghost"
+                      variant={videos.active_video_id === video.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleToggleActive(video.id)}
-                      className={videos.active_video_id === video.id ? 'text-green-600' : ''}
+                      className={videos.active_video_id === video.id ? 'bg-green-600 hover:bg-green-700 text-white' : 'hover:bg-green-50 hover:text-green-600 hover:border-green-600'}
                     >
                       {videos.active_video_id === video.id ? (
-                        <EyeOff className="h-4 w-4" />
+                        <>
+                          <EyeOff className="h-4 w-4 mr-1" />
+                          Desativar
+                        </>
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ativar
+                        </>
                       )}
                     </Button>
                     
@@ -354,7 +401,8 @@ export const VideoManager: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-          ))
+            ))}
+          </>
         )}
       </div>
     </div>
