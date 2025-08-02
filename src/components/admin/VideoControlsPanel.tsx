@@ -10,13 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { VideoControls } from '@/services/supabase/videoService';
-import { 
-  VideoControlsValidationService, 
-  ValidationWarning 
-} from '@/services/videoControlsValidationService';
 import { 
   Play, 
   Volume2, 
@@ -25,11 +19,7 @@ import {
   Keyboard, 
   Settings, 
   PlayCircle, 
-  VolumeX,
-  AlertTriangle,
-  Info,
-  CheckCircle,
-  Zap
+  VolumeX 
 } from 'lucide-react';
 
 interface VideoControlsPanelProps {
@@ -43,42 +33,11 @@ export const VideoControlsPanel: React.FC<VideoControlsPanelProps> = ({
   onChange,
   disabled = false
 }) => {
-  const validation = VideoControlsValidationService.validateAndCorrect(controls);
-  const presets = VideoControlsValidationService.getPresets();
-
   const handleControlChange = (key: keyof VideoControls, value: boolean) => {
-    // Aplica auto-correção inteligente
-    const correctedControls = VideoControlsValidationService.applySmartCorrection(
-      controls, 
-      key, 
-      value
-    );
-    onChange(correctedControls);
-  };
-
-  const handlePresetApply = (presetKey: string) => {
-    const preset = presets[presetKey];
-    if (preset) {
-      onChange(preset.controls);
-    }
-  };
-
-  const getWarningIcon = (type: ValidationWarning['type']) => {
-    switch (type) {
-      case 'critical': return AlertTriangle;
-      case 'warning': return Info;
-      case 'info': return CheckCircle;
-      default: return Info;
-    }
-  };
-
-  const getWarningColor = (type: ValidationWarning['type']) => {
-    switch (type) {
-      case 'critical': return 'border-red-200 bg-red-50 text-red-800';
-      case 'warning': return 'border-amber-200 bg-amber-50 text-amber-800';
-      case 'info': return 'border-blue-200 bg-blue-50 text-blue-800';
-      default: return 'border-gray-200 bg-gray-50 text-gray-800';
-    }
+    onChange({
+      ...controls,
+      [key]: value
+    });
   };
 
   const controlItems = [
@@ -144,49 +103,6 @@ export const VideoControlsPanel: React.FC<VideoControlsPanelProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Presets de Configuração */}
-        <div>
-          <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-            Configurações Predefinidas
-          </h4>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries(presets).map(([key, preset]) => (
-              <Button
-                key={key}
-                variant="outline"
-                size="sm"
-                onClick={() => handlePresetApply(key)}
-                disabled={disabled}
-                className="text-xs h-auto p-2 flex flex-col items-start"
-              >
-                <span className="font-medium">{preset.name}</span>
-                <span className="text-muted-foreground">{preset.description}</span>
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Alertas de Validação */}
-        {validation.warnings.length > 0 && (
-          <div className="space-y-2">
-            {validation.warnings.map((warning, index) => {
-              const IconComponent = getWarningIcon(warning.type);
-              return (
-                <Alert key={index} className={getWarningColor(warning.type)}>
-                  <IconComponent className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    {warning.autoCorrect && <Zap className="inline h-3 w-3 mr-1" />}
-                    {warning.message}
-                  </AlertDescription>
-                </Alert>
-              );
-            })}
-          </div>
-        )}
-
-        {validation.warnings.length > 0 && <Separator />}
         {/* Controles de Interação */}
         <div>
           <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
@@ -253,33 +169,20 @@ export const VideoControlsPanel: React.FC<VideoControlsPanelProps> = ({
           </div>
         </div>
 
-        {/* Status da Configuração */}
-        <div className={`rounded-lg p-3 border ${
-          validation.isValid 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-amber-50 border-amber-200'
-        }`}>
-          <div className="flex items-center gap-2 mb-1">
-            {validation.isValid ? (
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            ) : (
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-            )}
-            <p className={`text-sm font-medium ${
-              validation.isValid ? 'text-green-800' : 'text-amber-800'
-            }`}>
-              {validation.isValid ? 'Configuração Válida' : 'Atenção Necessária'}
-            </p>
-          </div>
-          <p className={`text-xs ${
-            validation.isValid ? 'text-green-600' : 'text-amber-600'
-          }`}>
-            {validation.isValid 
-              ? 'Todas as configurações estão compatíveis para uma boa experiência do usuário.'
-              : 'Algumas configurações podem prejudicar a experiência do usuário.'
-            }
-          </p>
-        </div>
+        {/* Indicador de Restrições Ativas */}
+        {Object.values(controls).some(value => !value) && (
+          <>
+            <Separator />
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800 font-medium mb-1">
+                ⚠️ Restrições Ativas
+              </p>
+              <p className="text-xs text-amber-600">
+                Algumas funcionalidades do vídeo estarão desabilitadas para os usuários.
+              </p>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
