@@ -41,12 +41,6 @@ export class VideoService {
         videos: []
       };
 
-      console.log('VideoService: Dados carregados:', JSON.stringify(videoData, null, 2));
-
-      // Auto-ativar primeiro vídeo se nenhum estiver ativo e houver vídeos disponíveis
-      // REMOVIDO: Causa loop infinito. A ativação deve ser feita apenas pelo admin via interface.
-
-      console.log('VideoService: Vídeos carregados com sucesso. Vídeo ativo:', videoData.active_video_id);
       return videoData;
     } catch (error) {
       console.error('VideoService: Erro ao buscar vídeos:', error);
@@ -62,27 +56,15 @@ export class VideoService {
    */
   static async getActiveVideo(): Promise<Video | null> {
     try {
-      console.log('VideoService: Buscando vídeo ativo');
       const videoSection = await this.getVideos();
       
-      console.log('VideoService: ID do vídeo ativo:', videoSection.active_video_id);
-      console.log('VideoService: Total de vídeos disponíveis:', videoSection.videos.length);
-      
       if (!videoSection.active_video_id) {
-        console.log('VideoService: Nenhum vídeo ativo definido');
         return null;
       }
 
       const activeVideo = videoSection.videos.find(
         video => video.id === videoSection.active_video_id
       );
-
-      if (activeVideo) {
-        console.log('VideoService: Vídeo ativo encontrado:', activeVideo.title);
-        console.log('VideoService: URL do vídeo:', activeVideo.url);
-      } else {
-        console.warn('VideoService: Vídeo ativo não encontrado na lista de vídeos');
-      }
 
       return activeVideo || null;
     } catch (error) {
