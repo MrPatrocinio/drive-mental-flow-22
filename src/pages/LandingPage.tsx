@@ -75,17 +75,6 @@ export default function LandingPage() {
     <div className="min-h-screen hero-gradient">
       <Header />
       
-      {/* Status de Sincronização - apenas para debug em desenvolvimento */}
-      <div className="fixed top-4 right-4 z-50 flex gap-2">
-        <SyncStatusIndicator />
-        <EnhancedRefreshButton
-          size="sm"
-          showText={false}
-          onRefresh={loadContent}
-          enableFallback={true}
-          className="opacity-70 hover:opacity-100"
-        />
-      </div>
       
       {/* Hero Section */}
       <section className="py-20 px-4">
