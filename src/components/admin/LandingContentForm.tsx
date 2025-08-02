@@ -99,11 +99,30 @@ export const LandingContentForm: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="hero-title">Título Principal</Label>
+            <Label htmlFor="hero-title">Título Principal (em branco)</Label>
             <Input
               id="hero-title"
               value={content.hero.title}
               onChange={(e) => updateHero('title', e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="hero-title-highlight">Destaque do Título (em amarelo)</Label>
+            <Input
+              id="hero-title-highlight"
+              value={content.hero.titleHighlight}
+              onChange={(e) => updateHero('titleHighlight', e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="hero-video">URL do Vídeo do YouTube (embed)</Label>
+            <Input
+              id="hero-video"
+              value={content.hero.videoUrl || ''}
+              onChange={(e) => updateHero('videoUrl', e.target.value)}
+              placeholder="https://www.youtube.com/embed/VIDEO_ID"
             />
           </div>
           
@@ -269,7 +288,7 @@ export const LandingContentForm: React.FC = () => {
         <CardHeader>
           <CardTitle>Rodapé</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div>
             <Label htmlFor="footer-copyright">Copyright</Label>
             <Input
@@ -280,6 +299,56 @@ export const LandingContentForm: React.FC = () => {
                 footer: { ...prev.footer, copyright: e.target.value }
               }))}
             />
+          </div>
+          
+          <div>
+            <Label htmlFor="footer-lgpd-text">Texto sobre LGPD</Label>
+            <Input
+              id="footer-lgpd-text"
+              value={content.footer.lgpdText}
+              onChange={(e) => setContent(prev => ({
+                ...prev,
+                footer: { ...prev.footer, lgpdText: e.target.value }
+              }))}
+            />
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="footer-lgpd-link">Link LGPD</Label>
+              <Input
+                id="footer-lgpd-link"
+                value={content.footer.lgpdLink}
+                onChange={(e) => setContent(prev => ({
+                  ...prev,
+                  footer: { ...prev.footer, lgpdLink: e.target.value }
+                }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="footer-privacy-link">Link Política de Privacidade</Label>
+              <Input
+                id="footer-privacy-link"
+                value={content.footer.privacyPolicyLink}
+                onChange={(e) => setContent(prev => ({
+                  ...prev,
+                  footer: { ...prev.footer, privacyPolicyLink: e.target.value }
+                }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="footer-terms-link">Link Termos de Uso</Label>
+              <Input
+                id="footer-terms-link"
+                value={content.footer.termsOfServiceLink}
+                onChange={(e) => setContent(prev => ({
+                  ...prev,
+                  footer: { ...prev.footer, termsOfServiceLink: e.target.value }
+                }))}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

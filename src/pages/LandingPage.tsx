@@ -71,16 +71,28 @@ export default function LandingPage() {
         <div className="container mx-auto text-center">
           <div className="animate-fade-in">
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              {content.hero.title.split(' ').map((word, index, words) => {
-                // Make last two words premium colored
-                const isLastTwoWords = index >= words.length - 2;
-                return (
-                  <span key={index} className={isLastTwoWords ? "text-premium block" : ""}>
-                    {word}{index < words.length - 1 ? " " : ""}
-                  </span>
-                );
-              })}
+              <span className="text-foreground">{content.hero.title}</span>
+              <br />
+              <span className="text-premium">{content.hero.titleHighlight}</span>
             </h1>
+            
+            {/* Video Section */}
+            {content.hero.videoUrl && (
+              <div className="mb-8">
+                <div className="max-w-4xl mx-auto">
+                  <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+                    <iframe
+                      className="absolute top-0 left-0 w-full h-full rounded-xl shadow-2xl"
+                      src={content.hero.videoUrl}
+                      title="Drive Mental - Vídeo de Apresentação"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
               {content.hero.subtitle}
             </p>
@@ -219,10 +231,26 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-border/50 py-8 px-4">
-        <div className="container mx-auto text-center">
-          <p className="text-muted-foreground">
-            © 2025 Drive Mental. Todos os direitos reservados.
-          </p>
+        <div className="container mx-auto">
+          <div className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              {content.footer.copyright}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
+              <span className="text-muted-foreground">{content.footer.lgpdText}</span>
+              <div className="flex gap-4">
+                <a href={content.footer.lgpdLink} className="text-primary hover:text-primary/80 transition-colors">
+                  LGPD
+                </a>
+                <a href={content.footer.privacyPolicyLink} className="text-primary hover:text-primary/80 transition-colors">
+                  Política de Privacidade
+                </a>
+                <a href={content.footer.termsOfServiceLink} className="text-primary hover:text-primary/80 transition-colors">
+                  Termos de Uso
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

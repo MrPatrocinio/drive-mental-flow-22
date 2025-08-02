@@ -1,9 +1,11 @@
 export interface LandingPageContent {
   hero: {
     title: string;
+    titleHighlight: string;
     subtitle: string;
     ctaText: string;
     demoText: string;
+    videoUrl?: string;
   };
   features: Array<{
     id: string;
@@ -21,6 +23,10 @@ export interface LandingPageContent {
   };
   footer: {
     copyright: string;
+    lgpdText: string;
+    lgpdLink: string;
+    privacyPolicyLink: string;
+    termsOfServiceLink: string;
   };
 }
 
@@ -37,10 +43,12 @@ export class ContentService {
     // Default content
     const defaultContent: LandingPageContent = {
       hero: {
-        title: "Transforme Sua Mente Através da Repetição",
+        title: "Transforme Sua Mente",
+        titleHighlight: "Instale Drives Mentais Poderosos",
         subtitle: "Desenvolva todo seu potencial com áudios especializados em desenvolvimento pessoal. Reprogramação mental através de técnicas comprovadas.",
         ctaText: "Começar Agora",
-        demoText: "Ver Demo"
+        demoText: "Ver Demo",
+        videoUrl: ""
       },
       features: [
         {
@@ -75,7 +83,11 @@ export class ContentService {
         button_text: "Começar Agora"
       },
       footer: {
-        copyright: "© 2024 Drive Mental. Todos os direitos reservados."
+        copyright: "© 2025 Drive Mental. Todos os direitos reservados.",
+        lgpdText: "Seus dados estão protegidos conforme a LGPD",
+        lgpdLink: "/lgpd",
+        privacyPolicyLink: "/politica-privacidade",
+        termsOfServiceLink: "/termos-uso"
       }
     };
 
