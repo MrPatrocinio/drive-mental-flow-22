@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AddToPlaylistDialog } from "./AddToPlaylistDialog";
 import { PlaylistAudio } from "@/services/playlistService";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Heart } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AddToPlaylistButtonProps {
   audio: PlaylistAudio;
@@ -20,10 +22,16 @@ export function AddToPlaylistButton({
   className = ""
 }: AddToPlaylistButtonProps) {
   const [showDialog, setShowDialog] = useState(false);
+  const { favoriteStatus, refreshFavoriteStatus } = useFavorites(audio.id);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowDialog(true);
+  };
+
+  const handleDialogSuccess = () => {
+    refreshFavoriteStatus();
+    setShowDialog(false);
   };
 
   return (
@@ -32,10 +40,24 @@ export function AddToPlaylistButton({
         variant={variant}
         size={size}
         onClick={handleClick}
-        className={`${className} transition-colors`}
-        title="Adicionar à playlist"
+        className={cn(
+          "transition-all duration-200",
+          favoriteStatus.isFavorite && "bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30",
+          className
+        )}
+        title={favoriteStatus.isFavorite 
+          ? `Está na playlist "${favoriteStatus.playlistName}"` 
+          : "Adicionar à playlist"
+        }
       >
-        <Heart className="h-4 w-4" />
+        <Heart 
+          className={cn(
+            "h-4 w-4 transition-colors duration-200",
+            favoriteStatus.isFavorite 
+              ? "fill-red-500 text-red-500" 
+              : "text-muted-foreground hover:text-red-400"
+          )} 
+        />
         {showText && <span className="ml-2">Adicionar à Playlist</span>}
       </Button>
 
@@ -43,6 +65,7 @@ export function AddToPlaylistButton({
         audio={audio}
         open={showDialog}
         onOpenChange={setShowDialog}
+        onSuccess={handleDialogSuccess}
       />
     </>
   );

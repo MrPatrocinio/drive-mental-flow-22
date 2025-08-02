@@ -12,9 +12,10 @@ interface AddToPlaylistDialogProps {
   audio: PlaylistAudio;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-export function AddToPlaylistDialog({ audio, open, onOpenChange }: AddToPlaylistDialogProps) {
+export function AddToPlaylistDialog({ audio, open, onOpenChange, onSuccess }: AddToPlaylistDialogProps) {
   const { playlists, addAudioToPlaylist } = usePlaylistManager();
   const [isAdding, setIsAdding] = useState<string | null>(null);
   const { toast } = useToast();
@@ -30,6 +31,7 @@ export function AddToPlaylistDialog({ audio, open, onOpenChange }: AddToPlaylist
           title: "Áudio adicionado!",
           description: `"${audio.title}" foi adicionado à playlist "${playlist.name}".`
         });
+        onSuccess?.(); // Chama o callback de sucesso se fornecido
       } else {
         toast({
           title: "Áudio já existe",

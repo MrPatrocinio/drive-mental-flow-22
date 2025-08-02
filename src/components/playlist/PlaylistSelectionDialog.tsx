@@ -18,13 +18,15 @@ interface PlaylistSelectionDialogProps {
   audioTitle: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 export function PlaylistSelectionDialog({
   audioId,
   audioTitle,
   open,
-  onOpenChange
+  onOpenChange,
+  onSuccess
 }: PlaylistSelectionDialogProps) {
   const [isAdding, setIsAdding] = useState(false);
   const { playlists, addAudioToPlaylist } = usePlaylistManager();
@@ -48,6 +50,7 @@ export function PlaylistSelectionDialog({
           title: "Adicionado à playlist",
           description: `"${audioTitle}" foi adicionado à playlist "${playlistName}"`,
         });
+        onSuccess?.(); // Chama o callback de sucesso se fornecido
         onOpenChange(false);
       } else {
         toast({
