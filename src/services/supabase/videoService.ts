@@ -44,13 +44,7 @@ export class VideoService {
       console.log('VideoService: Dados carregados:', JSON.stringify(videoData, null, 2));
 
       // Auto-ativar primeiro vídeo se nenhum estiver ativo e houver vídeos disponíveis
-      if (!videoData.active_video_id && videoData.videos.length > 0) {
-        console.log('VideoService: Nenhum vídeo ativo encontrado, ativando o primeiro automaticamente');
-        const firstVideoId = videoData.videos[0].id;
-        await this.setActiveVideo(firstVideoId);
-        videoData.active_video_id = firstVideoId;
-        console.log('VideoService: Primeiro vídeo ativado automaticamente:', firstVideoId);
-      }
+      // REMOVIDO: Causa loop infinito. A ativação deve ser feita apenas pelo admin via interface.
 
       console.log('VideoService: Vídeos carregados com sucesso. Vídeo ativo:', videoData.active_video_id);
       return videoData;
