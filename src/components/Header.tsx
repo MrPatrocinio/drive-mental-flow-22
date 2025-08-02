@@ -1,11 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogIn, User, LogOut, Crown } from "lucide-react";
+import { ArrowLeft, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
-import { useContext } from "react";
-import { UserContext, UserContextType } from "@/contexts/UserContext";
-import { useSubscription } from "@/hooks/useSubscription";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -14,25 +10,9 @@ interface HeaderProps {
 
 export const Header = ({ showBackButton = false, title }: HeaderProps) => {
   const navigate = useNavigate();
-  
-  // Safely access the UserContext without throwing an error
-  const userContext = useContext(UserContext) as UserContextType | null;
-  const isAuthenticated = userContext?.isAuthenticated || false;
-  const user = userContext?.user || null;
-  const logout = userContext?.logout || (() => {});
-  const { subscribed } = useSubscription();
 
   const handleLogin = () => {
     navigate("/login");
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/");
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-    }
   };
 
   return (
