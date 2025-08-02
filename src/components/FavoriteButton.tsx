@@ -123,10 +123,7 @@ export function FavoriteButton({
         size={size}
         onClick={handleToggleFavorite}
         disabled={isLoading}
-        className={cn(
-          "hover-scale transition-all duration-200",
-          favoriteStatus.isFavorite && "bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30"
-        )}
+        className="hover-scale transition-all duration-200"
         title={favoriteStatus.isFavorite 
           ? `Remover da playlist "${favoriteStatus.playlistName}"` 
           : "Adicionar à playlist"

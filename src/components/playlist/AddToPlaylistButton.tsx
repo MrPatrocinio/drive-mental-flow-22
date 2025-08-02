@@ -42,7 +42,6 @@ export function AddToPlaylistButton({
         onClick={handleClick}
         className={cn(
           "transition-all duration-200",
-          favoriteStatus.isFavorite && "bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30",
           className
         )}
         title={favoriteStatus.isFavorite 
