@@ -25,11 +25,18 @@ export default function LandingPage() {
 
   const loadContent = useCallback(async () => {
     try {
+      setLoading(true);
+      console.log('LandingPage: Carregando dados...');
+      
       const [landingContent, fieldsData, videoData] = await Promise.all([
         SupabaseContentService.getLandingPageContent(),
         FieldService.getAll(),
         VideoService.getActiveVideo()
       ]);
+      
+      console.log('LandingPage: Conteúdo carregado:', landingContent);
+      console.log('LandingPage: Campos carregados:', fieldsData.length);
+      console.log('LandingPage: Vídeo ativo:', videoData ? videoData.title : 'Nenhum');
       
       setContent(landingContent);
       setActiveVideo(videoData);
