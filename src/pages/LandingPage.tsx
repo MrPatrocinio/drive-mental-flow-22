@@ -81,10 +81,10 @@ export default function LandingPage() {
       
       
       {/* Hero Section */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto text-center">
           <div className="animate-fade-in">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-tight">
               <span className="text-foreground">{content.hero.title}</span>
               <br />
               <span className="text-premium">{content.hero.titleHighlight}</span>
@@ -93,10 +93,10 @@ export default function LandingPage() {
             {/* Video Section */}
             {activeVideo && (
               <div className="mb-8">
-                <div className="max-w-4xl mx-auto">
-                  <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+                <div className="max-w-4xl mx-auto px-2">
+                  <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
                     <iframe
-                      className="absolute top-0 left-0 w-full h-full rounded-xl shadow-2xl"
+                      className="absolute top-0 left-0 w-full h-full shadow-2xl"
                       src={VideoService.generateVideoUrlWithControls(activeVideo.url, activeVideo.video_controls)}
                       title={activeVideo.title}
                       frameBorder="0"
@@ -109,24 +109,24 @@ export default function LandingPage() {
                     {/* Overlay transparente para bloquear interações quando necessário */}
                     {videoControlsSettings.shouldShowOverlay && (
                       <div 
-                        className="absolute inset-0 rounded-xl"
+                        className="absolute inset-0"
                         style={{ pointerEvents: 'auto', background: 'transparent' }}
                         onContextMenu={videoControlsSettings.preventContextMenu ? (e) => e.preventDefault() : undefined}
                       />
                     )}
                   </div>
                   {activeVideo.description && (
-                    <p className="text-center text-muted-foreground mt-4 max-w-2xl mx-auto">
+                    <p className="text-center text-muted-foreground mt-4 max-w-2xl mx-auto text-sm md:text-base px-2">
                       {activeVideo.description}
                     </p>
                   )}
                 </div>
               </div>
             )}
-            <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed px-2">
               {content.hero.subtitle}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center px-2">
               <Button 
                 variant="premium" 
                 size="lg" 
@@ -158,12 +158,12 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12 px-2">
             Por que escolher o <span className="text-premium">Drive Mental</span>?
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {content.features.map((feature, index) => (
               <div 
                 key={feature.id} 
@@ -182,15 +182,15 @@ export default function LandingPage() {
       </section>
 
       {/* Campos Disponíveis */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 px-2">
             Campos de <span className="text-premium">Desenvolvimento</span>
           </h2>
-          <p className="text-center text-muted-foreground mb-12 text-lg">
+          <p className="text-center text-muted-foreground mb-8 md:mb-12 text-base md:text-lg px-2 max-w-2xl mx-auto">
             Escolha sua área de foco e comece sua jornada de transformação
           </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {fields.map((field, index) => (
               <div 
                 key={index} 
@@ -213,12 +213,12 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 px-2">
             Invista em seu <span className="text-premium">Desenvolvimento</span>
           </h2>
-          <p className="text-center text-muted-foreground mb-12 text-lg">
+          <p className="text-center text-muted-foreground mb-8 md:mb-12 text-base md:text-lg px-2 max-w-2xl mx-auto">
             Comece sua transformação hoje mesmo
           </p>
           <PricingDisplay />
@@ -237,13 +237,13 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Final */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto text-center">
-          <div className="card-gradient rounded-2xl p-12 max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="card-gradient rounded-2xl p-6 md:p-12 max-w-4xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 px-2">
               Pronto para transformar sua vida?
             </h2>
-            <p className="text-xl text-muted-foreground mb-8">
+            <p className="text-lg md:text-xl text-muted-foreground mb-6 md:mb-8 px-2 max-w-2xl mx-auto">
               Junte-se a milhares de pessoas que já transformaram suas vidas com o Drive Mental
             </p>
             <Button 
