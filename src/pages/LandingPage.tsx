@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { ArrowRight, Brain, Heart, Target, DollarSign, Activity, Sparkles, Play, Users, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SupabaseContentService, LandingPageContent } from "@/services/supabase/contentService";
+import { VideoService, Video } from "@/services/supabase/videoService";
 import { FieldService } from "@/services/supabase/fieldService";
 import { useDataSync } from "@/hooks/useDataSync";
 import { PricingDisplay } from "@/components/PricingDisplay";
@@ -13,6 +14,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [content, setContent] = useState<LandingPageContent | null>(null);
   const [fields, setFields] = useState<any[]>([]);
+  const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Get dynamic icon component
@@ -23,12 +25,14 @@ export default function LandingPage() {
 
   const loadContent = useCallback(async () => {
     try {
-      const [landingContent, fieldsData] = await Promise.all([
+      const [landingContent, fieldsData, videoData] = await Promise.all([
         SupabaseContentService.getLandingPageContent(),
-        FieldService.getAll()
+        FieldService.getAll(),
+        VideoService.getActiveVideo()
       ]);
       
       setContent(landingContent);
+      setActiveVideo(videoData);
       setFields(fieldsData.map(field => ({
         icon: getIconComponent(field.icon_name),
         title: field.title,
@@ -77,19 +81,24 @@ export default function LandingPage() {
             </h1>
             
             {/* Video Section */}
-            {content.hero.videoUrl && (
+            {activeVideo && (
               <div className="mb-8">
                 <div className="max-w-4xl mx-auto">
                   <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
                     <iframe
                       className="absolute top-0 left-0 w-full h-full rounded-xl shadow-2xl"
-                      src={content.hero.videoUrl}
-                      title="Drive Mental - Vídeo de Apresentação"
+                      src={activeVideo.url}
+                      title={activeVideo.title}
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
                   </div>
+                  {activeVideo.description && (
+                    <p className="text-center text-muted-foreground mt-4 max-w-2xl mx-auto">
+                      {activeVideo.description}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
