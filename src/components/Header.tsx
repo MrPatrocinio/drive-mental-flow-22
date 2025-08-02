@@ -57,47 +57,15 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-4">
-          {isAuthenticated ? (
-            <>
-              <NotificationBell />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/assinatura")}
-                className={`hover:bg-primary/10 hover:text-primary ${
-                  subscribed ? 'border-primary text-primary' : ''
-                }`}
-              >
-                <Crown className="h-4 w-4 mr-2" />
-                {subscribed ? 'Minha Assinatura' : 'Assinar'}
-              </Button>
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{user?.display_name || user?.email || "Usuário"}</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="hover:bg-destructive/10 hover:text-destructive"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogin}
-                className="hover:bg-primary/10 hover:text-primary"
-              >
-                <LogIn className="h-4 w-4 mr-2" />
-                Entrar
-              </Button>
-            </>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogin}
+            className="hover:bg-primary/10 hover:text-primary"
+          >
+            <LogIn className="h-4 w-4 mr-2" />
+            Entrar
+          </Button>
         </div>
       </div>
     </header>
