@@ -7,6 +7,7 @@ import { SupabaseContentService, LandingPageContent } from "@/services/supabase/
 import { VideoService, Video } from "@/services/supabase/videoService";
 import { FieldService } from "@/services/supabase/fieldService";
 import { useDataSync } from "@/hooks/useDataSync";
+import { useVideoControls } from "@/hooks/useVideoControls";
 import { PricingDisplay } from "@/components/PricingDisplay";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
@@ -18,6 +19,9 @@ export default function LandingPage() {
   const [fields, setFields] = useState<any[]>([]);
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Hook para controles de vídeo
+  const videoControlsSettings = useVideoControls(activeVideo?.video_controls);
 
   // Get dynamic icon component
   const getIconComponent = (iconName: string) => {
@@ -93,12 +97,23 @@ export default function LandingPage() {
                   <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
                     <iframe
                       className="absolute top-0 left-0 w-full h-full rounded-xl shadow-2xl"
-                      src={activeVideo.url}
+                      src={VideoService.generateVideoUrlWithControls(activeVideo.url, activeVideo.video_controls)}
                       title={activeVideo.title}
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
+                      allowFullScreen={videoControlsSettings.allowFullscreen}
+                      style={{
+                        pointerEvents: videoControlsSettings.pointerEvents
+                      }}
                     />
+                    {/* Overlay transparente para bloquear interações quando necessário */}
+                    {videoControlsSettings.shouldShowOverlay && (
+                      <div 
+                        className="absolute inset-0 rounded-xl"
+                        style={{ pointerEvents: 'auto', background: 'transparent' }}
+                        onContextMenu={videoControlsSettings.preventContextMenu ? (e) => e.preventDefault() : undefined}
+                      />
+                    )}
                   </div>
                   {activeVideo.description && (
                     <p className="text-center text-muted-foreground mt-4 max-w-2xl mx-auto">

@@ -7,6 +7,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+export interface VideoControls {
+  allowPause: boolean;
+  allowVolumeControl: boolean;
+  allowSeek: boolean;
+  allowFullscreen: boolean;
+  allowKeyboardControls: boolean;
+  showControls: boolean;
+  autoplay: boolean;
+  muted: boolean;
+}
+
 export interface Video {
   id: string;
   title: string;
@@ -14,6 +25,7 @@ export interface Video {
   thumbnail?: string;
   description?: string;
   created_at: string;
+  video_controls?: VideoControls;
 }
 
 export interface VideoSection {
@@ -74,6 +86,22 @@ export class VideoService {
   }
 
   /**
+   * Gera controles padrão para novos vídeos
+   */
+  static getDefaultVideoControls(): VideoControls {
+    return {
+      allowPause: true,
+      allowVolumeControl: true,
+      allowSeek: true,
+      allowFullscreen: true,
+      allowKeyboardControls: true,
+      showControls: true,
+      autoplay: false,
+      muted: false
+    };
+  }
+
+  /**
    * Adiciona um novo vídeo
    */
   static async addVideo(videoData: Omit<Video, 'id' | 'created_at'>): Promise<void> {
@@ -84,6 +112,7 @@ export class VideoService {
       const newVideo: Video = {
         id: `video_${Date.now()}`,
         ...videoData,
+        video_controls: videoData.video_controls || this.getDefaultVideoControls(),
         created_at: new Date().toISOString()
       };
 
@@ -215,6 +244,59 @@ export class VideoService {
     } catch (error) {
       console.error('VideoService: Erro ao converter URL do YouTube:', error);
       return url;
+    }
+  }
+
+  /**
+   * Gera URL do YouTube com parâmetros de controle baseados nas configurações
+   */
+  static generateVideoUrlWithControls(baseUrl: string, controls?: VideoControls): string {
+    try {
+      // Se não há controles específicos, retorna URL original
+      if (!controls) {
+        return this.convertYouTubeUrl(baseUrl);
+      }
+
+      // Converte para formato embed primeiro
+      const embedUrl = this.convertYouTubeUrl(baseUrl);
+      
+      // Se não é YouTube, retorna como está
+      if (!embedUrl.includes('youtube.com/embed/')) {
+        return embedUrl;
+      }
+
+      // Constrói parâmetros baseados nos controles
+      const params = new URLSearchParams();
+      
+      // Controles de interface
+      params.set('controls', controls.showControls ? '1' : '0');
+      params.set('modestbranding', '1'); // Remove logo do YouTube
+      params.set('rel', '0'); // Remove vídeos relacionados
+      
+      // Controles de interação
+      if (!controls.allowKeyboardControls) {
+        params.set('disablekb', '1');
+      }
+      
+      if (!controls.allowFullscreen) {
+        params.set('fs', '0');
+      }
+      
+      // Controles de reprodução
+      if (controls.autoplay) {
+        params.set('autoplay', '1');
+      }
+      
+      if (controls.muted) {
+        params.set('mute', '1');
+      }
+
+      // Adiciona parâmetros à URL
+      const separator = embedUrl.includes('?') ? '&' : '?';
+      return `${embedUrl}${separator}${params.toString()}`;
+    } catch (error) {
+      console.error('VideoService: Erro ao gerar URL com controles:', error);
+      return this.convertYouTubeUrl(baseUrl);
     }
   }
 }

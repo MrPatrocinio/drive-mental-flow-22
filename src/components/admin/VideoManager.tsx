@@ -14,7 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { VideoService, Video, VideoSection } from '@/services/supabase/videoService';
+import { VideoService, Video, VideoSection, VideoControls } from '@/services/supabase/videoService';
+import { VideoControlsPanel } from './VideoControlsPanel';
 import { Plus, Edit2, Trash2, Play, Eye, EyeOff } from 'lucide-react';
 
 export const VideoManager: React.FC = () => {
@@ -28,6 +29,7 @@ export const VideoManager: React.FC = () => {
     description: '',
     thumbnail: ''
   });
+  const [videoControls, setVideoControls] = useState<VideoControls>(VideoService.getDefaultVideoControls());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -70,6 +72,7 @@ export const VideoManager: React.FC = () => {
       description: '',
       thumbnail: ''
     });
+    setVideoControls(VideoService.getDefaultVideoControls());
     setEditingVideo(null);
   };
 
@@ -85,6 +88,7 @@ export const VideoManager: React.FC = () => {
       description: video.description || '',
       thumbnail: video.thumbnail || ''
     });
+    setVideoControls(video.video_controls || VideoService.getDefaultVideoControls());
     setEditingVideo(video);
     setIsAddDialogOpen(true);
   };
@@ -107,7 +111,8 @@ export const VideoManager: React.FC = () => {
           title: formData.title,
           url: convertedUrl,
           description: formData.description || undefined,
-          thumbnail: formData.thumbnail || undefined
+          thumbnail: formData.thumbnail || undefined,
+          video_controls: videoControls
         });
         toast({
           title: 'Sucesso',
@@ -118,7 +123,8 @@ export const VideoManager: React.FC = () => {
           title: formData.title,
           url: convertedUrl,
           description: formData.description || undefined,
-          thumbnail: formData.thumbnail || undefined
+          thumbnail: formData.thumbnail || undefined,
+          video_controls: videoControls
         });
         toast({
           title: 'Sucesso',
@@ -213,55 +219,66 @@ export const VideoManager: React.FC = () => {
             </Button>
           </DialogTrigger>
           
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingVideo ? 'Editar Vídeo' : 'Novo Vídeo'}
               </DialogTitle>
             </DialogHeader>
             
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title">Título *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Título do vídeo"
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Formulário Principal */}
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Título *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Título do vídeo"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="url">URL do YouTube *</Label>
+                  <Input
+                    id="url"
+                    value={formData.url}
+                    onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Aceita URLs do YouTube, será convertida automaticamente para embed
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="description">Descrição</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Descrição do vídeo"
+                    rows={3}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="thumbnail">URL da Thumbnail</Label>
+                  <Input
+                    id="thumbnail"
+                    value={formData.thumbnail}
+                    onChange={(e) => setFormData(prev => ({ ...prev, thumbnail: e.target.value }))}
+                    placeholder="https://..."
+                  />
+                </div>
               </div>
-              
+
+              {/* Painel de Controles */}
               <div>
-                <Label htmlFor="url">URL do YouTube *</Label>
-                <Input
-                  id="url"
-                  value={formData.url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
-                  placeholder="https://youtube.com/watch?v=..."
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Aceita URLs do YouTube, será convertida automaticamente para embed
-                </p>
-              </div>
-              
-              <div>
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Descrição do vídeo"
-                  rows={3}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="thumbnail">URL da Thumbnail</Label>
-                <Input
-                  id="thumbnail"
-                  value={formData.thumbnail}
-                  onChange={(e) => setFormData(prev => ({ ...prev, thumbnail: e.target.value }))}
-                  placeholder="https://..."
+                <VideoControlsPanel
+                  controls={videoControls}
+                  onChange={setVideoControls}
                 />
               </div>
             </div>
