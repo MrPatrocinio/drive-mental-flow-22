@@ -30,7 +30,7 @@ export function FavoriteButton({
   const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { playlists, createPlaylist, addAudioToPlaylist, removeAudioFromPlaylist } = usePlaylistManager();
-  const { favoriteStatus, refreshFavoriteStatus } = useFavorites(audioId);
+  const { favoriteStatus, forceRefresh } = useFavorites(audioId);
   const { toast } = useToast();
 
   const handleToggleFavorite = async () => {
@@ -45,7 +45,7 @@ export function FavoriteButton({
             title: "Removido da playlist",
             description: `"${audioTitle}" foi removido da playlist "${favoriteStatus.playlistName}"`,
           });
-          refreshFavoriteStatus();
+          forceRefresh();
         }
         return;
       }
@@ -68,7 +68,7 @@ export function FavoriteButton({
             title: "Adicionado à playlist Favoritos",
             description: `"${audioTitle}" foi adicionado à sua playlist Favoritos`,
           });
-          refreshFavoriteStatus();
+          forceRefresh();
         }
       } 
       // Se tem apenas uma playlist, adiciona diretamente
@@ -87,7 +87,7 @@ export function FavoriteButton({
             title: "Adicionado à playlist",
             description: `"${audioTitle}" foi adicionado à playlist "${playlists[0].name}"`,
           });
-          refreshFavoriteStatus();
+          forceRefresh();
         } else {
           toast({
             title: "Áudio já está na playlist",
@@ -112,7 +112,7 @@ export function FavoriteButton({
   };
 
   const handlePlaylistDialogSuccess = () => {
-    refreshFavoriteStatus();
+    forceRefresh();
     setShowPlaylistDialog(false);
   };
 

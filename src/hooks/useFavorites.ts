@@ -5,8 +5,9 @@
  * Princípio SSOT: Fonte única da verdade para favoritos
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePlaylistManager } from './usePlaylistManager';
+import { PlaylistService } from '@/services/playlistService';
 
 export interface FavoriteStatus {
   isFavorite: boolean;
@@ -21,9 +22,40 @@ export function useFavorites(audioId: string) {
     playlistId: null,
     playlistName: null
   });
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * Verifica se o áudio está em alguma playlist diretamente do localStorage
+   * Responsabilidade: Verificação síncrona e imediata
+   */
+  const checkFavoriteStatusFromStorage = useCallback(() => {
+    const storedPlaylists = PlaylistService.getPlaylists();
+    
+    for (const playlist of storedPlaylists) {
+      const audioExists = playlist.audios.some(audio => audio.id === audioId);
+      if (audioExists) {
+        const newStatus = {
+          isFavorite: true,
+          playlistId: playlist.id,
+          playlistName: playlist.name
+        };
+        setFavoriteStatus(newStatus);
+        return newStatus;
+      }
+    }
+    
+    const newStatus = {
+      isFavorite: false,
+      playlistId: null,
+      playlistName: null
+    };
+    setFavoriteStatus(newStatus);
+    return newStatus;
+  }, [audioId]);
 
   /**
    * Verifica se o áudio está em alguma playlist (é favorito)
+   * Responsabilidade: Verificação baseada no estado reativo
    */
   const checkFavoriteStatus = useCallback(() => {
     for (const playlist of playlists) {
@@ -45,6 +77,25 @@ export function useFavorites(audioId: string) {
       playlistName: null
     });
   }, [playlists, audioId]);
+
+  /**
+   * Força refresh imediato e com fallback
+   * Responsabilidade: Garantir sincronização imediata após operações
+   */
+  const forceRefresh = useCallback(() => {
+    // Limpa timeout anterior se existir
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Primeira verificação imediata
+    checkFavoriteStatusFromStorage();
+    
+    // Fallback após pequeno delay para garantir que localStorage foi processado
+    timeoutRef.current = setTimeout(() => {
+      checkFavoriteStatusFromStorage();
+    }, 50);
+  }, [checkFavoriteStatusFromStorage]);
 
   /**
    * Verifica se o áudio está numa playlist específica
@@ -69,10 +120,20 @@ export function useFavorites(audioId: string) {
     checkFavoriteStatus();
   }, [checkFavoriteStatus]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   return {
     favoriteStatus,
     isInPlaylist,
     getPlaylistsContainingAudio,
-    refreshFavoriteStatus: checkFavoriteStatus
+    refreshFavoriteStatus: checkFavoriteStatus,
+    forceRefresh
   };
 }

@@ -22,7 +22,7 @@ export function AddToPlaylistButton({
   className = ""
 }: AddToPlaylistButtonProps) {
   const [showDialog, setShowDialog] = useState(false);
-  const { favoriteStatus, refreshFavoriteStatus } = useFavorites(audio.id);
+  const { favoriteStatus, forceRefresh } = useFavorites(audio.id);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -30,7 +30,7 @@ export function AddToPlaylistButton({
   };
 
   const handleDialogSuccess = () => {
-    refreshFavoriteStatus();
+    forceRefresh();
     setShowDialog(false);
   };
 
