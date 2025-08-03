@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogIn } from "lucide-react";
+import { ArrowLeft, LogIn, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
+import { toast } from "sonner";
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -10,9 +12,22 @@ interface HeaderProps {
 
 export const Header = ({ showBackButton = false, title }: HeaderProps) => {
   const navigate = useNavigate();
+  const { isAuthenticated, signOut, isLoading } = useSupabaseAuth();
 
-  const handleLogin = () => {
-    navigate("/login");
+  const handleAuthAction = async () => {
+    if (isAuthenticated) {
+      // Fazer logout
+      const { error } = await signOut();
+      if (error) {
+        toast.error("Erro ao sair: " + error);
+      } else {
+        toast.success("Logout realizado com sucesso!");
+        navigate("/");
+      }
+    } else {
+      // Ir para login
+      navigate("/login");
+    }
   };
 
   return (
@@ -37,16 +52,28 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogin}
-            className="hover:bg-primary/10 hover:text-primary text-xs md:text-sm"
-          >
-            <LogIn className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Entrar</span>
-            <span className="sm:hidden">Login</span>
-          </Button>
+          {!isLoading && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAuthAction}
+              className="hover:bg-primary/10 hover:text-primary text-xs md:text-sm"
+            >
+              {isAuthenticated ? (
+                <>
+                  <LogOut className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">Sair</span>
+                  <span className="sm:hidden">Sair</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">Entrar</span>
+                  <span className="sm:hidden">Login</span>
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </header>
