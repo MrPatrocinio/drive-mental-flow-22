@@ -1,6 +1,7 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { LandingContentForm } from "@/components/admin/LandingContentForm";
 import { VideoManager } from "@/components/admin/VideoManager";
+import { DemoConfigPanel } from "@/components/admin/DemoConfigPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/RefreshButton";
@@ -8,7 +9,7 @@ import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, Save, Play } from "lucide-react";
+import { Eye, Save, Play, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminLandingPage() {
@@ -55,12 +56,13 @@ export default function AdminLandingPage() {
 
         {/* Content Tabs */}
         <Tabs defaultValue="content" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="content">Conteúdo da Página</TabsTrigger>
             <TabsTrigger value="videos">
               <Play className="h-4 w-4 mr-2" />
               Gerenciar Vídeos
             </TabsTrigger>
+            <TabsTrigger value="demo">Demonstração</TabsTrigger>
           </TabsList>
 
           <TabsContent value="content" className="space-y-6">
@@ -152,6 +154,38 @@ export default function AdminLandingPage() {
                       <li>• Apenas um vídeo pode estar ativo por vez</li>
                       <li>• Use o botão de olho para ativar/desativar</li>
                       <li>• Vídeo ativo aparece na página inicial</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="demo" className="space-y-6">
+            <DemoConfigPanel />
+            
+            {/* Demo Help Section */}
+            <Card className="bg-gradient-to-br from-green-500/5 to-emerald-500/5 border-green-500/20">
+              <CardHeader>
+                <CardTitle className="text-lg">🎯 Sobre a Demonstração</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <h4 className="font-semibold mb-2">Objetivo</h4>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Permite que visitantes testem gratuitamente</li>
+                      <li>• Demonstra a qualidade dos áudios</li>
+                      <li>• Aumenta conversão para assinaturas pagas</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Escolha do Áudio</h4>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Selecione um áudio representativo</li>
+                      <li>• Prefira conteúdo de alta qualidade</li>
+                      <li>• Considere áudios mais populares</li>
                     </ul>
                   </div>
                 </div>

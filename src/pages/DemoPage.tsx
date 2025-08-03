@@ -1,138 +1,206 @@
-import { Header } from "@/components/Header";
-import { AudioPlayer } from "@/components/AudioPlayer";
-import { Button } from "@/components/ui/button";
-import { Heart, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+/**
+ * DemoPage - Página de demonstração gratuita
+ * Responsabilidade: Exibir áudio de demonstração para visitantes
+ * Princípio SRP: Apenas lógica de demonstração
+ * Princípio KISS: Interface simples e direta
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Play, Pause, Volume2, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { DemoService, DemoAudio } from '@/services/supabase/demoService';
+import { AudioPlayer } from '@/components/AudioPlayer';
+import { Header } from '@/components/Header';
+import { toast } from 'sonner';
 
 export default function DemoPage() {
   const navigate = useNavigate();
+  const [demoAudio, setDemoAudio] = useState<DemoAudio | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [playCount, setPlayCount] = useState(0);
 
-  // Áudio demo do campo Emocional
-  const demoAudio = {
-    id: "demo",
-    title: "Controle da Ansiedade - Versão Demo",
-    duration: "5:00",
-    url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // Mock audio
-    description: "Uma amostra do nosso conteúdo premium para você experimentar"
+  useEffect(() => {
+    loadDemoAudio();
+  }, []);
+
+  const loadDemoAudio = async () => {
+    try {
+      setLoading(true);
+      const audio = await DemoService.getDemoAudio();
+      setDemoAudio(audio);
+      
+      if (!audio) {
+        toast.error('Nenhuma demonstração disponível no momento');
+      }
+    } catch (error) {
+      console.error('Error loading demo audio:', error);
+      toast.error('Erro ao carregar demonstração');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handlePlayStart = () => {
+    setPlayCount(prev => prev + 1);
+  };
+
+  const handleRestartDemo = () => {
+    setPlayCount(0);
+    toast.success('Demonstração reiniciada!');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen hero-gradient">
+        <Header />
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="text-lg text-muted-foreground">Carregando demonstração...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!demoAudio) {
+    return (
+      <div className="min-h-screen hero-gradient">
+        <Header />
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-2xl mx-auto">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/')}
+              className="mb-6"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar ao início
+            </Button>
+
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle>Demonstração Temporariamente Indisponível</CardTitle>
+                <CardDescription>
+                  Não há demonstração configurada no momento. Tente novamente mais tarde.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Button onClick={() => navigate('/pagamento')} className="mr-4">
+                  Ver Planos Completos
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/')}>
+                  Voltar ao Início
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen hero-gradient">
-      <Header showBackButton />
+      <Header />
       
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-6">
-            <Heart className="h-10 w-10 text-primary" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Experimente o <span className="text-premium">Drive Mental</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Teste nossa tecnologia de reprogramação mental com este áudio demonstrativo 
-            do campo Emocional
-          </p>
-        </div>
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
+          {/* Navegação */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="mb-6"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar ao início
+          </Button>
 
-        {/* Demo Player */}
-        <div className="mb-12">
-          <AudioPlayer
-            audioUrl={demoAudio.url}
-            title={demoAudio.title}
-            onRepeatComplete={() => {
-              console.log("Demo repetition completed");
-            }}
-          />
-        </div>
-
-        {/* Instruções */}
-        <div className="card-gradient rounded-xl p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-center">Como usar o Drive Mental</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-primary text-black font-bold flex items-center justify-center mx-auto mb-3">
-                1
-              </div>
-              <h3 className="font-semibold mb-2">Escolha seu Campo</h3>
-              <p className="text-sm text-muted-foreground">
-                Selecione a área que deseja desenvolver
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-primary text-black font-bold flex items-center justify-center mx-auto mb-3">
-                2
-              </div>
-              <h3 className="font-semibold mb-2">Ouça e Repita</h3>
-              <p className="text-sm text-muted-foreground">
-                Use fones de ouvido e deixe o áudio repetir
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-primary text-black font-bold flex items-center justify-center mx-auto mb-3">
-                3
-              </div>
-              <h3 className="font-semibold mb-2">Transforme-se</h3>
-              <p className="text-sm text-muted-foreground">
-                Sua mente será reprogramada gradualmente
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Benefícios */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold">Por que funciona?</h3>
-            <div className="space-y-3 text-muted-foreground">
-              <p>✓ Baseado em neurociência e programação neurolinguística</p>
-              <p>✓ Repetição espaçada para fixação na mente subconsciente</p>
-              <p>✓ Técnicas de visualização e afirmações positivas</p>
-              <p>✓ Desenvolvido por especialistas em desenvolvimento humano</p>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold">Resultados esperados</h3>
-            <div className="space-y-3 text-muted-foreground">
-              <p>• Mudanças perceptíveis em 7-14 dias</p>
-              <p>• Transformação profunda em 30-60 dias</p>
-              <p>• Novos padrões mentais permanentes</p>
-              <p>• Maior autoconfiança e bem-estar</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Call to Action */}
-        <div className="text-center">
-          <div className="card-gradient rounded-2xl p-8 max-w-2xl mx-auto">
-            <h3 className="text-3xl font-bold mb-4">
-              Gostou do que ouviu?
-            </h3>
-            <p className="text-muted-foreground mb-6 text-lg">
-              Este é apenas um exemplo. Temos mais de 44 áudios completos esperando por você.
+          {/* Cabeçalho */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">
+              <span className="text-foreground">Demonstração</span>
+              <br />
+              <span className="text-premium">Gratuita</span>
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Experimente nosso Drive Mental gratuitamente. Configure e ouça quantas vezes quiser!
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                variant="premium" 
-                size="lg"
-                onClick={() => navigate('/pagamento')}
-                className="group"
-              >
-                Quero Acesso Completo
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => navigate('/')}
-              >
-                Voltar ao Início
-              </Button>
-            </div>
           </div>
+
+          {/* Card do Áudio de Demonstração */}
+          <Card className="mb-8">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <Volume2 className="h-5 w-5 text-primary" />
+                    {demoAudio.title}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{demoAudio.field_title}</Badge>
+                    <span className="text-sm text-muted-foreground">•</span>
+                    <span className="text-sm text-muted-foreground">{demoAudio.duration}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Reproduções</p>
+                  <p className="text-2xl font-bold text-primary">{playCount}</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <AudioPlayer
+                audioUrl={demoAudio.url}
+                title={demoAudio.title}
+                onRepeatComplete={handlePlayStart}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Controles */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <Button
+              variant="outline"
+              onClick={handleRestartDemo}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Reiniciar Contador
+            </Button>
+            <Button
+              onClick={() => navigate('/pagamento')}
+              className="flex items-center gap-2"
+            >
+              <Play className="h-4 w-4" />
+              Acessar Biblioteca Completa
+            </Button>
+          </div>
+
+          {/* Call to Action */}
+          <Card className="card-gradient">
+            <CardContent className="text-center p-8">
+              <h3 className="text-xl font-semibold mb-4">
+                Gostou da demonstração?
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Tenha acesso a centenas de áudios de Drive Mental e transforme sua vida hoje mesmo!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button onClick={() => navigate('/pagamento')} size="lg">
+                  Ver Todos os Planos
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/auth')} size="lg">
+                  Criar Conta Gratuita
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
