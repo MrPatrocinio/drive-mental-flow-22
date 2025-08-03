@@ -156,14 +156,6 @@ export default function LandingPage() {
                 <Play className="mr-2 h-5 w-5" />
                 {content.hero.demoText}
               </Button>
-              <Button 
-                variant="ghost" 
-                size="lg"
-                onClick={() => navigate('/auth')}
-                className="text-primary hover:text-primary/90"
-              >
-                Já tem conta? Faça login
-              </Button>
             </div>
           </div>
         </div>
