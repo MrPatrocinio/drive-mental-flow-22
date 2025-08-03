@@ -188,15 +188,32 @@ export default function DemoPage() {
               <h3 className="text-xl font-semibold mb-4">
                 Gostou da demonstração?
               </h3>
-              <p className="text-muted-foreground mb-6">
-                Tenha acesso a centenas de áudios de Drive Mental e transforme sua vida hoje mesmo!
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={() => navigate('/pagamento')} size="lg">
-                  Ver Todos os Planos
-                </Button>
-                <Button variant="outline" onClick={() => navigate('/auth')} size="lg">
-                  Criar Conta Gratuita
+              <div className="space-y-4 mb-6">
+                <p className="text-muted-foreground">
+                  Transforme sua vida financeira e pessoal com áudios cientificamente desenvolvidos
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-premium rounded-full"></div>
+                    <span>Abundância financeira</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-premium rounded-full"></div>
+                    <span>Autoconfiança elevada</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-premium rounded-full"></div>
+                    <span>Relacionamentos saudáveis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-premium rounded-full"></div>
+                    <span>Sucesso profissional</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <Button onClick={() => navigate('/pagamento')} size="lg" className="px-8">
+                  Faça o upgrade que sua mente merece
                 </Button>
               </div>
             </CardContent>
