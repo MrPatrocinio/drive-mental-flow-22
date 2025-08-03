@@ -185,37 +185,37 @@ export default function DemoPage() {
           {/* Call to Action */}
           <Card className="card-gradient">
             <CardContent className="text-center p-8">
-              <h3 className="text-xl font-semibold mb-4">
+              <h3 className="text-2xl font-bold mb-4">
                 Gostou da demonstração?
               </h3>
-              <div className="space-y-4 mb-6">
-                <p className="text-muted-foreground">
-                  Transforme sua vida financeira e pessoal com áudios cientificamente desenvolvidos
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-premium rounded-full"></div>
-                    <span>Abundância financeira</span>
+              <p className="text-lg text-muted-foreground mb-6">
+                Transforme sua vida financeira e pessoal com áudios cientificamente desenvolvidos
+              </p>
+              
+              <div className="bg-background/10 backdrop-blur-sm rounded-xl p-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-background/20 hover:bg-background/30 transition-all duration-300 hover-scale">
+                    <div className="text-2xl">💰</div>
+                    <span className="font-medium">Abundância financeira</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-premium rounded-full"></div>
-                    <span>Autoconfiança elevada</span>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-background/20 hover:bg-background/30 transition-all duration-300 hover-scale">
+                    <div className="text-2xl">✨</div>
+                    <span className="font-medium">Autoconfiança elevada</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-premium rounded-full"></div>
-                    <span>Relacionamentos saudáveis</span>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-background/20 hover:bg-background/30 transition-all duration-300 hover-scale">
+                    <div className="text-2xl">❤️</div>
+                    <span className="font-medium">Relacionamentos saudáveis</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-premium rounded-full"></div>
-                    <span>Sucesso profissional</span>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-background/20 hover:bg-background/30 transition-all duration-300 hover-scale">
+                    <div className="text-2xl">🚀</div>
+                    <span className="font-medium">Sucesso profissional</span>
                   </div>
                 </div>
               </div>
-              <div className="flex justify-center">
-                <Button onClick={() => navigate('/pagamento')} size="lg" className="px-8">
-                  Faça o upgrade que sua mente merece
-                </Button>
-              </div>
+              
+              <Button onClick={() => navigate('/pagamento')} size="lg" className="px-8 py-4 text-lg animate-fade-in">
+                Faça o upgrade que sua mente merece
+              </Button>
             </CardContent>
           </Card>
         </div>
