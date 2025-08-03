@@ -40,7 +40,7 @@ export const SupabaseProtectedRoute = ({
 
   // Não autenticado
   if (!isAuthenticated) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Verificação de role (se necessário)

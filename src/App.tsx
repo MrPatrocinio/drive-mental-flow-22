@@ -19,7 +19,7 @@ import FieldPage from "./pages/FieldPage";
 import AudioPlayerPage from "./pages/AudioPlayerPage";
 import DemoPage from "./pages/DemoPage";
 import UserLoginPage from "./pages/UserLoginPage";
-import AuthPage from "./pages/AuthPage";
+
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLandingPage from "./pages/admin/AdminLandingPage";
@@ -52,7 +52,7 @@ const App = () => (
               
               {/* User Routes */}
               <Route path="/login" element={<UserLoginPage />} />
-              <Route path="/auth" element={<AuthPage />} />
+              
               <Route path="/dashboard" element={
                 <UserProtectedRoute>
                   <Dashboard />

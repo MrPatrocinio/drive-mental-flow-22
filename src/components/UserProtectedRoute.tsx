@@ -30,7 +30,7 @@ export const UserProtectedRoute = ({ children }: UserProtectedRouteProps) => {
 
   // Not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Only allow regular users (not admins)
