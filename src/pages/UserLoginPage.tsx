@@ -10,8 +10,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, User, AlertCircle } from "lucide-react";
 
 export default function UserLoginPage() {
-  const [email, setEmail] = useState("usuario@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -126,13 +126,6 @@ export default function UserLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-            <h4 className="font-semibold text-sm mb-2">Credenciais de Acesso:</h4>
-            <p className="text-xs text-muted-foreground">
-              <strong>Email:</strong> usuario@gmail.com<br />
-              <strong>Senha:</strong> 123456
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

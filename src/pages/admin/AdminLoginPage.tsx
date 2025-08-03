@@ -10,7 +10,7 @@ import { Eye, EyeOff, Shield, AlertCircle } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("dppsoft@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -119,13 +119,6 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-            <h4 className="font-semibold text-sm mb-2">Credenciais de Acesso:</h4>
-            <p className="text-xs text-muted-foreground">
-              <strong>Email:</strong> dppsoft@gmail.com<br />
-              <strong>Senha:</strong> 123456
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

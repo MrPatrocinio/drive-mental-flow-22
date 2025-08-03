@@ -34,10 +34,10 @@ export class AudioService {
     );
   }
 
-  // Simula autenticação básica
+  // Removed mock authentication - only authenticated users can access
   static async authenticateUser(email: string, password: string): Promise<boolean> {
-    // Mock authentication - em produção seria uma chamada real de API
-    return email === "dppsoft@gmail.com" && password === "123456";
+    // Authentication is handled by Supabase
+    return false;
   }
 
   // Simula verificação de pagamento
