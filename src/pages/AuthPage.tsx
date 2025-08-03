@@ -24,7 +24,7 @@ export default function AuthPage() {
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpDisplayName, setSignUpDisplayName] = useState("");
-  const [isCreatingTestUser, setIsCreatingTestUser] = useState(false);
+  
 
   const { signIn, signUp, isAuthenticated } = useSupabaseAuth();
   const navigate = useNavigate();
@@ -58,45 +58,6 @@ export default function AuthPage() {
     }
   };
 
-  const handleCreateTestUser = async () => {
-    setIsCreatingTestUser(true);
-    setError("");
-
-    try {
-      // Usar supabase.functions.invoke em vez de fetch direto
-      const { data, error: functionError } = await supabase.functions.invoke('create-test-user', {
-        body: {}
-      });
-      
-      if (functionError) {
-        console.error('Erro na edge function:', functionError);
-        setError(`Erro ao criar usuário: ${functionError.message}`);
-        return;
-      }
-      
-      if (data?.success) {
-        setError("");
-        // Agora tenta fazer login com as credenciais de teste
-        const { error: loginError } = await signIn({ 
-          email: "usuario@teste.com", 
-          password: "123456" 
-        });
-        
-        if (loginError) {
-          setError("Usuário criado com sucesso! Agora você pode fazer login.");
-        } else {
-          navigate(from, { replace: true });
-        }
-      } else {
-        setError(data?.error || "Erro ao criar usuário de teste");
-      }
-    } catch (err) {
-      console.error('Erro geral:', err);
-      setError("Erro ao criar usuário de teste. Tente novamente.");
-    } finally {
-      setIsCreatingTestUser(false);
-    }
-  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,26 +169,6 @@ export default function AuthPage() {
                 </Button>
               </form>
 
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg space-y-3">
-                <div>
-                  <h4 className="font-semibold text-sm mb-2">Credenciais de Teste:</h4>
-                  <p className="text-xs text-muted-foreground">
-                    <strong>Email:</strong> usuario@teste.com<br />
-                    <strong>Senha:</strong> 123456
-                  </p>
-                </div>
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={handleCreateTestUser}
-                  disabled={isCreatingTestUser || isLoading}
-                >
-                  {isCreatingTestUser ? "Criando usuário..." : "Criar Usuário de Teste"}
-                </Button>
-              </div>
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4 mt-6">
