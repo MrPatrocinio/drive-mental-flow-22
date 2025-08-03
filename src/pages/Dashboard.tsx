@@ -69,7 +69,7 @@ export default function Dashboard() {
               <User className="h-6 w-6 text-primary" />
             </div>
             <div className="text-left">
-              <h1 className="text-2xl font-bold">Bem-vindo de volta!</h1>
+              <h1 className="text-2xl font-bold">Dashboard</h1>
               <p className="text-muted-foreground">Continue sua jornada de desenvolvimento</p>
             </div>
             <RefreshButton variant="ghost" size="sm" className="mt-2" />
