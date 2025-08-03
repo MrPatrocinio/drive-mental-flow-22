@@ -69,7 +69,7 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
                 <>
                   <LogIn className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                   <span className="hidden sm:inline">Entrar</span>
-                  <span className="sm:hidden">Login</span>
+                  <span className="sm:hidden">Entrar</span>
                 </>
               )}
             </Button>
