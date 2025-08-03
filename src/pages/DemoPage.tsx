@@ -214,7 +214,7 @@ export default function DemoPage() {
               </div>
               
               <Button onClick={() => navigate('/pagamento')} size="lg" className="px-8 py-4 text-lg animate-fade-in">
-                Faça o upgrade que sua mente merece
+                Sua mente Merece!
               </Button>
             </CardContent>
           </Card>
