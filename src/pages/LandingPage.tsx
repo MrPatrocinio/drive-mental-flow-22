@@ -8,6 +8,7 @@ import { VideoService, Video } from "@/services/supabase/videoService";
 import { FieldService } from "@/services/supabase/fieldService";
 import { useDataSync } from "@/hooks/useDataSync";
 import { useVideoControls } from "@/hooks/useVideoControls";
+import { useVideoLifecycle } from "@/hooks/useVideoLifecycle";
 import { PricingDisplay } from "@/components/PricingDisplay";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
@@ -20,8 +21,9 @@ export default function LandingPage() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Hook para controles de vídeo
+  // Hooks para controles e lifecycle de vídeo
   const videoControlsSettings = useVideoControls(activeVideo?.video_controls);
+  const { isVideoReady, videoKey, cleanupPreviousVideo } = useVideoLifecycle(activeVideo);
 
   // Get dynamic icon component
   const getIconComponent = (iconName: string) => {
@@ -33,6 +35,9 @@ export default function LandingPage() {
     try {
       setLoading(true);
       
+      // Limpar vídeo anterior antes de carregar novo conteúdo
+      cleanupPreviousVideo();
+      
       const [landingContent, fieldsData, videoData] = await Promise.all([
         SupabaseContentService.getLandingPageContent(),
         FieldService.getAll(),
@@ -40,7 +45,13 @@ export default function LandingPage() {
       ]);
       
       setContent(landingContent);
-      setActiveVideo(videoData);
+      
+      // Verificar se o vídeo realmente mudou antes de atualizar
+      if (videoData?.id !== activeVideo?.id) {
+        console.log('LandingPage: Novo vídeo detectado:', videoData?.id);
+        setActiveVideo(videoData);
+      }
+      
       setFields(fieldsData.map(field => ({
         icon: getIconComponent(field.icon_name),
         title: field.title,
@@ -51,7 +62,7 @@ export default function LandingPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeVideo?.id, cleanupPreviousVideo]);
 
   useEffect(() => {
     loadContent();
@@ -91,16 +102,20 @@ export default function LandingPage() {
             </h1>
             
             {/* Video Section */}
-            {activeVideo && (
+            {activeVideo && isVideoReady && (
               <div className="mb-8">
                 <div className="max-w-4xl mx-auto px-2">
                   <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
                     <iframe
+                      key={videoKey}
                       className="absolute top-0 left-0 w-full h-full shadow-2xl"
-                      src={VideoService.generateVideoUrlWithControls(activeVideo.url, activeVideo.video_controls)}
+                      src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
+                        ...activeVideo.video_controls,
+                        autoplay: false // Desabilitar autoplay para evitar reprodução dupla
+                      })}
                       title={activeVideo.title}
                       frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen={videoControlsSettings.allowFullscreen}
                       style={{
                         pointerEvents: videoControlsSettings.pointerEvents
