@@ -35,9 +35,6 @@ export default function LandingPage() {
     try {
       setLoading(true);
       
-      // Limpar vídeo anterior antes de carregar novo conteúdo
-      cleanupPreviousVideo();
-      
       const [landingContent, fieldsData, videoData] = await Promise.all([
         SupabaseContentService.getLandingPageContent(),
         FieldService.getAll(),
@@ -62,7 +59,7 @@ export default function LandingPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeVideo?.id, cleanupPreviousVideo]);
+  }, [activeVideo?.id]); // Removida dependência circular
 
   useEffect(() => {
     loadContent();
@@ -102,7 +99,7 @@ export default function LandingPage() {
             </h1>
             
             {/* Video Section */}
-            {activeVideo && isVideoReady && (
+            {activeVideo && (
               <div className="mb-8">
                 <div className="max-w-4xl mx-auto px-2">
                   <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>

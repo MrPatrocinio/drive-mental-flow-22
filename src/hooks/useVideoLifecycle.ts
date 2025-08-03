@@ -19,15 +19,20 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
   const [videoKey, setVideoKey] = useState('');
   const currentVideoRef = useRef<string | null>(null);
   const cleanupTimeoutRef = useRef<NodeJS.Timeout>();
+  const isCleaningRef = useRef(false);
 
   const cleanupPreviousVideo = useCallback(() => {
+    // Evitar execuções múltiplas simultâneas
+    if (isCleaningRef.current) {
+      return;
+    }
+    
+    isCleaningRef.current = true;
+    
     // Limpar timeout anterior se existir
     if (cleanupTimeoutRef.current) {
       clearTimeout(cleanupTimeoutRef.current);
     }
-
-    // Resetar estado do vídeo
-    setIsVideoReady(false);
     
     // Forçar limpeza de iframes anteriores
     const existingIframes = document.querySelectorAll('iframe[src*="youtube.com"]');
@@ -44,11 +49,16 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
     });
 
     console.log('VideoLifecycle: Limpeza de vídeo anterior executada');
+    
+    // Reset flag após um delay
+    setTimeout(() => {
+      isCleaningRef.current = false;
+    }, 100);
   }, []);
 
   useEffect(() => {
     if (!activeVideo) {
-      cleanupPreviousVideo();
+      setIsVideoReady(false);
       setVideoKey('');
       currentVideoRef.current = null;
       return;
@@ -56,25 +66,30 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
 
     // Verificar se é um vídeo diferente
     const newVideoId = activeVideo.id;
-    if (currentVideoRef.current === newVideoId) {
-      return; // Mesmo vídeo, não fazer nada
+    if (currentVideoRef.current === newVideoId && isVideoReady) {
+      return; // Mesmo vídeo já carregado, não fazer nada
     }
 
     console.log('VideoLifecycle: Carregando novo vídeo:', newVideoId);
 
-    // Limpar vídeo anterior
-    cleanupPreviousVideo();
+    // Resetar estado primeiro
+    setIsVideoReady(false);
+    
+    // Limpar vídeo anterior apenas se necessário
+    if (currentVideoRef.current && currentVideoRef.current !== newVideoId) {
+      cleanupPreviousVideo();
+    }
 
     // Gerar nova key para forçar remontagem do iframe
     const newKey = `video-${newVideoId}-${Date.now()}`;
     setVideoKey(newKey);
     currentVideoRef.current = newVideoId;
 
-    // Aguardar um pouco antes de marcar como pronto para evitar conflitos
+    // Aguardar um pouco antes de marcar como pronto
     cleanupTimeoutRef.current = setTimeout(() => {
       setIsVideoReady(true);
       console.log('VideoLifecycle: Vídeo pronto para reprodução');
-    }, 300);
+    }, 100);
 
     // Cleanup no unmount
     return () => {
@@ -82,7 +97,7 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
         clearTimeout(cleanupTimeoutRef.current);
       }
     };
-  }, [activeVideo, cleanupPreviousVideo]);
+  }, [activeVideo?.id]); // Apenas dependência do ID do vídeo
 
   // Cleanup geral no unmount do componente
   useEffect(() => {
