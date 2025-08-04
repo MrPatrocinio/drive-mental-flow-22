@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Play, Clock } from 'lucide-react';
 import { FavoriteButton } from './FavoriteButton';
+import { OfflineDownloadButton } from './OfflineDownloadButton';
 
 export interface Audio {
   id: string;
@@ -17,6 +18,7 @@ export interface Audio {
   duration: string;
   url: string;
   tags?: string[];
+  field_id?: string;
 }
 
 interface AudioCardProps {
@@ -62,6 +64,17 @@ export function AudioCard({ audio, onPlay, showTags = true }: AudioCardProps) {
 
           <div className="flex flex-col gap-2">
             <FavoriteButton audioId={audio.id} audioTitle={audio.title} size="sm" />
+            
+            <OfflineDownloadButton
+              audioId={audio.id}
+              audioUrl={audio.url}
+              audioTitle={audio.title}
+              fieldId={audio.field_id || ''}
+              duration={audio.duration}
+              size="sm"
+              variant="ghost"
+              showProgress={false}
+            />
             
             <Button
               size="sm"
