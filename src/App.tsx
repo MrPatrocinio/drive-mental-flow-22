@@ -29,6 +29,7 @@ import { AdminPricingPage } from "./pages/admin/AdminPricingPage";
 import { AdminStatsPage } from "./pages/admin/AdminStatsPage";
 import { AdminValidationPage } from "./pages/admin/AdminValidationPage";
 import { AdminAnalyticsPage } from "./pages/admin/AdminAnalyticsPage";
+import { AdminBackgroundMusicPage } from "./pages/admin/AdminBackgroundMusicPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -114,6 +115,11 @@ const App = () => (
               <Route path="/admin/analytics" element={
                 <AdminProtectedRoute>
                   <AdminAnalyticsPage />
+                </AdminProtectedRoute>
+              } />
+              <Route path="/admin/background-music" element={
+                <AdminProtectedRoute>
+                  <AdminBackgroundMusicPage />
                 </AdminProtectedRoute>
               } />
               

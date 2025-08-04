@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { AudioPlayerService, AudioPlayerState } from '@/services/audioPlayerService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
+import { useBackgroundMusic } from './useBackgroundMusic';
 
 /**
  * Hook customizado para gerenciar o estado do player de áudio
@@ -23,6 +24,9 @@ export const useAudioPlayer = (
     canPlay: false
   });
   const [repeatCount, setRepeatCount] = useState(0);
+  
+  // Hook para música de fundo
+  const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
 
   // Inicializa o serviço de player
   useEffect(() => {
@@ -69,9 +73,13 @@ export const useAudioPlayer = (
   // Atualiza preferências de volume
   useEffect(() => {
     if (playerServiceRef.current) {
-      playerServiceRef.current.setVolume(preferences.volume);
+      const normalizedVolume = preferences.volume / 100; // Converte 0-100 para 0-1
+      playerServiceRef.current.setVolume(normalizedVolume);
+      
+      // Sincroniza volume com música de fundo
+      setBackgroundVolume(normalizedVolume);
     }
-  }, [preferences.volume]);
+  }, [preferences.volume, setBackgroundVolume]);
 
   // Auto-play functionality
   useEffect(() => {
@@ -97,6 +105,8 @@ export const useAudioPlayer = (
 
   const setMuted = (muted: boolean) => {
     playerServiceRef.current?.setMuted(muted);
+    // Sincroniza mute com música de fundo
+    setBackgroundMuted(muted);
   };
 
   return {

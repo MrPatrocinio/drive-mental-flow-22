@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Settings, Volume2, Repeat, Play, RotateCcw } from "lucide-react";
+import { Settings, Volume2, Repeat, Play, RotateCcw, Music } from "lucide-react";
 import { AudioPreferences, audioPreferencesService } from "@/services/audioPreferencesService";
 
 interface AudioPreferencesPanelProps {
@@ -114,6 +114,18 @@ export const AudioPreferencesPanel = ({
             <Switch
               checked={preferences.showProgress}
               onCheckedChange={(checked) => handlePreferenceChange({ showProgress: checked })}
+            />
+          </div>
+
+          {/* Background Music */}
+          <div className="flex items-center justify-between">
+            <Label className="flex items-center gap-2">
+              <Music className="h-4 w-4" />
+              Música de Fundo
+            </Label>
+            <Switch
+              checked={preferences.backgroundMusicEnabled}
+              onCheckedChange={(checked) => handlePreferenceChange({ backgroundMusicEnabled: checked })}
             />
           </div>
 

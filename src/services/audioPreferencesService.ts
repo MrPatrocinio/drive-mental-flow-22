@@ -3,6 +3,7 @@ export interface AudioPreferences {
   repeatCount: number; // 0 = infinite, >0 = specific number
   autoPlay: boolean;
   showProgress: boolean;
+  backgroundMusicEnabled: boolean;
 }
 
 export interface AudioPreferencesService {
@@ -16,6 +17,7 @@ const DEFAULT_PREFERENCES: AudioPreferences = {
   repeatCount: 0, // infinite by default
   autoPlay: false,
   showProgress: true,
+  backgroundMusicEnabled: false,
 };
 
 const STORAGE_KEY = 'audio-preferences';

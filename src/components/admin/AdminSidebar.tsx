@@ -30,6 +30,11 @@ const navigationItems = [
     icon: Music,
   },
   {
+    label: "Música de Fundo",
+    href: "/admin/background-music",
+    icon: Music,
+  },
+  {
     label: "Estatísticas",
     href: "/admin/stats",
     icon: BarChart3,
