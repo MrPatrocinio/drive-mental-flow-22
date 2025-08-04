@@ -77,7 +77,9 @@ export const useAudioPlayer = (
   // Atualiza preferências de volume
   useEffect(() => {
     if (playerServiceRef.current) {
-      const normalizedVolume = Math.max(0.01, preferences.volume / 100); // Mínimo 1%
+      // Volume já normalizado entre 0 e 1, mínimo 1%
+      const normalizedVolume = Math.max(0.01, preferences.volume / 100);
+      console.log('useAudioPlayer: Definindo volume:', preferences.volume, 'normalizado:', normalizedVolume);
       playerServiceRef.current.setVolume(normalizedVolume);
       
       // Sincroniza volume com música de fundo

@@ -50,14 +50,19 @@ export const useBackgroundMusic = () => {
       currentMusic: state.currentMusic?.title
     });
     
-    if (isEnabled && shouldPlayBackgroundMusic && !state.isPlaying && !state.isLoading && !state.hasError) {
-      console.log('useBackgroundMusic: Iniciando reprodução (áudio principal ativo)');
-      backgroundMusicPlayer.play();
-    } else if ((!isEnabled || !shouldPlayBackgroundMusic) && state.isPlaying) {
-      console.log('useBackgroundMusic: Pausando reprodução');
-      backgroundMusicPlayer.pause();
+    // Evita loops infinitos verificando se a ação é necessária
+    if (isEnabled && shouldPlayBackgroundMusic) {
+      if (!state.isPlaying && !state.isLoading && !state.hasError) {
+        console.log('useBackgroundMusic: Iniciando reprodução (áudio principal ativo)');
+        backgroundMusicPlayer.play();
+      }
+    } else {
+      if (state.isPlaying) {
+        console.log('useBackgroundMusic: Pausando reprodução');
+        backgroundMusicPlayer.pause();
+      }
     }
-  }, [isEnabled, shouldPlayBackgroundMusic, state.isPlaying, state.isLoading, state.hasError]);
+  }, [isEnabled, shouldPlayBackgroundMusic]);
 
   const toggleEnabled = useCallback((enabled: boolean) => {
     console.log('useBackgroundMusic: Toggle ativado:', enabled);

@@ -179,11 +179,14 @@ export class AudioPlayerService {
 
   /**
    * Define o volume
+   * @param volume - Volume entre 0 e 1 (já normalizado)
    */
   setVolume(volume: number): void {
     if (!this.audioElement) return;
     
-    this.audioElement.volume = Math.max(0, Math.min(1, volume / 100));
+    // Volume já vem normalizado entre 0 e 1
+    this.audioElement.volume = Math.max(0, Math.min(1, volume));
+    console.log('AudioPlayerService: Volume definido para:', volume, 'Element volume:', this.audioElement.volume);
   }
 
   /**
