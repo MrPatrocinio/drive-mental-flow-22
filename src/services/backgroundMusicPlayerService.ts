@@ -20,6 +20,8 @@ export class BackgroundMusicPlayerService {
   private audioElement: HTMLAudioElement | null = null;
   private activeMusic: BackgroundMusic[] = [];
   private currentMusicIndex = 0;
+  private isInitialized = false;
+  private isInitializing = false;
   private state: BackgroundMusicState = {
     isPlaying: false,
     currentMusic: null,
@@ -39,6 +41,18 @@ export class BackgroundMusicPlayerService {
   }
 
   async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      console.log('BackgroundMusicPlayer: Já inicializado');
+      return;
+    }
+    
+    if (this.isInitializing) {
+      console.log('BackgroundMusicPlayer: Inicialização em andamento');
+      return;
+    }
+
+    this.isInitializing = true;
+    
     try {
       console.log('BackgroundMusicPlayer: Inicializando sistema...');
       this.updateState({ isLoading: true, hasError: false });
@@ -64,9 +78,12 @@ export class BackgroundMusicPlayerService {
       }
 
       this.updateState({ isLoading: false });
+      this.isInitialized = true;
     } catch (error) {
       console.error('BackgroundMusicPlayer: Erro ao inicializar:', error);
       this.updateState({ isLoading: false, hasError: true });
+    } finally {
+      this.isInitializing = false;
     }
   }
 

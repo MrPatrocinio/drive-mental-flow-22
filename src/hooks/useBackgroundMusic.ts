@@ -7,10 +7,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { backgroundMusicPlayer, BackgroundMusicState } from '@/services/backgroundMusicPlayerService';
 import { audioPreferencesService } from '@/services/audioPreferencesService';
+import { useAudioPlayback } from '@/contexts/AudioPlaybackContext';
 
 export const useBackgroundMusic = () => {
   const [state, setState] = useState<BackgroundMusicState>(backgroundMusicPlayer.getState());
   const [isEnabled, setIsEnabled] = useState(false);
+  
+  // Obtém contexto com fallback
+  let shouldPlayBackgroundMusic = false;
+  try {
+    const context = useAudioPlayback();
+    shouldPlayBackgroundMusic = context.shouldPlayBackgroundMusic;
+  } catch {
+    // Contexto não está disponível, usa fallback
+    shouldPlayBackgroundMusic = false;
+  }
 
   // Carrega preferências do usuário
   useEffect(() => {
@@ -34,24 +45,25 @@ export const useBackgroundMusic = () => {
     return unsubscribe;
   }, []);
 
-  // Controla reprodução baseado na preferência do usuário
+  // Controla reprodução baseado no contexto de áudio principal
   useEffect(() => {
     console.log('useBackgroundMusic: Verificando estado para reprodução', {
       isEnabled,
+      shouldPlayBackgroundMusic,
       isPlaying: state.isPlaying,
       isLoading: state.isLoading,
       hasError: state.hasError,
       currentMusic: state.currentMusic?.title
     });
     
-    if (isEnabled && !state.isPlaying && !state.isLoading && !state.hasError) {
-      console.log('useBackgroundMusic: Iniciando reprodução');
+    if (isEnabled && shouldPlayBackgroundMusic && !state.isPlaying && !state.isLoading && !state.hasError) {
+      console.log('useBackgroundMusic: Iniciando reprodução (áudio principal ativo)');
       backgroundMusicPlayer.play();
-    } else if (!isEnabled && state.isPlaying) {
+    } else if ((!isEnabled || !shouldPlayBackgroundMusic) && state.isPlaying) {
       console.log('useBackgroundMusic: Pausando reprodução');
       backgroundMusicPlayer.pause();
     }
-  }, [isEnabled, state.isPlaying, state.isLoading, state.hasError]);
+  }, [isEnabled, shouldPlayBackgroundMusic, state.isPlaying, state.isLoading, state.hasError]);
 
   const toggleEnabled = useCallback((enabled: boolean) => {
     console.log('useBackgroundMusic: Toggle ativado:', enabled);

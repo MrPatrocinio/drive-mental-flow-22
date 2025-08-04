@@ -9,6 +9,7 @@ import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
 import { AudioErrorDisplay } from "@/components/audio/AudioErrorDisplay";
 import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator";
 import { useToast } from "@/hooks/use-toast";
+import { BackgroundMusicToggle } from "@/components/BackgroundMusicToggle";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -163,18 +164,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </Button>
 
         {/* Background Music Toggle */}
-        <Button
-          variant="audio"
-          size="audio"
-          onClick={() => toggleBackgroundMusic(!backgroundMusicEnabled)}
-          className={backgroundMusicEnabled ? "bg-primary/20" : ""}
-        >
-          {backgroundMusicEnabled ? (
-            <Music className="h-5 w-5 text-primary" />
-          ) : (
-            <Volume className="h-5 w-5" />
-          )}
-        </Button>
+        <BackgroundMusicToggle />
       </div>
 
       {/* Volume Control */}

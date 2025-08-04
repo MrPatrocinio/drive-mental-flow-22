@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { UserProvider } from "@/contexts/UserContext";
 import { SupabaseAuthProvider } from "@/contexts/SupabaseAuthContext";
+import { AudioPlaybackProvider } from "@/contexts/AudioPlaybackContext";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import { UserProtectedRoute } from "@/components/UserProtectedRoute";
 import LandingPage from "./pages/LandingPage";
@@ -39,10 +40,11 @@ const App = () => (
     <SupabaseAuthProvider>
       <AdminProvider>
         <UserProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+          <AudioPlaybackProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
             <Routes>
               <Route path="/" element={<LandingPage />} />
         <Route path="/pagamento" element={<PaymentPage />} />
@@ -126,8 +128,9 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AudioPlaybackProvider>
         </UserProvider>
       </AdminProvider>
     </SupabaseAuthProvider>

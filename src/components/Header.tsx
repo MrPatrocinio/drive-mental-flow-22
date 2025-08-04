@@ -3,7 +3,6 @@ import { ArrowLeft, LogIn, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
-import { BackgroundMusicToggle } from "@/components/BackgroundMusicToggle";
 import { toast } from "sonner";
 
 interface HeaderProps {
@@ -53,9 +52,6 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
-          {/* Background Music Toggle */}
-          <BackgroundMusicToggle size="icon" className="shrink-0" />
-          
           {!isLoading && (
             <Button
               variant="ghost"

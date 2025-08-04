@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { AudioPlayerService, AudioPlayerState } from '@/services/audioPlayerService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
 import { useBackgroundMusic } from './useBackgroundMusic';
+import { useAudioPlayback } from '@/contexts/AudioPlaybackContext';
 
 /**
  * Hook customizado para gerenciar o estado do player de áudio
@@ -27,6 +28,9 @@ export const useAudioPlayer = (
   
   // Hook para música de fundo
   const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
+  
+  // Context para controlar música de fundo
+  const { setMainAudioPlaying } = useAudioPlayback();
 
   // Inicializa o serviço de player
   useEffect(() => {
@@ -80,6 +84,11 @@ export const useAudioPlayer = (
       setBackgroundVolume(preferences.volume);
     }
   }, [preferences.volume, setBackgroundVolume]);
+
+  // Notifica o contexto sobre o estado do áudio principal
+  useEffect(() => {
+    setMainAudioPlaying(playerState.isPlaying);
+  }, [playerState.isPlaying, setMainAudioPlaying]);
 
   // Auto-play functionality
   useEffect(() => {
