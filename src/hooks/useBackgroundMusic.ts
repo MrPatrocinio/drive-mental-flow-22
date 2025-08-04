@@ -7,21 +7,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { backgroundMusicPlayer, BackgroundMusicState } from '@/services/backgroundMusicPlayerService';
 import { audioPreferencesService } from '@/services/audioPreferencesService';
-import { useAudioPlayback } from '@/contexts/AudioPlaybackContext';
+import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
 export const useBackgroundMusic = () => {
   const [state, setState] = useState<BackgroundMusicState>(backgroundMusicPlayer.getState());
   const [isEnabled, setIsEnabled] = useState(false);
   
-  // Obtém contexto com fallback
-  let shouldPlayBackgroundMusic = false;
-  try {
-    const context = useAudioPlayback();
-    shouldPlayBackgroundMusic = context.shouldPlayBackgroundMusic;
-  } catch {
-    // Contexto não está disponível, usa fallback
-    shouldPlayBackgroundMusic = false;
-  }
+  // Obtém contexto com fallback seguro
+  const audioPlaybackContext = useAudioPlaybackSafe();
+  const shouldPlayBackgroundMusic = audioPlaybackContext?.shouldPlayBackgroundMusic || false;
 
   // Carrega preferências do usuário
   useEffect(() => {

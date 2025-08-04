@@ -22,6 +22,12 @@ export const useAudioPlayback = () => {
   return context;
 };
 
+// Hook seguro que pode ser usado fora do contexto
+export const useAudioPlaybackSafe = () => {
+  const context = useContext(AudioPlaybackContext);
+  return context; // Retorna null se não estiver no contexto
+};
+
 export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode }) => {
   const [isMainAudioPlaying, setIsMainAudioPlaying] = useState(false);
 
