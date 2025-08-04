@@ -11,8 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Music } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { X, Upload, Music, FileAudio } from 'lucide-react';
 import { BackgroundMusic } from '@/services/supabase/backgroundMusicService';
+import { BackgroundMusicUploadService, UploadProgress } from '@/services/supabase/backgroundMusicUploadService';
+import { toast } from '@/hooks/use-toast';
 
 interface BackgroundMusicFormProps {
   music?: BackgroundMusic;
@@ -34,12 +37,91 @@ export const BackgroundMusicForm = ({
     tags: music?.tags || []
   });
   const [newTag, setNewTag] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = BackgroundMusicUploadService.validateFile(file);
+    if (validation) {
+      toast({
+        title: "Arquivo inválido",
+        description: validation,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSelectedFile(file);
+    
+    // Auto-preencher título se estiver vazio
+    if (!formData.title) {
+      const filename = file.name.replace(/\.[^/.]+$/, "");
+      setFormData(prev => ({ ...prev, title: filename }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.file_url) return;
+    
+    // Validar dados básicos
+    if (!formData.title) {
+      toast({
+        title: "Título obrigatório",
+        description: "Informe o título da música",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    await onSubmit(formData);
+    // Se está editando e não selecionou novo arquivo, usar URL existente
+    if (music && !selectedFile) {
+      await onSubmit(formData);
+      return;
+    }
+
+    // Se é novo ou selecionou arquivo, fazer upload
+    if (!selectedFile) {
+      toast({
+        title: "Arquivo obrigatório",
+        description: "Selecione um arquivo de áudio",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadProgress({ loaded: 0, total: selectedFile.size, percentage: 0 });
+
+      const fileUrl = await BackgroundMusicUploadService.uploadFile(
+        selectedFile,
+        formData.title,
+        setUploadProgress
+      );
+
+      await onSubmit({
+        ...formData,
+        file_url: fileUrl
+      });
+
+      toast({
+        title: "Sucesso",
+        description: "Música de fundo salva com sucesso"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no upload",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(null);
+    }
   };
 
   const handleAddTag = () => {
@@ -88,18 +170,49 @@ export const BackgroundMusicForm = ({
             />
           </div>
 
-          {/* URL do Arquivo */}
+          {/* Upload de Arquivo */}
           <div className="space-y-2">
-            <Label htmlFor="file_url">URL do Arquivo</Label>
-            <Input
-              id="file_url"
-              value={formData.file_url}
-              onChange={(e) => setFormData(prev => ({ ...prev, file_url: e.target.value }))}
-              placeholder="https://exemplo.com/musica.mp3"
-              required
-            />
+            <Label htmlFor="audio_file">Arquivo de Áudio</Label>
+            <div className="space-y-3">
+              <Input
+                id="audio_file"
+                type="file"
+                accept="audio/mp3,audio/wav,audio/ogg,.mp3,.wav,.ogg"
+                onChange={handleFileSelect}
+                disabled={isUploading}
+              />
+              
+              {selectedFile && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <FileAudio className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{selectedFile.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({(selectedFile.size / 1024 / 1024).toFixed(1)} MB)
+                  </span>
+                </div>
+              )}
+
+              {music && !selectedFile && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <FileAudio className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    Arquivo atual: {BackgroundMusicUploadService.extractFilenameFromUrl(music.file_url)}
+                  </span>
+                </div>
+              )}
+
+              {uploadProgress && (
+                <div className="space-y-2">
+                  <Progress value={uploadProgress.percentage} className="w-full" />
+                  <p className="text-xs text-muted-foreground text-center">
+                    Enviando... {uploadProgress.percentage.toFixed(0)}%
+                  </p>
+                </div>
+              )}
+            </div>
+            
             <p className="text-xs text-muted-foreground">
-              Formatos suportados: MP3, WAV, OGG
+              Formatos suportados: MP3, WAV, OGG (máximo 50MB)
             </p>
           </div>
 
@@ -160,11 +273,18 @@ export const BackgroundMusicForm = ({
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !formData.title || !formData.file_url}
+              disabled={
+                isLoading || 
+                isUploading || 
+                !formData.title || 
+                (!music && !selectedFile)
+              }
               className="flex items-center gap-2"
             >
-              {isLoading ? (
-                <>Salvando...</>
+              {isLoading || isUploading ? (
+                <>
+                  {isUploading ? 'Enviando...' : 'Salvando...'}
+                </>
               ) : (
                 <>
                   <Upload className="h-4 w-4" />

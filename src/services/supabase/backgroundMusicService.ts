@@ -73,12 +73,26 @@ export class BackgroundMusicService {
   }
 
   static async delete(id: string): Promise<void> {
+    // Buscar música para obter URL do arquivo
+    const music = await this.getById(id);
+    
     const { error } = await (supabase as any)
       .from('background_music')
       .delete()
       .eq('id', id);
 
     if (error) throw error;
+
+    // Deletar arquivo do storage se existir
+    if (music?.file_url) {
+      try {
+        const { BackgroundMusicUploadService } = await import('./backgroundMusicUploadService');
+        await BackgroundMusicUploadService.deleteFile(music.file_url);
+      } catch (storageError) {
+        console.warn('Erro ao deletar arquivo do storage:', storageError);
+        // Não falhar a operação se o arquivo não puder ser deletado
+      }
+    }
   }
 
   static async toggleActive(id: string, isActive: boolean): Promise<BackgroundMusic> {

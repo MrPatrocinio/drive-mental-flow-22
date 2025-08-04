@@ -115,6 +115,57 @@ export type Database = {
           },
         ]
       }
+      background_music: {
+        Row: {
+          created_at: string
+          file_url: string
+          id: string
+          is_active: boolean
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          file_url: string
+          id?: string
+          is_active?: boolean
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          file_url?: string
+          id?: string
+          is_active?: boolean
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      background_music_settings: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          volume_percentage: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          volume_percentage?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          volume_percentage?: number
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           audio_id: string
