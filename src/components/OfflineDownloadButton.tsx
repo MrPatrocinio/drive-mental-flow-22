@@ -78,38 +78,24 @@ export function OfflineDownloadButton({
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>
-      <div className="flex gap-2">
-        <Button
-          variant={getButtonVariant()}
-          size={size}
-          onClick={isAvailableOffline ? undefined : handleDownload}
-          disabled={isDownloading || !isOnline}
-          className={cn(
-            'w-8 h-8 p-0',
-            isAvailableOffline && 'text-green-600 hover:text-green-700'
-          )}
-        >
-          <Icon className={cn(
-            'h-4 w-4',
-            isDownloading && 'animate-pulse'
-          )} />
-          <span className="sr-only">
-            {getButtonText()}
-          </span>
-        </Button>
-
-        {isAvailableOffline && (
-          <Button
-            variant="ghost"
-            size={size}
-            onClick={handleRemove}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Remover download</span>
-          </Button>
+      <Button
+        variant={getButtonVariant()}
+        size={size}
+        onClick={isAvailableOffline ? undefined : handleDownload}
+        disabled={isDownloading || !isOnline}
+        className={cn(
+          'w-8 h-8 p-0',
+          isAvailableOffline && 'text-green-600 hover:text-green-700'
         )}
-      </div>
+      >
+        <Icon className={cn(
+          'h-4 w-4',
+          isDownloading && 'animate-pulse'
+        )} />
+        <span className="sr-only">
+          {getButtonText()}
+        </span>
+      </Button>
 
       {showProgress && isDownloading && (
         <div className="w-full">
