@@ -69,9 +69,8 @@ export function OfflineDownloadButton({
     return 'Baixar';
   };
 
-  const getButtonVariant = () => {
-    if (isAvailableOffline) return 'default';
-    return variant;
+  const getButtonVariant = (): 'default' | 'outline' | 'ghost' => {
+    return 'ghost';
   };
 
   const Icon = getIcon();
