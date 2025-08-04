@@ -53,8 +53,6 @@ export const Header = ({ showBackButton = false, title }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
-          <OfflineStatusIndicator size="sm" />
-          
           {!isLoading && (
             <Button
               variant="ghost"
