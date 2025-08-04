@@ -43,8 +43,6 @@ export function OfflineDownloadButton({
   } = useOfflineAudio(audioId);
 
   const handleDownload = async () => {
-    if (!isOnline) return;
-
     await downloadAudio(audioId, audioUrl, {
       title: audioTitle,
       fieldId,
@@ -54,6 +52,16 @@ export function OfflineDownloadButton({
 
   const handleRemove = async () => {
     await removeAudio(audioId);
+  };
+
+  const handleToggle = async () => {
+    if (!isOnline && !isAvailableOffline) return;
+
+    if (isAvailableOffline) {
+      await handleRemove();
+    } else {
+      await handleDownload();
+    }
   };
 
   const getIcon = () => {
@@ -80,8 +88,8 @@ export function OfflineDownloadButton({
       <Button
         variant={getButtonVariant()}
         size={size}
-        onClick={isAvailableOffline ? undefined : handleDownload}
-        disabled={isDownloading || !isOnline}
+        onClick={handleToggle}
+        disabled={isDownloading || (!isOnline && !isAvailableOffline)}
         className={cn(
           'w-8 h-8 p-0',
           isAvailableOffline && 'text-green-600 hover:text-green-700'
