@@ -73,11 +73,11 @@ export const useAudioPlayer = (
   // Atualiza preferências de volume
   useEffect(() => {
     if (playerServiceRef.current) {
-      const normalizedVolume = preferences.volume / 100; // Converte 0-100 para 0-1
+      const normalizedVolume = Math.max(0.01, preferences.volume / 100); // Mínimo 1%
       playerServiceRef.current.setVolume(normalizedVolume);
       
       // Sincroniza volume com música de fundo
-      setBackgroundVolume(normalizedVolume);
+      setBackgroundVolume(preferences.volume);
     }
   }, [preferences.volume, setBackgroundVolume]);
 

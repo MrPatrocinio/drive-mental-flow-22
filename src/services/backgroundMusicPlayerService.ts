@@ -40,6 +40,7 @@ export class BackgroundMusicPlayerService {
 
   async initialize(): Promise<void> {
     try {
+      console.log('BackgroundMusicPlayer: Inicializando sistema...');
       this.updateState({ isLoading: true, hasError: false });
       
       // Carrega músicas ativas e configurações
@@ -50,15 +51,21 @@ export class BackgroundMusicPlayerService {
 
       this.activeMusic = musicList;
       this.state.volume = volumePercentage / 100;
+      
+      console.log('BackgroundMusicPlayer: Músicas ativas encontradas:', musicList.length);
+      console.log('BackgroundMusicPlayer: Volume configurado para:', volumePercentage + '%');
 
       if (this.activeMusic.length > 0) {
         this.currentMusicIndex = Math.floor(Math.random() * this.activeMusic.length);
         await this.loadCurrentMusic();
+        console.log('BackgroundMusicPlayer: Primeira música carregada');
+      } else {
+        console.warn('BackgroundMusicPlayer: Nenhuma música ativa encontrada');
       }
 
       this.updateState({ isLoading: false });
     } catch (error) {
-      console.error('Erro ao inicializar background music:', error);
+      console.error('BackgroundMusicPlayer: Erro ao inicializar:', error);
       this.updateState({ isLoading: false, hasError: true });
     }
   }
@@ -67,6 +74,7 @@ export class BackgroundMusicPlayerService {
     if (this.activeMusic.length === 0) return;
 
     const music = this.activeMusic[this.currentMusicIndex];
+    console.log('BackgroundMusicPlayer: Carregando música:', music.title);
     
     if (this.audioElement) {
       this.audioElement.pause();
@@ -81,6 +89,7 @@ export class BackgroundMusicPlayerService {
     this.audioElement.addEventListener('ended', this.handleMusicEnded);
     this.audioElement.addEventListener('error', this.handleMusicError);
     this.audioElement.addEventListener('loadeddata', () => {
+      console.log('BackgroundMusicPlayer: Música carregada com sucesso');
       this.updateState({ hasError: false });
     });
 
@@ -98,18 +107,30 @@ export class BackgroundMusicPlayerService {
   };
 
   async play(): Promise<void> {
+    console.log('BackgroundMusicPlayer: Tentando reproduzir música');
+    
     if (!this.audioElement || this.activeMusic.length === 0) {
+      console.log('BackgroundMusicPlayer: Inicializando...');
       await this.initialize();
     }
 
-    if (this.audioElement && !this.state.hasError) {
+    // Se ainda não temos música após inicializar, seleciona uma
+    if (!this.state.currentMusic && this.activeMusic.length > 0) {
+      console.log('BackgroundMusicPlayer: Selecionando primeira música');
+      await this.loadCurrentMusic();
+    }
+
+    if (this.audioElement && !this.state.hasError && this.state.currentMusic) {
       try {
+        console.log('BackgroundMusicPlayer: Reproduzindo:', this.state.currentMusic.title);
         await this.audioElement.play();
         this.updateState({ isPlaying: true, hasError: false });
       } catch (error) {
-        console.error('Erro ao reproduzir música de fundo:', error);
+        console.error('BackgroundMusicPlayer: Erro ao reproduzir:', error);
         this.updateState({ hasError: true });
       }
+    } else {
+      console.warn('BackgroundMusicPlayer: Não foi possível reproduzir - sem áudio/música');
     }
   }
 

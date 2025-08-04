@@ -15,25 +15,46 @@ export const useBackgroundMusic = () => {
   // Carrega preferências do usuário
   useEffect(() => {
     const preferences = audioPreferencesService.getPreferences();
+    console.log('useBackgroundMusic: Preferências carregadas:', preferences);
     setIsEnabled(preferences.backgroundMusicEnabled);
   }, []);
 
   // Monitora mudanças no estado do player
   useEffect(() => {
+    console.log('useBackgroundMusic: Configurando listener de estado');
     const unsubscribe = backgroundMusicPlayer.onStateChange(setState);
+    
+    // Inicializa o player se ainda não foi inicializado
+    backgroundMusicPlayer.initialize().then(() => {
+      console.log('useBackgroundMusic: Player inicializado com sucesso');
+    }).catch(error => {
+      console.error('useBackgroundMusic: Erro ao inicializar player:', error);
+    });
+    
     return unsubscribe;
   }, []);
 
   // Controla reprodução baseado na preferência do usuário
   useEffect(() => {
+    console.log('useBackgroundMusic: Verificando estado para reprodução', {
+      isEnabled,
+      isPlaying: state.isPlaying,
+      isLoading: state.isLoading,
+      hasError: state.hasError,
+      currentMusic: state.currentMusic?.title
+    });
+    
     if (isEnabled && !state.isPlaying && !state.isLoading && !state.hasError) {
+      console.log('useBackgroundMusic: Iniciando reprodução');
       backgroundMusicPlayer.play();
     } else if (!isEnabled && state.isPlaying) {
+      console.log('useBackgroundMusic: Pausando reprodução');
       backgroundMusicPlayer.pause();
     }
   }, [isEnabled, state.isPlaying, state.isLoading, state.hasError]);
 
   const toggleEnabled = useCallback((enabled: boolean) => {
+    console.log('useBackgroundMusic: Toggle ativado:', enabled);
     setIsEnabled(enabled);
     
     // Atualiza preferências do usuário
@@ -45,10 +66,12 @@ export const useBackgroundMusic = () => {
   }, []);
 
   const setVolume = useCallback((volume: number) => {
-    backgroundMusicPlayer.setVolume(volume);
+    console.log('useBackgroundMusic: Definindo volume:', volume);
+    backgroundMusicPlayer.setVolume(volume / 100);
   }, []);
 
   const setMuted = useCallback((muted: boolean) => {
+    console.log('useBackgroundMusic: Definindo mute:', muted);
     backgroundMusicPlayer.setMuted(muted);
   }, []);
 

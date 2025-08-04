@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings } from "lucide-react";
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Music, Volume } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { AudioPreferencesPanel } from "@/components/AudioPreferencesPanel";
 import { AudioPreferences, audioPreferencesService } from "@/services/audioPreferencesService";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
 import { AudioErrorDisplay } from "@/components/audio/AudioErrorDisplay";
 import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,15 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
   const [showPreferences, setShowPreferences] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const { toast } = useToast();
+
+  // Background Music Hook
+  const {
+    state: backgroundMusicState,
+    isEnabled: backgroundMusicEnabled,
+    toggleEnabled: toggleBackgroundMusic,
+    setVolume: setBackgroundVolume,
+    setMuted: setBackgroundMuted
+  } = useBackgroundMusic();
 
   const handleError = (error: string) => {
     console.error('Erro no player de áudio:', error);
@@ -151,6 +161,20 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         >
           <Settings className="h-5 w-5" />
         </Button>
+
+        {/* Background Music Toggle */}
+        <Button
+          variant="audio"
+          size="audio"
+          onClick={() => toggleBackgroundMusic(!backgroundMusicEnabled)}
+          className={backgroundMusicEnabled ? "bg-primary/20" : ""}
+        >
+          {backgroundMusicEnabled ? (
+            <Music className="h-5 w-5 text-primary" />
+          ) : (
+            <Volume className="h-5 w-5" />
+          )}
+        </Button>
       </div>
 
       {/* Volume Control */}
@@ -161,9 +185,10 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           max={100}
           step={1}
           onValueChange={(value) => {
-            const newPreferences = { ...preferences, volume: value[0] };
+            const newVolume = Math.max(1, value[0]); // Mínimo de 1%
+            const newPreferences = { ...preferences, volume: newVolume };
             setPreferences(newPreferences);
-            audioPreferencesService.updatePreferences({ volume: value[0] });
+            audioPreferencesService.updatePreferences({ volume: newVolume });
           }}
           className="flex-1"
         />
@@ -171,6 +196,19 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           {preferences.volume}%
         </span>
       </div>
+
+      {/* Background Music Status */}
+      {backgroundMusicEnabled && (
+        <div className="text-center text-xs text-muted-foreground">
+          <div className="flex items-center justify-center gap-2">
+            <Music className="h-3 w-3" />
+            <span>
+              Música de fundo: {backgroundMusicState.isPlaying ? 'Reproduzindo' : 'Pausada'}
+              {backgroundMusicState.currentMusic && ` - ${backgroundMusicState.currentMusic.title}`}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Repeat Count Display */}
       <div className="text-center text-sm text-muted-foreground">

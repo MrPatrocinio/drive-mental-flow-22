@@ -17,7 +17,7 @@ const DEFAULT_PREFERENCES: AudioPreferences = {
   repeatCount: 0, // infinite by default
   autoPlay: false,
   showProgress: true,
-  backgroundMusicEnabled: false,
+  backgroundMusicEnabled: true, // Ativado por padrão
 };
 
 const STORAGE_KEY = 'audio-preferences';
