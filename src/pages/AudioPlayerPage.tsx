@@ -10,7 +10,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useDataSync } from "@/hooks/useDataSync";
 import { Playlist } from "@/services/playlistService";
-import { BackgroundMusicDebug } from "@/components/BackgroundMusicDebug";
+
 import * as Icons from "lucide-react";
 
 export default function AudioPlayerPage() {
@@ -323,8 +323,6 @@ export default function AudioPlayerPage() {
         )}
       </div>
 
-      {/* Debug Component (apenas desenvolvimento) */}
-      <BackgroundMusicDebug />
     </div>
   );
 }
