@@ -85,15 +85,15 @@ export function OfflineDownloadButton({
           onClick={isAvailableOffline ? undefined : handleDownload}
           disabled={isDownloading || !isOnline}
           className={cn(
-            'flex items-center gap-2',
-            isAvailableOffline && 'bg-green-600 hover:bg-green-700'
+            'w-8 h-8 p-0',
+            isAvailableOffline && 'text-green-600 hover:text-green-700'
           )}
         >
           <Icon className={cn(
             'h-4 w-4',
             isDownloading && 'animate-pulse'
           )} />
-          <span className="hidden sm:inline">
+          <span className="sr-only">
             {getButtonText()}
           </span>
         </Button>
