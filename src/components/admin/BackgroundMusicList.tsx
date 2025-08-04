@@ -196,12 +196,21 @@ export const BackgroundMusicList = () => {
               <Label>Volume da Música de Fundo ({volumePercentage}%)</Label>
               <Slider
                 value={[volumePercentage]}
-                min={10}
-                max={50}
-                step={5}
+                min={2}
+                max={30}
+                step={1}
                 onValueChange={handleVolumeChange}
                 className="w-full"
               />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>2%</span>
+                <span>4%</span>
+                <span>6%</span>
+                <span>10%</span>
+                <span>15%</span>
+                <span>20%</span>
+                <span>30%</span>
+              </div>
               <p className="text-xs text-muted-foreground">
                 Este percentual será aplicado sobre o volume do usuário
               </p>
