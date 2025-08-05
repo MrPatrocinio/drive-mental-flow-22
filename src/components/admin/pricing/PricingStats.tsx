@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PricingData } from '@/services/pricingService';
+import { PricingInfo } from '@/services/supabase/pricingService';
 import { formatPrice } from '@/utils/pricingUtils';
 import { TrendingUp, Package, Star } from 'lucide-react';
 
 interface PricingStatsProps {
-  pricingData: PricingData;
+  pricingData: PricingInfo;
 }
 
 export const PricingStats = ({ pricingData }: PricingStatsProps) => {
@@ -23,9 +23,9 @@ export const PricingStats = ({ pricingData }: PricingStatsProps) => {
     },
     {
       label: 'Tipo de Pagamento',
-      value: 'Único',
+      value: pricingData.payment_type,
       icon: Package,
-      description: 'sem recorrência',
+      description: pricingData.access_type,
     },
   ];
 
