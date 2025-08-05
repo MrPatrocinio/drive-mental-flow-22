@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { CreditCard, Shield, Check, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PricingService, PricingInfo } from "@/services/supabase/pricingService";
+import { useDataSync } from "@/hooks/useDataSync";
 
 export default function PaymentPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +19,32 @@ export default function PaymentPage() {
     name: ""
   });
   const [error, setError] = useState("");
+  const [pricingData, setPricingData] = useState<PricingInfo | null>(null);
+  const [isPricingLoading, setIsPricingLoading] = useState(true);
   const { toast } = useToast();
+
+  const loadPricingData = async () => {
+    try {
+      setIsPricingLoading(true);
+      const data = await PricingService.get();
+      setPricingData(data || PricingService.getDefaultPricing());
+    } catch (error) {
+      console.error('Erro ao carregar dados de pricing:', error);
+      setPricingData(PricingService.getDefaultPricing());
+    } finally {
+      setIsPricingLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPricingData();
+  }, []);
+
+  useDataSync({
+    onContentChange: () => {
+      loadPricingData();
+    }
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -73,14 +100,33 @@ export default function PaymentPage() {
     }
   };
 
-  const benefits = [
-    "Acesso a mais de 44 áudios exclusivos",
-    "6 campos completos de desenvolvimento",
-    "Player avançado com repetição automática",
-    "Atualizações mensais de conteúdo",
-    "Suporte prioritário",
-    "Garantia de 30 dias"
-  ];
+  const formatPrice = (price: number, currency: string) => {
+    return `${currency} ${price.toFixed(2).replace('.', ',')}`;
+  };
+
+  const getCurrentPrice = () => {
+    if (!pricingData) return 'R$ 97';
+    return formatPrice(pricingData.price, pricingData.currency);
+  };
+
+  const getBenefits = () => {
+    if (!pricingData) {
+      return [
+        "Acesso a mais de 44 áudios exclusivos",
+        "6 campos completos de desenvolvimento",
+        "Player avançado com repetição automática",
+        "Atualizações mensais de conteúdo",
+        "Suporte prioritário",
+        "Garantia de 30 dias"
+      ];
+    }
+    return pricingData.benefits;
+  };
+
+  const getButtonText = () => {
+    if (!pricingData) return 'Começar Agora';
+    return pricingData.button_text;
+  };
 
   return (
     <div className="min-h-screen hero-gradient w-full overflow-x-hidden">
@@ -93,11 +139,15 @@ export default function PaymentPage() {
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
                 Transforme sua vida por apenas
               </h1>
-              <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-premium mb-4">
-                R$ 97
-              </div>
+              {isPricingLoading ? (
+                <div className="h-16 bg-muted/50 rounded animate-pulse mb-4"></div>
+              ) : (
+                <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-premium mb-4">
+                  {getCurrentPrice()}
+                </div>
+              )}
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                Acesso vitalício a todo conteúdo do Drive Mental
+                {pricingData ? `${pricingData.payment_type} • ${pricingData.access_type}` : 'Acesso vitalício a todo conteúdo do Drive Mental'}
               </p>
             </div>
 
@@ -171,8 +221,8 @@ export default function PaymentPage() {
                           "Redirecionando..."
                         ) : (
                           <>
-                            <span className="hidden sm:inline">Prosseguir para Pagamento - R$ 97</span>
-                            <span className="sm:hidden">Pagar R$ 97</span>
+                            <span className="hidden sm:inline">{getButtonText()} - {getCurrentPrice()}</span>
+                            <span className="sm:hidden">Pagar {getCurrentPrice()}</span>
                           </>
                         )}
                       </Button>
@@ -193,16 +243,27 @@ export default function PaymentPage() {
                     <CardTitle className="text-lg md:text-xl">O que você recebe</CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 md:px-6">
-                    <div className="space-y-3">
-                      {benefits.map((benefit, index) => (
-                        <div key={index} className="flex items-start gap-3">
-                          <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="h-3 w-3 text-primary" />
+                    {isPricingLoading ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                          <div key={i} className="flex items-start gap-3">
+                            <div className="w-5 h-5 rounded-full bg-muted animate-pulse shrink-0 mt-0.5"></div>
+                            <div className="h-4 bg-muted rounded animate-pulse flex-1"></div>
                           </div>
-                          <span className="text-sm md:text-base leading-relaxed">{benefit}</span>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {getBenefits().map((benefit, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                              <Check className="h-3 w-3 text-primary" />
+                            </div>
+                            <span className="text-sm md:text-base leading-relaxed">{benefit}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
