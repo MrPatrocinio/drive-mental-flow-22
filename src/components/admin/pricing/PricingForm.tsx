@@ -4,8 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Plus } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { X, Plus, Percent, Calendar } from 'lucide-react';
 import { PricingInsert } from '@/services/supabase/pricingService';
+import { PromotionService } from '@/services/promotionService';
+import { formatPrice } from '@/utils/pricingUtils';
 
 interface PricingFormProps {
   initialData?: PricingInsert;
@@ -28,7 +32,12 @@ export const PricingForm: React.FC<PricingFormProps> = ({
     payment_type: 'Pagamento único',
     access_type: 'Acesso vitalício',
     benefits: [''],
-    button_text: 'Começar Agora'
+    button_text: 'Começar Agora',
+    has_promotion: false,
+    original_price: 97,
+    discount_percentage: 0,
+    promotion_end_date: '',
+    promotion_label: ''
   });
 
   useEffect(() => {
@@ -43,9 +52,25 @@ export const PricingForm: React.FC<PricingFormProps> = ({
     // Filter empty benefits
     const filteredBenefits = formData.benefits.filter(benefit => benefit.trim() !== '');
     
+    // Validate promotion data
+    const promotionErrors = PromotionService.validatePromotionData({
+      has_promotion: formData.has_promotion || false,
+      discount_percentage: formData.discount_percentage,
+      promotion_end_date: formData.promotion_end_date,
+      original_price: formData.original_price
+    });
+    if (promotionErrors.length > 0) {
+      // You might want to show these errors in the parent component
+      console.error('Promotion validation errors:', promotionErrors);
+    }
+    
     await onSubmit({
       ...formData,
-      benefits: filteredBenefits
+      benefits: filteredBenefits,
+      // Ensure promotion price is set correctly
+      price: formData.has_promotion && formData.discount_percentage 
+        ? formData.original_price! - (formData.original_price! * formData.discount_percentage / 100)
+        : formData.price
     });
   };
 
@@ -75,6 +100,23 @@ export const PricingForm: React.FC<PricingFormProps> = ({
       ...prev,
       benefits: prev.benefits.map((benefit, i) => i === index ? value : benefit)
     }));
+  };
+
+  const togglePromotion = (enabled: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      has_promotion: enabled,
+      original_price: enabled ? prev.price : prev.original_price,
+      discount_percentage: enabled ? prev.discount_percentage || 10 : 0,
+      promotion_label: enabled ? prev.promotion_label || 'OFERTA ESPECIAL' : ''
+    }));
+  };
+
+  const calculatePromotedPrice = () => {
+    if (!formData.has_promotion || !formData.original_price || !formData.discount_percentage) {
+      return formData.price;
+    }
+    return formData.original_price - (formData.original_price * formData.discount_percentage / 100);
   };
 
   return (
@@ -199,6 +241,106 @@ export const PricingForm: React.FC<PricingFormProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+
+          <Separator className="my-6" />
+
+          {/* Promotion Section */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-base font-semibold">Sistema de Promoções</Label>
+                <p className="text-sm text-muted-foreground">
+                  Configure descontos e ofertas especiais
+                </p>
+              </div>
+              <Switch
+                checked={formData.has_promotion}
+                onCheckedChange={togglePromotion}
+              />
+            </div>
+
+            {formData.has_promotion && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="original_price">Preço Original</Label>
+                    <Input
+                      id="original_price"
+                      type="number"
+                      step="0.01"
+                      value={formData.original_price || ''}
+                      onChange={(e) => handleChange('original_price', parseFloat(e.target.value) || 0)}
+                      placeholder="97.00"
+                      required={formData.has_promotion}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="discount_percentage">
+                      <div className="flex items-center gap-2">
+                        <Percent className="h-4 w-4" />
+                        Desconto (%)
+                      </div>
+                    </Label>
+                    <Input
+                      id="discount_percentage"
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={formData.discount_percentage || ''}
+                      onChange={(e) => handleChange('discount_percentage', parseFloat(e.target.value) || 0)}
+                      placeholder="10"
+                      required={formData.has_promotion}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="promotion_end_date">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Data de Fim da Promoção
+                      </div>
+                    </Label>
+                    <Input
+                      id="promotion_end_date"
+                      type="datetime-local"
+                      value={formData.promotion_end_date || ''}
+                      onChange={(e) => handleChange('promotion_end_date', e.target.value)}
+                      required={formData.has_promotion}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="promotion_label">Texto da Promoção</Label>
+                    <Input
+                      id="promotion_label"
+                      value={formData.promotion_label || ''}
+                      onChange={(e) => handleChange('promotion_label', e.target.value)}
+                      placeholder="OFERTA ESPECIAL"
+                    />
+                  </div>
+                </div>
+
+                {/* Price Preview */}
+                <div className="p-4 bg-background border rounded-lg">
+                  <Label className="text-sm font-medium text-muted-foreground">Preview do Preço</Label>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="text-lg text-muted-foreground line-through">
+                      {formatPrice(formData.original_price || 0, formData.currency)}
+                    </div>
+                    <div className="text-2xl font-bold text-primary">
+                      {formatPrice(calculatePromotedPrice(), formData.currency)}
+                    </div>
+                    <div className="px-2 py-1 bg-destructive text-destructive-foreground text-sm font-bold rounded">
+                      {formData.discount_percentage}% OFF
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-4">

@@ -10,7 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PricingService, PricingInfo } from "@/services/supabase/pricingService";
+import { PromotionService } from "@/services/promotionService";
 import { useDataSync } from "@/hooks/useDataSync";
+import { Countdown } from "@/components/ui/countdown";
+import { PromotionBadge } from "@/components/ui/promotion-badge";
 
 export default function PaymentPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -104,9 +107,12 @@ export default function PaymentPage() {
     return `${currency} ${price.toFixed(2).replace('.', ',')}`;
   };
 
+  const promotion = pricingData ? PromotionService.calculatePromotion(pricingData) : null;
+
   const getCurrentPrice = () => {
     if (!pricingData) return 'R$ 97';
-    return formatPrice(pricingData.price, pricingData.currency);
+    const price = promotion?.isValid ? promotion.discountedPrice : pricingData.price;
+    return formatPrice(price, pricingData.currency);
   };
 
   const getBenefits = () => {
@@ -139,13 +145,43 @@ export default function PaymentPage() {
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
                 Transforme sua vida por apenas
               </h1>
+              
               {isPricingLoading ? (
                 <div className="h-16 bg-muted/50 rounded animate-pulse mb-4"></div>
               ) : (
-                <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-premium mb-4">
-                  {getCurrentPrice()}
+                <div className="space-y-4">
+                  {promotion?.isValid && pricingData?.promotion_label && (
+                    <div className="flex justify-center">
+                      <PromotionBadge 
+                        label={pricingData.promotion_label}
+                        discount={pricingData.discount_percentage}
+                      />
+                    </div>
+                  )}
+                  
+                  {promotion?.isValid ? (
+                    <div className="space-y-2">
+                      <div className="text-2xl md:text-3xl text-muted-foreground line-through">
+                        {formatPrice(promotion.originalPrice, pricingData?.currency || 'R$')}
+                      </div>
+                      <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-premium">
+                        {getCurrentPrice()}
+                      </div>
+                      {promotion.timeRemaining && pricingData?.promotion_end_date && (
+                        <Countdown 
+                          endDate={pricingData.promotion_end_date}
+                          className="justify-center"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-premium mb-4">
+                      {getCurrentPrice()}
+                    </div>
+                  )}
                 </div>
               )}
+              
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
                 {pricingData ? `${pricingData.payment_type} • ${pricingData.access_type}` : 'Acesso vitalício a todo conteúdo do Drive Mental'}
               </p>

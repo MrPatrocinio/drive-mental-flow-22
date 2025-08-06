@@ -30,6 +30,43 @@ serve(async (req) => {
       throw new Error("Email é obrigatório");
     }
 
+    // Get current pricing from Supabase
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    const { data: pricingData, error: pricingError } = await supabaseService
+      .from('landing_content')
+      .select('content')
+      .eq('section', 'pricing')
+      .single();
+
+    let finalPrice = 9700; // Default R$ 97,00 em centavos
+    let productName = "Drive Mental - Acesso Vitalício";
+
+    if (pricingData?.content && !pricingError) {
+      const pricing = pricingData.content as any;
+      
+      // Check for active promotion
+      if (pricing.has_promotion && pricing.promotion_end_date && new Date(pricing.promotion_end_date) > new Date()) {
+        // Use discounted price
+        const originalPrice = pricing.original_price || pricing.price;
+        const discountPercentage = pricing.discount_percentage || 0;
+        const discountedPrice = originalPrice - (originalPrice * discountPercentage / 100);
+        finalPrice = Math.round(discountedPrice * 100); // Convert to centavos
+        
+        if (pricing.promotion_label) {
+          productName = `${productName} - ${pricing.promotion_label}`;
+        }
+      } else {
+        // Use regular price
+        finalPrice = Math.round(pricing.price * 100); // Convert to centavos
+      }
+    }
+
+    console.log("[CREATE-PAYMENT] Using price:", finalPrice / 100, "BRL");
+
     // Initialize Stripe
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
@@ -41,7 +78,7 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Create a one-time payment session without checking existing customers
+    // Create a one-time payment session with dynamic pricing
     console.log("[CREATE-PAYMENT] Creating checkout session...");
     const session = await stripe.checkout.sessions.create({
       customer_email: email,
@@ -51,10 +88,10 @@ serve(async (req) => {
           price_data: {
             currency: "brl",
             product_data: { 
-              name: "Drive Mental - Acesso Vitalício",
+              name: productName,
               description: "Acesso completo a todos os áudios e recursos do Drive Mental"
             },
-            unit_amount: 9700, // R$ 97,00 em centavos
+            unit_amount: finalPrice,
           },
           quantity: 1,
         },
@@ -65,6 +102,7 @@ serve(async (req) => {
       metadata: {
         customer_email: email,
         customer_name: name || "",
+        final_price: finalPrice.toString(),
       },
     });
 

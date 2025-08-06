@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { PricingService, PricingInfo } from '@/services/supabase/pricingService';
+import { PromotionService } from '@/services/promotionService';
 import { useDataSync } from '@/hooks/useDataSync';
+import { Countdown } from '@/components/ui/countdown';
+import { PromotionBadge } from '@/components/ui/promotion-badge';
 
 export const PricingDisplay = () => {
   const [pricingData, setPricingData] = useState<PricingInfo | null>(null);
@@ -35,6 +38,8 @@ export const PricingDisplay = () => {
     return `${currency} ${price.toFixed(2).replace('.', ',')}`;
   };
 
+  const promotion = pricingData ? PromotionService.calculatePromotion(pricingData) : null;
+
   if (isLoading || !pricingData) {
     return (
       <div className="w-full max-w-none md:max-w-lg lg:max-w-xl mx-auto">
@@ -58,14 +63,39 @@ export const PricingDisplay = () => {
   return (
     <div className="w-full max-w-none md:max-w-lg lg:max-w-xl mx-auto">
       <div className="pricing-card rounded-2xl p-6 md:p-8 text-center">
-        <Badge variant="premium" className="mb-4">
-          Oferta Especial
-        </Badge>
+        {promotion?.isValid && pricingData.promotion_label ? (
+          <PromotionBadge 
+            label={pricingData.promotion_label}
+            discount={pricingData.discount_percentage}
+            className="mb-4"
+          />
+        ) : (
+          <Badge variant="premium" className="mb-4">
+            Oferta Especial
+          </Badge>
+        )}
         
         <div className="mb-6">
-          <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-premium mb-2">
-            {formatPrice(pricingData.price, pricingData.currency)}
-          </div>
+          {promotion?.isValid ? (
+            <div className="space-y-2">
+              <div className="text-xl text-muted-foreground line-through">
+                {formatPrice(promotion.originalPrice, pricingData.currency)}
+              </div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-premium">
+                {formatPrice(promotion.discountedPrice, pricingData.currency)}
+              </div>
+              {promotion.timeRemaining && pricingData.promotion_end_date && (
+                <Countdown 
+                  endDate={pricingData.promotion_end_date}
+                  className="justify-center"
+                />
+              )}
+            </div>
+          ) : (
+            <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-premium mb-2">
+              {formatPrice(pricingData.price, pricingData.currency)}
+            </div>
+          )}
           <p className="text-sm md:text-base text-muted-foreground">
             {pricingData.payment_type} • {pricingData.access_type}
           </p>

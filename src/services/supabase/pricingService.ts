@@ -8,6 +8,12 @@ export interface PricingInfo {
   access_type: string;
   benefits: string[];
   button_text: string;
+  // Promotion fields
+  has_promotion?: boolean;
+  original_price?: number;
+  discount_percentage?: number;
+  promotion_end_date?: string;
+  promotion_label?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -19,6 +25,12 @@ export interface PricingInsert {
   access_type: string;
   benefits: string[];
   button_text: string;
+  // Promotion fields
+  has_promotion?: boolean;
+  original_price?: number;
+  discount_percentage?: number;
+  promotion_end_date?: string;
+  promotion_label?: string;
 }
 
 export interface PricingUpdate {
@@ -28,6 +40,12 @@ export interface PricingUpdate {
   access_type?: string;
   benefits?: string[];
   button_text?: string;
+  // Promotion fields
+  has_promotion?: boolean;
+  original_price?: number;
+  discount_percentage?: number;
+  promotion_end_date?: string;
+  promotion_label?: string;
 }
 
 export class PricingService {
@@ -121,7 +139,12 @@ export class PricingService {
         'Suporte especializado 24/7',
         'Atualizações constantes de conteúdo'
       ],
-      button_text: 'Começar Agora'
+      button_text: 'Começar Agora',
+      has_promotion: false,
+      original_price: 97,
+      discount_percentage: 0,
+      promotion_end_date: '',
+      promotion_label: ''
     };
   }
 }
