@@ -68,6 +68,7 @@ export default function AudioPlayerPage() {
             description: playlistState.playlist.description || 'Playlist personalizada',
             icon_name: 'Music',
             audio_count: playlistState.playlist.audios.length,
+            display_order: 0,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
@@ -111,6 +112,7 @@ export default function AudioPlayerPage() {
                 description: 'Reprodução individual',
                 icon_name: 'Music',
                 audio_count: 1,
+                display_order: 0,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
               });

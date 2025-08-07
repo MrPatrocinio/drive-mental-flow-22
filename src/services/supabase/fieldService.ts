@@ -7,6 +7,7 @@ export interface Field {
   description: string | null;
   icon_name: string;
   audio_count: number;
+  display_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -15,12 +16,14 @@ export interface FieldInsert {
   title: string;
   description?: string;
   icon_name: string;
+  display_order?: number;
 }
 
 export interface FieldUpdate {
   title?: string;
   description?: string;
   icon_name?: string;
+  display_order?: number;
 }
 
 export class FieldService {
@@ -29,7 +32,7 @@ export class FieldService {
     const { data, error } = await supabase
       .from('fields')
       .select('*')
-      .order('created_at', { ascending: true });
+      .order('display_order', { ascending: true });
 
     if (error) {
       console.error('FieldService: Erro ao buscar campos:', error);
@@ -125,6 +128,34 @@ export class FieldService {
     // Notificar mudança via DataSync
     import('@/services/dataSync').then(({ DataSyncService }) => {
       DataSyncService.forceNotification('fields_changed', { event: 'DELETE', old: { id } });
+    });
+  }
+
+  static async updateOrder(fieldOrders: { id: string; display_order: number }[]): Promise<void> {
+    console.log('FieldService: Atualizando ordem dos campos:', fieldOrders);
+    
+    // Atualizar em lote usando Promise.all para performance
+    const updates = fieldOrders.map(({ id, display_order }) =>
+      supabase
+        .from('fields')
+        .update({ display_order })
+        .eq('id', id)
+    );
+
+    const results = await Promise.all(updates);
+    
+    // Verificar se houve erros
+    const errors = results.filter(result => result.error).map(result => result.error);
+    if (errors.length > 0) {
+      console.error('FieldService: Erros ao atualizar ordem:', errors);
+      throw new Error(`Erro ao atualizar ordem: ${errors[0]?.message}`);
+    }
+
+    console.log('FieldService: Ordem atualizada com sucesso');
+    
+    // Notificar mudança via DataSync
+    import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('fields_changed', { event: 'ORDER_UPDATE', payload: fieldOrders });
     });
   }
 }

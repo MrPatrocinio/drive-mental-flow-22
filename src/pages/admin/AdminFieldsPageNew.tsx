@@ -9,20 +9,25 @@ import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { FieldForm } from "@/components/admin/FieldForm";
 import { FieldListNew } from "@/components/admin/FieldListNew";
+import { DragDropFieldList } from "@/components/admin/DragDropFieldList";
 import { RefreshButton } from "@/components/RefreshButton";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FieldService, Field, FieldInsert, FieldUpdate } from "@/services/supabase/fieldService";
 import { AudioService } from "@/services/supabase/audioService";
+import { FieldOrderService } from "@/services/fieldOrderService";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Target, BarChart3 } from "lucide-react";
+import { Plus, Target, BarChart3, Move, RefreshCw } from "lucide-react";
 
 export default function AdminFieldsPageNew() {
   const [fields, setFields] = useState<Field[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingField, setEditingField] = useState<Field | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isReorderMode, setIsReorderMode] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -140,6 +145,32 @@ export default function AdminFieldsPageNew() {
     setEditingField(null);
   };
 
+  const handleOrderChange = async (newOrder: Field[]) => {
+    try {
+      // Atualizar estado local imediatamente para feedback visual
+      setFields(newOrder);
+      
+      // Persistir no banco
+      await FieldOrderService.updateFieldsOrder(newOrder);
+      
+      toast({
+        title: "Ordem atualizada",
+        description: "A ordem dos campos foi atualizada com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar ordem:', error);
+      
+      // Reverter estado local em caso de erro
+      await loadFields();
+      
+      toast({
+        title: "Erro ao atualizar ordem",
+        description: "Ocorreu um erro ao salvar a nova ordem. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fieldStats = {
     total: fields.length,
     totalAudios: fields.reduce((sum, field) => sum + field.audio_count, 0),
@@ -154,13 +185,36 @@ export default function AdminFieldsPageNew() {
           <div>
             <h1 className="text-3xl font-bold">Gerenciar Campos</h1>
             <p className="text-muted-foreground">
-              Organize o conteúdo em campos de desenvolvimento
+              Organize os campos de desenvolvimento e defina a ordem de exibição.
             </p>
           </div>
           
-          <div className="flex items-center gap-2">
-            <RefreshButton onRefresh={loadFields} />
-            <Button onClick={handleNewField} disabled={isLoading}>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="reorder-mode"
+                checked={isReorderMode}
+                onCheckedChange={setIsReorderMode}
+              />
+              <Label htmlFor="reorder-mode" className="text-sm">
+                <Move className="w-4 h-4 inline mr-1" />
+                Modo Reordenação
+              </Label>
+            </div>
+            
+            <div className="h-6 w-px bg-border" />
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadFields}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+            
+            <Button onClick={handleNewField} disabled={isReorderMode}>
               <Plus className="w-4 h-4 mr-2" />
               Novo Campo
             </Button>
@@ -202,11 +256,18 @@ export default function AdminFieldsPageNew() {
         </div>
 
         {/* Lista de Campos */}
-        <FieldListNew
-          fields={fields}
-          onEdit={handleEditField}
-          onDelete={handleDeleteField}
-        />
+        {isReorderMode ? (
+          <DragDropFieldList
+            fields={fields}
+            onOrderChange={handleOrderChange}
+          />
+        ) : (
+          <FieldListNew
+            fields={fields}
+            onEdit={handleEditField}
+            onDelete={handleDeleteField}
+          />
+        )}
 
         {/* Formulário de Campo */}
         {isFormOpen && (

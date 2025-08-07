@@ -192,6 +192,7 @@ export type Database = {
           audio_count: number
           created_at: string
           description: string | null
+          display_order: number
           icon_name: string
           id: string
           title: string
@@ -201,6 +202,7 @@ export type Database = {
           audio_count?: number
           created_at?: string
           description?: string | null
+          display_order?: number
           icon_name?: string
           id?: string
           title: string
@@ -210,6 +212,7 @@ export type Database = {
           audio_count?: number
           created_at?: string
           description?: string | null
+          display_order?: number
           icon_name?: string
           id?: string
           title?: string
