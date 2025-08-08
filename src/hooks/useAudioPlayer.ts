@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { AudioPlayerService, AudioPlayerState } from '@/services/audioPlayerService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
@@ -22,7 +23,8 @@ export const useAudioPlayer = (
     duration: 0,
     isLoading: false,
     hasError: false,
-    canPlay: false
+    canPlay: false,
+    isTransitioning: false
   });
   const [repeatCount, setRepeatCount] = useState(0);
   
@@ -36,11 +38,13 @@ export const useAudioPlayer = (
   useEffect(() => {
     if (!audioRef.current) return;
 
+    console.log('useAudioPlayer: Inicializando player para:', audioUrl);
     setRepeatCount(0); // Reset count on new audio
 
     const service = new AudioPlayerService({
       onStateChange: setPlayerState,
       onRepeatComplete: () => {
+        console.log('useAudioPlayer: Repetição concluída');
         setRepeatCount(current => {
           const newCount = current + 1;
           onRepeatComplete?.();
@@ -48,13 +52,12 @@ export const useAudioPlayer = (
           // Verifica se deve continuar repetindo
           const shouldContinue = preferences.repeatCount === 0 || newCount < preferences.repeatCount;
           
-          if (shouldContinue && audioRef.current) {
-            setTimeout(() => {
-              if (audioRef.current) {
-                audioRef.current.currentTime = 0;
-                audioRef.current.play();
-              }
-            }, 100);
+          if (shouldContinue && playerServiceRef.current) {
+            console.log('useAudioPlayer: Executando próxima repetição (otimizada)');
+            // Usa o método otimizado de loop
+            playerServiceRef.current.performLoop();
+          } else {
+            console.log('useAudioPlayer: Repetições concluídas');
           }
           
           return newCount;
@@ -70,6 +73,7 @@ export const useAudioPlayer = (
     service.setVolume(preferences.volume);
 
     return () => {
+      console.log('useAudioPlayer: Limpando serviço');
       service.cleanup();
     };
   }, [audioUrl, preferences.repeatCount]);
@@ -87,25 +91,33 @@ export const useAudioPlayer = (
     }
   }, [preferences.volume, setBackgroundVolume]);
 
-  // Notifica o contexto sobre o estado do áudio principal (se disponível)
+  // Notifica o contexto sobre o estado do áudio principal (apenas quando não está em transição)
   useEffect(() => {
-    audioPlaybackContext?.setMainAudioPlaying(playerState.isPlaying);
-  }, [playerState.isPlaying, audioPlaybackContext]);
+    if (!playerState.isTransitioning) {
+      console.log('useAudioPlayer: Notificando contexto - áudio principal:', playerState.isPlaying ? 'tocando' : 'parado');
+      audioPlaybackContext?.setMainAudioPlaying(playerState.isPlaying);
+    } else {
+      console.log('useAudioPlayer: Em transição - não notificando contexto');
+    }
+  }, [playerState.isPlaying, playerState.isTransitioning, audioPlaybackContext]);
 
   // Auto-play functionality
   useEffect(() => {
-    if (preferences.autoPlay && audioRef.current && !playerState.isPlaying && playerState.canPlay && !playerState.hasError) {
+    if (preferences.autoPlay && audioRef.current && !playerState.isPlaying && playerState.canPlay && !playerState.hasError && !playerState.isTransitioning) {
+      console.log('useAudioPlayer: Executando auto-play');
       setTimeout(() => {
         playerServiceRef.current?.togglePlay();
       }, 200);
     }
-  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError]);
+  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning]);
 
   const togglePlay = () => {
+    console.log('useAudioPlayer: Toggle play solicitado');
     playerServiceRef.current?.togglePlay();
   };
 
   const reset = () => {
+    console.log('useAudioPlayer: Reset solicitado');
     playerServiceRef.current?.reset();
     setRepeatCount(0);
   };

@@ -10,6 +10,7 @@ export interface AudioPlayerState {
   hasError: boolean;
   errorMessage?: string;
   canPlay: boolean;
+  isTransitioning: boolean; // Novo estado para indicar transições de loop
 }
 
 export interface AudioPlayerEvents {
@@ -27,7 +28,8 @@ export class AudioPlayerService {
     duration: 0,
     isLoading: false,
     hasError: false,
-    canPlay: false
+    canPlay: false,
+    isTransitioning: false
   };
 
   constructor(events: AudioPlayerEvents) {
@@ -52,10 +54,12 @@ export class AudioPlayerService {
 
     // Eventos de carregamento
     audio.addEventListener('loadstart', () => {
+      console.log('AudioPlayerService: Iniciando carregamento');
       this.updateState({ isLoading: true, hasError: false });
     });
 
     audio.addEventListener('loadedmetadata', () => {
+      console.log('AudioPlayerService: Metadata carregada');
       this.updateState({ 
         duration: audio.duration,
         isLoading: false,
@@ -64,44 +68,63 @@ export class AudioPlayerService {
     });
 
     audio.addEventListener('canplay', () => {
+      console.log('AudioPlayerService: Áudio pronto para reprodução');
       this.updateState({ canPlay: true, isLoading: false });
+    });
+
+    audio.addEventListener('canplaythrough', () => {
+      console.log('AudioPlayerService: Áudio completamente carregado');
+      this.updateState({ isLoading: false });
     });
 
     // Eventos de reprodução
     audio.addEventListener('timeupdate', () => {
-      this.updateState({ currentTime: audio.currentTime });
+      if (!this.state.isTransitioning) {
+        this.updateState({ currentTime: audio.currentTime });
+      }
     });
 
     audio.addEventListener('play', () => {
-      this.updateState({ isPlaying: true });
+      console.log('AudioPlayerService: Reprodução iniciada');
+      this.updateState({ isPlaying: true, isTransitioning: false });
     });
 
     audio.addEventListener('pause', () => {
-      this.updateState({ isPlaying: false });
+      // Só atualiza isPlaying se não está em transição
+      if (!this.state.isTransitioning) {
+        console.log('AudioPlayerService: Reprodução pausada');
+        this.updateState({ isPlaying: false });
+      }
     });
 
     audio.addEventListener('ended', () => {
-      this.updateState({ isPlaying: false });
+      console.log('AudioPlayerService: Áudio terminou - iniciando transição de loop');
+      // Marca como transição para evitar mudanças de estado desnecessárias
+      this.updateState({ isTransitioning: true });
       this.events.onRepeatComplete?.();
     });
 
     // Eventos de erro
     audio.addEventListener('error', (e) => {
       const errorMessage = this.getAudioErrorMessage(audio.error);
+      console.error('AudioPlayerService: Erro no áudio:', errorMessage);
       this.updateState({ 
         hasError: true, 
         isLoading: false,
         errorMessage,
-        canPlay: false 
+        canPlay: false,
+        isTransitioning: false
       });
       this.events.onError?.(errorMessage);
     });
 
     audio.addEventListener('stalled', () => {
+      console.warn('AudioPlayerService: Reprodução travada');
       this.updateState({ 
         hasError: true, 
         errorMessage: 'Reprodução interrompida - problema de conexão',
-        isLoading: false 
+        isLoading: false,
+        isTransitioning: false
       });
     });
   }
@@ -142,16 +165,20 @@ export class AudioPlayerService {
 
     try {
       if (this.state.isPlaying) {
+        console.log('AudioPlayerService: Pausando reprodução');
         this.audioElement.pause();
       } else {
+        console.log('AudioPlayerService: Iniciando reprodução');
         await this.audioElement.play();
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao reproduzir áudio';
+      console.error('AudioPlayerService: Erro no togglePlay:', errorMessage);
       this.updateState({ 
         hasError: true, 
         errorMessage,
-        isPlaying: false 
+        isPlaying: false,
+        isTransitioning: false
       });
       this.events.onError?.(errorMessage);
     }
@@ -163,8 +190,37 @@ export class AudioPlayerService {
   reset(): void {
     if (!this.audioElement) return;
     
+    console.log('AudioPlayerService: Resetando áudio');
     this.audioElement.currentTime = 0;
-    this.updateState({ currentTime: 0 });
+    this.updateState({ currentTime: 0, isTransitioning: false });
+  }
+
+  /**
+   * Executa loop otimizado (sem pausar o estado de reprodução)
+   */
+  async performLoop(): Promise<void> {
+    if (!this.audioElement) return;
+
+    try {
+      console.log('AudioPlayerService: Executando loop otimizado');
+      // Não marca como não tocando durante o loop
+      this.updateState({ isTransitioning: true });
+      
+      // Reset imediato para o início
+      this.audioElement.currentTime = 0;
+      
+      // Inicia reprodução sem delay
+      await this.audioElement.play();
+      
+      console.log('AudioPlayerService: Loop concluído com sucesso');
+    } catch (error) {
+      console.error('AudioPlayerService: Erro no loop:', error);
+      this.updateState({ 
+        hasError: true, 
+        isTransitioning: false,
+        isPlaying: false 
+      });
+    }
   }
 
   /**

@@ -1,3 +1,4 @@
+
 /**
  * useBackgroundMusic Hook
  * Responsabilidade: Interface React para o player de música de fundo
@@ -39,7 +40,7 @@ export const useBackgroundMusic = () => {
     return unsubscribe;
   }, []);
 
-  // Controla reprodução baseado no contexto de áudio principal
+  // Controla reprodução baseado no contexto de áudio principal (com lógica otimizada)
   useEffect(() => {
     console.log('useBackgroundMusic: Verificando estado para reprodução', {
       isEnabled,
@@ -50,19 +51,22 @@ export const useBackgroundMusic = () => {
       currentMusic: state.currentMusic?.title
     });
     
-    // Evita loops infinitos verificando se a ação é necessária
     if (isEnabled && shouldPlayBackgroundMusic) {
+      // Deve tocar música de fundo
       if (!state.isPlaying && !state.isLoading && !state.hasError) {
         console.log('useBackgroundMusic: Iniciando reprodução (áudio principal ativo)');
-        backgroundMusicPlayer.play();
+        backgroundMusicPlayer.play().catch(error => {
+          console.error('useBackgroundMusic: Erro ao iniciar reprodução:', error);
+        });
       }
     } else {
+      // Deve pausar música de fundo
       if (state.isPlaying) {
-        console.log('useBackgroundMusic: Pausando reprodução');
+        console.log('useBackgroundMusic: Pausando reprodução (áudio principal inativo ou música desabilitada)');
         backgroundMusicPlayer.pause();
       }
     }
-  }, [isEnabled, shouldPlayBackgroundMusic]);
+  }, [isEnabled, shouldPlayBackgroundMusic, state.isPlaying, state.isLoading, state.hasError]);
 
   const toggleEnabled = useCallback((enabled: boolean) => {
     console.log('useBackgroundMusic: Toggle ativado:', enabled);
@@ -74,7 +78,13 @@ export const useBackgroundMusic = () => {
       ...currentPreferences,
       backgroundMusicEnabled: enabled
     });
-  }, []);
+
+    // Se desabilitando, para imediatamente
+    if (!enabled && state.isPlaying) {
+      console.log('useBackgroundMusic: Parando música por desabilitação');
+      backgroundMusicPlayer.pause();
+    }
+  }, [state.isPlaying]);
 
   const setVolume = useCallback((volume: number) => {
     console.log('useBackgroundMusic: Definindo volume:', volume);
@@ -87,6 +97,7 @@ export const useBackgroundMusic = () => {
   }, []);
 
   const refresh = useCallback(async () => {
+    console.log('useBackgroundMusic: Refreshing player');
     await backgroundMusicPlayer.refresh();
   }, []);
 
