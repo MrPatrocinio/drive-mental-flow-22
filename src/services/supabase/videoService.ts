@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { VideoUploadService } from './videoUploadService';
 
 export interface VideoControls {
   allowPause: boolean;
@@ -22,6 +23,7 @@ export interface Video {
   id: string;
   title: string;
   url: string;
+  type: 'youtube' | 'upload'; // Novo campo para identificar o tipo
   thumbnail?: string;
   description?: string;
   created_at: string;
@@ -130,6 +132,35 @@ export class VideoService {
   }
 
   /**
+   * Remove um vídeo
+   */
+  static async deleteVideo(videoId: string): Promise<void> {
+    try {
+      console.log('VideoService: Removendo vídeo');
+      const currentData = await this.getVideos();
+      
+      // Encontrar o vídeo que será removido
+      const videoToDelete = currentData.videos.find(video => video.id === videoId);
+      
+      // Se for um vídeo do storage, remover do Supabase Storage
+      if (videoToDelete && videoToDelete.type === 'upload') {
+        await VideoUploadService.deleteVideo(videoToDelete.url);
+      }
+      
+      const updatedData: VideoSection = {
+        active_video_id: currentData.active_video_id === videoId ? null : currentData.active_video_id,
+        videos: currentData.videos.filter(video => video.id !== videoId)
+      };
+
+      await this.saveVideoSection(updatedData);
+      console.log('VideoService: Vídeo removido com sucesso');
+    } catch (error) {
+      console.error('VideoService: Erro ao remover vídeo:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Atualiza um vídeo existente
    */
   static async updateVideo(videoId: string, videoData: Partial<Omit<Video, 'id' | 'created_at'>>): Promise<void> {
@@ -150,27 +181,6 @@ export class VideoService {
       console.log('VideoService: Vídeo atualizado com sucesso');
     } catch (error) {
       console.error('VideoService: Erro ao atualizar vídeo:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Remove um vídeo
-   */
-  static async deleteVideo(videoId: string): Promise<void> {
-    try {
-      console.log('VideoService: Removendo vídeo');
-      const currentData = await this.getVideos();
-      
-      const updatedData: VideoSection = {
-        active_video_id: currentData.active_video_id === videoId ? null : currentData.active_video_id,
-        videos: currentData.videos.filter(video => video.id !== videoId)
-      };
-
-      await this.saveVideoSection(updatedData);
-      console.log('VideoService: Vídeo removido com sucesso');
-    } catch (error) {
-      console.error('VideoService: Erro ao remover vídeo:', error);
       throw error;
     }
   }
@@ -248,55 +258,96 @@ export class VideoService {
   }
 
   /**
-   * Gera URL do YouTube com parâmetros de controle baseados nas configurações
+   * Determina o tipo de vídeo baseado na URL
+   */
+  static determineVideoType(url: string): 'youtube' | 'upload' {
+    if (VideoUploadService.isSupabaseStorageUrl(url)) {
+      return 'upload';
+    }
+    
+    // Verificar se é URL do YouTube
+    const youtubePatterns = [
+      /(?:https?:\/\/)?(?:www\.)?youtube\.com/,
+      /(?:https?:\/\/)?(?:www\.)?youtu\.be/
+    ];
+    
+    for (const pattern of youtubePatterns) {
+      if (pattern.test(url)) {
+        return 'youtube';
+      }
+    }
+    
+    // Por padrão, assumir que é upload se não for YouTube
+    return 'upload';
+  }
+
+  /**
+   * Processa URL do vídeo baseado no tipo
+   */
+  static processVideoUrl(url: string, type?: 'youtube' | 'upload'): string {
+    const videoType = type || this.determineVideoType(url);
+    
+    if (videoType === 'youtube') {
+      return this.convertYouTubeUrl(url);
+    }
+    
+    // Para vídeos do storage, retornar URL como está
+    return url;
+  }
+
+  /**
+   * Gera URL do vídeo com parâmetros de controle baseados nas configurações
    */
   static generateVideoUrlWithControls(baseUrl: string, controls?: VideoControls): string {
     try {
-      // Se não há controles específicos, retorna URL original
-      if (!controls) {
-        return this.convertYouTubeUrl(baseUrl);
-      }
+      const videoType = this.determineVideoType(baseUrl);
+      
+      // Para vídeos do YouTube, aplicar controles via parâmetros
+      if (videoType === 'youtube') {
+        // Se não há controles específicos, retorna URL original
+        if (!controls) {
+          return this.convertYouTubeUrl(baseUrl);
+        }
 
-      // Converte para formato embed primeiro
-      const embedUrl = this.convertYouTubeUrl(baseUrl);
-      
-      // Se não é YouTube, retorna como está
-      if (!embedUrl.includes('youtube.com/embed/')) {
-        return embedUrl;
-      }
+        // Converte para formato embed primeiro
+        const embedUrl = this.convertYouTubeUrl(baseUrl);
+        
+        // Constrói parâmetros baseados nos controles
+        const params = new URLSearchParams();
+        
+        // Controles de interface
+        params.set('controls', controls.showControls ? '1' : '0');
+        params.set('modestbranding', '1'); // Remove logo do YouTube
+        params.set('rel', '0'); // Remove vídeos relacionados
+        
+        // Controles de interação
+        if (!controls.allowKeyboardControls) {
+          params.set('disablekb', '1');
+        }
+        
+        if (!controls.allowFullscreen) {
+          params.set('fs', '0');
+        }
+        
+        // Controles de reprodução
+        if (controls.autoplay) {
+          params.set('autoplay', '1');
+        }
+        
+        if (controls.muted) {
+          params.set('mute', '1');
+        }
 
-      // Constrói parâmetros baseados nos controles
-      const params = new URLSearchParams();
-      
-      // Controles de interface
-      params.set('controls', controls.showControls ? '1' : '0');
-      params.set('modestbranding', '1'); // Remove logo do YouTube
-      params.set('rel', '0'); // Remove vídeos relacionados
-      
-      // Controles de interação
-      if (!controls.allowKeyboardControls) {
-        params.set('disablekb', '1');
+        // Adiciona parâmetros à URL
+        const separator = embedUrl.includes('?') ? '&' : '?';
+        return `${embedUrl}${separator}${params.toString()}`;
       }
       
-      if (!controls.allowFullscreen) {
-        params.set('fs', '0');
-      }
-      
-      // Controles de reprodução
-      if (controls.autoplay) {
-        params.set('autoplay', '1');
-      }
-      
-      if (controls.muted) {
-        params.set('mute', '1');
-      }
-
-      // Adiciona parâmetros à URL
-      const separator = embedUrl.includes('?') ? '&' : '?';
-      return `${embedUrl}${separator}${params.toString()}`;
+      // Para vídeos do storage, retornar URL original (controles serão aplicados no player HTML5)
+      return baseUrl;
     } catch (error) {
       console.error('VideoService: Erro ao gerar URL com controles:', error);
-      return this.convertYouTubeUrl(baseUrl);
+      return this.processVideoUrl(baseUrl);
     }
   }
 }
