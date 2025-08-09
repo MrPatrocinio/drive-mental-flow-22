@@ -94,7 +94,8 @@ export const VideoManager: React.FC = () => {
       thumbnail: video.thumbnail || ''
     });
     setVideoControls(video.video_controls || VideoService.getDefaultVideoControls());
-    setVideoInputMode(video.type || 'url');
+    // Corrigir o tipo aqui - mapear youtube para url
+    setVideoInputMode(video.type === 'upload' ? 'upload' : 'url');
     setEditingVideo(video);
     setIsAddDialogOpen(true);
   };
@@ -117,7 +118,7 @@ export const VideoManager: React.FC = () => {
 
       // Processar URL baseado no modo
       let processedUrl = formData.url;
-      let videoType: 'youtube' | 'upload' = 'url';
+      let videoType: 'youtube' | 'upload' = 'youtube';
       
       if (videoInputMode === 'url') {
         processedUrl = VideoService.convertYouTubeUrl(formData.url);
