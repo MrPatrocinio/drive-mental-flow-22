@@ -59,7 +59,7 @@ export default function LandingPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeVideo?.id]); // Removida dependência circular
+  }, [activeVideo?.id]);
 
   useEffect(() => {
     loadContent();
@@ -103,21 +103,52 @@ export default function LandingPage() {
               <div className="mb-8">
                 <div className="max-w-4xl mx-auto px-2">
                   <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
-                    <iframe
-                      key={videoKey}
-                      className="absolute top-0 left-0 w-full h-full shadow-2xl"
-                      src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
-                        ...activeVideo.video_controls,
-                        autoplay: false // Desabilitar autoplay para evitar reprodução dupla
-                      })}
-                      title={activeVideo.title}
-                      frameBorder="0"
-                      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen={videoControlsSettings.allowFullscreen}
-                      style={{
-                        pointerEvents: videoControlsSettings.pointerEvents
-                      }}
-                    />
+                    {activeVideo.type === 'atomicat' ? (
+                      // Renderização específica para vídeos da Atomicat
+                      activeVideo.url.includes('<iframe') ? (
+                        <div 
+                          key={videoKey}
+                          className="absolute top-0 left-0 w-full h-full shadow-2xl"
+                          dangerouslySetInnerHTML={{ __html: activeVideo.url }}
+                          style={{
+                            pointerEvents: videoControlsSettings.pointerEvents
+                          }}
+                        />
+                      ) : (
+                        <iframe
+                          key={videoKey}
+                          className="absolute top-0 left-0 w-full h-full shadow-2xl"
+                          src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
+                            ...activeVideo.video_controls,
+                            autoplay: false // Desabilitar autoplay para evitar reprodução dupla
+                          })}
+                          title={activeVideo.title}
+                          frameBorder="0"
+                          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen={videoControlsSettings.allowFullscreen}
+                          style={{
+                            pointerEvents: videoControlsSettings.pointerEvents
+                          }}
+                        />
+                      )
+                    ) : (
+                      // Renderização para YouTube e uploads locais
+                      <iframe
+                        key={videoKey}
+                        className="absolute top-0 left-0 w-full h-full shadow-2xl"
+                        src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
+                          ...activeVideo.video_controls,
+                          autoplay: false // Desabilitar autoplay para evitar reprodução dupla
+                        })}
+                        title={activeVideo.title}
+                        frameBorder="0"
+                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen={videoControlsSettings.allowFullscreen}
+                        style={{
+                          pointerEvents: videoControlsSettings.pointerEvents
+                        }}
+                      />
+                    )}
                     {/* Overlay transparente para bloquear interações quando necessário */}
                     {videoControlsSettings.shouldShowOverlay && (
                       <div 

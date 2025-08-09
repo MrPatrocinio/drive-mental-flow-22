@@ -1,4 +1,3 @@
-
 /**
  * VideoManager - Componente para gerenciar vídeos da landing page
  * Responsabilidade: UI para CRUD de vídeos
@@ -19,14 +18,14 @@ import { useToast } from '@/hooks/use-toast';
 import { VideoService, Video, VideoSection, VideoControls } from '@/services/supabase/videoService';
 import { VideoControlsPanel } from './VideoControlsPanel';
 import { VideoUploadForm } from './VideoUploadForm';
-import { Plus, Edit2, Trash2, Play, Eye, EyeOff, Link, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Play, Eye, EyeOff, Link, Upload, ExternalLink } from 'lucide-react';
 
 export const VideoManager: React.FC = () => {
   const [videos, setVideos] = useState<VideoSection>({ active_video_id: null, videos: [] });
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
-  const [videoInputMode, setVideoInputMode] = useState<'url' | 'upload'>('url');
+  const [videoInputMode, setVideoInputMode] = useState<'url' | 'upload' | 'atomicat'>('url');
   const [formData, setFormData] = useState({
     title: '',
     url: '',
@@ -94,8 +93,14 @@ export const VideoManager: React.FC = () => {
       thumbnail: video.thumbnail || ''
     });
     setVideoControls(video.video_controls || VideoService.getDefaultVideoControls());
-    // Corrigir o tipo aqui - mapear youtube para url
-    setVideoInputMode(video.type === 'upload' ? 'upload' : 'url');
+    // Mapear corretamente os tipos para o modo de entrada
+    if (video.type === 'upload') {
+      setVideoInputMode('upload');
+    } else if (video.type === 'atomicat') {
+      setVideoInputMode('atomicat');
+    } else {
+      setVideoInputMode('url'); // YouTube e outros
+    }
     setEditingVideo(video);
     setIsAddDialogOpen(true);
   };
@@ -118,11 +123,14 @@ export const VideoManager: React.FC = () => {
 
       // Processar URL baseado no modo
       let processedUrl = formData.url;
-      let videoType: 'youtube' | 'upload' = 'youtube';
+      let videoType: 'youtube' | 'upload' | 'atomicat' = 'youtube';
       
       if (videoInputMode === 'url') {
         processedUrl = VideoService.convertYouTubeUrl(formData.url);
         videoType = VideoService.determineVideoType(processedUrl);
+      } else if (videoInputMode === 'atomicat') {
+        processedUrl = VideoService.processAtomicatUrl(formData.url);
+        videoType = 'atomicat';
       } else {
         videoType = 'upload';
       }
@@ -222,7 +230,7 @@ export const VideoManager: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold">Gerenciar Vídeos</h2>
           <p className="text-muted-foreground">
-            Controle os vídeos exibidos na página inicial (YouTube ou uploads locais)
+            Controle os vídeos exibidos na página inicial (YouTube, Atomicat ou uploads locais)
           </p>
           {videos.active_video_id && (
             <div className="mt-2">
@@ -252,11 +260,15 @@ export const VideoManager: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Seleção do Tipo de Vídeo */}
               <div className="lg:col-span-2">
-                <Tabs value={videoInputMode} onValueChange={(value) => setVideoInputMode(value as 'url' | 'upload')}>
-                  <TabsList className="grid w-full grid-cols-2">
+                <Tabs value={videoInputMode} onValueChange={(value) => setVideoInputMode(value as 'url' | 'upload' | 'atomicat')}>
+                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="url" className="flex items-center gap-2">
                       <Link className="h-4 w-4" />
-                      URL do YouTube
+                      YouTube
+                    </TabsTrigger>
+                    <TabsTrigger value="atomicat" className="flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4" />
+                      Atomicat
                     </TabsTrigger>
                     <TabsTrigger value="upload" className="flex items-center gap-2">
                       <Upload className="h-4 w-4" />
@@ -286,6 +298,55 @@ export const VideoManager: React.FC = () => {
                         />
                         <p className="text-xs text-muted-foreground mt-1">
                           Aceita URLs do YouTube, será convertida automaticamente para embed
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="description">Descrição</Label>
+                        <Textarea
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                          placeholder="Descrição do vídeo"
+                          rows={3}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="thumbnail">URL da Thumbnail</Label>
+                        <Input
+                          id="thumbnail"
+                          value={formData.thumbnail}
+                          onChange={(e) => setFormData(prev => ({ ...prev, thumbnail: e.target.value }))}
+                          placeholder="https://..."
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="atomicat" className="space-y-4 mt-4">
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="title">Título *</Label>
+                        <Input
+                          id="title"
+                          value={formData.title}
+                          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Título do vídeo"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="url">URL ou Código Embed da Atomicat *</Label>
+                        <Textarea
+                          id="url"
+                          value={formData.url}
+                          onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+                          placeholder="https://atomicat.com.br/... ou código <iframe>..."
+                          rows={4}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Cole a URL do vídeo ou o código embed completo da Atomicat
                         </p>
                       </div>
                       
@@ -360,7 +421,7 @@ export const VideoManager: React.FC = () => {
               </div>
 
               {/* Painel de Controles */}
-              {(videoInputMode === 'url' || formData.url) && (
+              {(videoInputMode === 'url' || videoInputMode === 'atomicat' || formData.url) && (
                 <div className="lg:col-span-2">
                   <VideoControlsPanel
                     controls={videoControls}
@@ -395,7 +456,7 @@ export const VideoManager: React.FC = () => {
               </div>
               <h3 className="text-lg font-semibold mb-2">Nenhum vídeo cadastrado</h3>
               <p className="text-muted-foreground mb-4">
-                Adicione vídeos do YouTube para exibir na página inicial do seu site.
+                Adicione vídeos do YouTube, Atomicat ou faça upload para exibir na página inicial do seu site.
               </p>
               <Button className="mt-4" onClick={handleAddVideo}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -429,8 +490,12 @@ export const VideoManager: React.FC = () => {
                       <CardTitle className="text-lg truncate">
                         {video.title}
                       </CardTitle>
-                      <Badge variant={video.type === 'upload' ? 'default' : 'secondary'}>
-                        {video.type === 'upload' ? 'Local' : 'YouTube'}
+                      <Badge variant={
+                        video.type === 'upload' ? 'default' : 
+                        video.type === 'atomicat' ? 'destructive' : 'secondary'
+                      }>
+                        {video.type === 'upload' ? 'Local' : 
+                         video.type === 'atomicat' ? 'Atomicat' : 'YouTube'}
                       </Badge>
                       {videos.active_video_id === video.id && (
                         <Badge variant="default" className="bg-green-600 hover:bg-green-700">
@@ -495,6 +560,24 @@ export const VideoManager: React.FC = () => {
                       controls
                       title={video.title}
                     />
+                  ) : video.type === 'atomicat' ? (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      {video.url.includes('<iframe') ? (
+                        <div 
+                          className="w-full h-full" 
+                          dangerouslySetInnerHTML={{ __html: video.url }}
+                        />
+                      ) : (
+                        <iframe
+                          src={video.url}
+                          className="w-full h-full"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title={video.title}
+                        />
+                      )}
+                    </div>
                   ) : (
                     <iframe
                       src={video.url}
@@ -518,6 +601,11 @@ export const VideoManager: React.FC = () => {
                     >
                       Ver no YouTube
                     </a>
+                  )}
+                  {video.type === 'atomicat' && (
+                    <span className="text-primary">
+                      Vídeo da Atomicat
+                    </span>
                   )}
                 </div>
               </CardContent>
