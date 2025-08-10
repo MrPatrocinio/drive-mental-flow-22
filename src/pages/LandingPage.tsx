@@ -105,7 +105,7 @@ export default function LandingPage() {
                   <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
                     {activeVideo.type === 'atomicat' ? (
                       // Renderização específica para vídeos da Atomicat
-                      activeVideo.url.includes('<iframe') ? (
+                      VideoService.isAtomicatHtml(activeVideo.url) ? (
                         <div 
                           key={videoKey}
                           className="absolute top-0 left-0 w-full h-full shadow-2xl"
@@ -120,7 +120,7 @@ export default function LandingPage() {
                           className="absolute top-0 left-0 w-full h-full shadow-2xl"
                           src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
                             ...activeVideo.video_controls,
-                            autoplay: false // Desabilitar autoplay para evitar reprodução dupla
+                            autoplay: false
                           })}
                           title={activeVideo.title}
                           frameBorder="0"
@@ -138,7 +138,7 @@ export default function LandingPage() {
                         className="absolute top-0 left-0 w-full h-full shadow-2xl"
                         src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
                           ...activeVideo.video_controls,
-                          autoplay: false // Desabilitar autoplay para evitar reprodução dupla
+                          autoplay: false
                         })}
                         title={activeVideo.title}
                         frameBorder="0"

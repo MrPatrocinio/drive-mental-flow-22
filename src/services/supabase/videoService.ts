@@ -23,7 +23,7 @@ export interface Video {
   id: string;
   title: string;
   url: string;
-  type: 'youtube' | 'upload' | 'atomicat'; // Adicionado tipo atomicat
+  type: 'youtube' | 'upload' | 'atomicat';
   thumbnail?: string;
   description?: string;
   created_at: string;
@@ -258,26 +258,36 @@ export class VideoService {
   }
 
   /**
-   * Processa URL da Atomicat para formato embed
+   * Processa URL/código da Atomicat para formato embed
    */
-  static processAtomicatUrl(url: string): string {
+  static processAtomicatUrl(input: string): string {
     try {
+      console.log('VideoService: Processando input da Atomicat:', input);
+      
+      // Se o input contém HTML (iframe), extrair o src
+      if (input.includes('<iframe') || input.includes('<video')) {
+        const srcMatch = input.match(/src=['"](.*?)['"]/i);
+        if (srcMatch && srcMatch[1]) {
+          console.log('VideoService: URL extraída do iframe:', srcMatch[1]);
+          return srcMatch[1];
+        }
+      }
+
       // Se já é um embed da Atomicat, retorna como está
-      if (this.isAtomicatEmbed(url)) {
-        return url;
+      if (this.isAtomicatEmbed(input)) {
+        return input;
       }
 
       // Se é uma URL da Atomicat mas não embed, tenta converter
-      if (this.isAtomicatUrl(url)) {
-        // Atomicat URLs já vêm no formato correto para embed
-        return url;
+      if (this.isAtomicatUrl(input)) {
+        return input;
       }
 
-      // Se não é da Atomicat, retorna como está
-      return url;
+      // Se não reconhece o formato, retorna como está
+      return input;
     } catch (error) {
-      console.error('VideoService: Erro ao processar URL da Atomicat:', error);
-      return url;
+      console.error('VideoService: Erro ao processar input da Atomicat:', error);
+      return input;
     }
   }
 
@@ -288,8 +298,10 @@ export class VideoService {
     const atomicatPatterns = [
       /(?:https?:\/\/)?(?:www\.)?atomicat\.com\.br/,
       /(?:https?:\/\/)?.*\.atomicat\.com\.br/,
-      /(?:https?:\/\/)?atomicat\.io/,
-      /(?:https?:\/\/)?.*\.atomicat\.io/
+      /(?:https?:\/\/)?(?:www\.)?atomicat\.io/,
+      /(?:https?:\/\/)?.*\.atomicat\.io/,
+      /(?:https?:\/\/)?media\.atomicat\.pages\.dev/,
+      /(?:https?:\/\/)?.*\.atomicat\.pages\.dev/
     ];
 
     return atomicatPatterns.some(pattern => pattern.test(url));
@@ -302,19 +314,33 @@ export class VideoService {
     return this.isAtomicatUrl(url) && (
       url.includes('iframe') || 
       url.includes('embed') ||
-      url.includes('player')
+      url.includes('player') ||
+      url.includes('/v1/')
     );
   }
 
   /**
-   * Determina o tipo de vídeo baseado na URL
+   * Verifica se é código HTML da Atomicat
    */
-  static determineVideoType(url: string): 'youtube' | 'upload' | 'atomicat' {
-    if (VideoUploadService.isSupabaseStorageUrl(url)) {
+  static isAtomicatHtml(input: string): boolean {
+    return (input.includes('<iframe') || input.includes('<video')) && 
+           (input.includes('atomicat') || input.includes('media.atomicat.pages.dev'));
+  }
+
+  /**
+   * Determina o tipo de vídeo baseado na URL ou código
+   */
+  static determineVideoType(input: string): 'youtube' | 'upload' | 'atomicat' {
+    // Verificar se é código HTML da Atomicat primeiro
+    if (this.isAtomicatHtml(input)) {
+      return 'atomicat';
+    }
+
+    if (VideoUploadService.isSupabaseStorageUrl(input)) {
       return 'upload';
     }
     
-    if (this.isAtomicatUrl(url)) {
+    if (this.isAtomicatUrl(input)) {
       return 'atomicat';
     }
     
@@ -325,7 +351,7 @@ export class VideoService {
     ];
     
     for (const pattern of youtubePatterns) {
-      if (pattern.test(url)) {
+      if (pattern.test(input)) {
         return 'youtube';
       }
     }
@@ -337,19 +363,19 @@ export class VideoService {
   /**
    * Processa URL do vídeo baseado no tipo
    */
-  static processVideoUrl(url: string, type?: 'youtube' | 'upload' | 'atomicat'): string {
-    const videoType = type || this.determineVideoType(url);
+  static processVideoUrl(input: string, type?: 'youtube' | 'upload' | 'atomicat'): string {
+    const videoType = type || this.determineVideoType(input);
     
     if (videoType === 'youtube') {
-      return this.convertYouTubeUrl(url);
+      return this.convertYouTubeUrl(input);
     }
     
     if (videoType === 'atomicat') {
-      return this.processAtomicatUrl(url);
+      return this.processAtomicatUrl(input);
     }
     
     // Para vídeos do storage, retornar URL como está
-    return url;
+    return input;
   }
 
   /**
