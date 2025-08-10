@@ -1,619 +1,581 @@
-/**
- * VideoManager - Componente para gerenciar vídeos da landing page
- * Responsabilidade: UI para CRUD de vídeos
- * Princípio SRP: Apenas interface para gerenciamento de vídeos
- * Princípio DRY: Reutiliza componentes de UI existentes
- */
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import { VideoService, Video, VideoControls } from '@/services/supabase/videoService';
+import { VideoUploadService } from '@/services/supabase/videoUploadService';
+import { useToast } from "@/components/ui/use-toast";
+import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { VideoService, Video, VideoSection, VideoControls } from '@/services/supabase/videoService';
-import { VideoControlsPanel } from './VideoControlsPanel';
-import { VideoUploadForm } from './VideoUploadForm';
-import { Plus, Edit2, Trash2, Play, Eye, EyeOff, Link, Upload, ExternalLink } from 'lucide-react';
+interface VideoFormState {
+  title: string;
+  url: string;
+  description?: string;
+  type: 'youtube' | 'upload' | 'atomicat';
+  video_controls?: VideoControls;
+}
 
-export const VideoManager: React.FC = () => {
-  const [videos, setVideos] = useState<VideoSection>({ active_video_id: null, videos: [] });
-  const [loading, setLoading] = useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingVideo, setEditingVideo] = useState<Video | null>(null);
-  const [videoInputMode, setVideoInputMode] = useState<'url' | 'upload' | 'atomicat'>('url');
-  const [formData, setFormData] = useState({
-    title: '',
-    url: '',
-    description: '',
-    thumbnail: ''
+export const VideoManager = () => {
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState("list");
+
+  // YouTube Form State
+  const [youtubeTitle, setYoutubeTitle] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeDescription, setYoutubeDescription] = useState('');
+
+  // Upload Form State
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadDescription, setUploadDescription] = useState('');
+
+  // Atomicat Form State
+  const [atomicatTitle, setAtomicatTitle] = useState('');
+  const [atomicatInput, setAtomicatInput] = useState('');
+  const [atomicatDescription, setAtomicatDescription] = useState('');
+
+  // Video Controls State
+  const [videoControls, setVideoControls] = useState<VideoControls>({
+    allowPause: true,
+    allowVolumeControl: true,
+    allowSeek: true,
+    allowFullscreen: true,
+    allowKeyboardControls: true,
+    showControls: true,
+    autoplay: false,
+    muted: false
   });
-  const [videoControls, setVideoControls] = useState<VideoControls>(VideoService.getDefaultVideoControls());
+
   const { toast } = useToast();
+
+  const loadVideos = useCallback(async () => {
+    try {
+      const videoSection = await VideoService.getVideos();
+      setVideos(videoSection.videos);
+      setActiveVideoId(videoSection.active_video_id);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar vídeos",
+        description: error.message,
+      });
+    }
+  }, [toast]);
 
   useEffect(() => {
     loadVideos();
-  }, []);
+  }, [loadVideos]);
 
-  const loadVideos = async () => {
+  const handleAddYouTubeVideo = async () => {
+    setIsAdding(true);
     try {
-      setLoading(true);
-      const videoData = await VideoService.getVideos();
-      
-      // Auto-ativar o primeiro vídeo se nenhum estiver ativo e existirem vídeos
-      if (!videoData.active_video_id && videoData.videos.length > 0) {
-        await VideoService.setActiveVideo(videoData.videos[0].id);
-        const updatedData = await VideoService.getVideos();
-        setVideos(updatedData);
-        toast({
-          title: 'Vídeo Ativado',
-          description: 'O primeiro vídeo foi automaticamente ativado na landing page',
-          variant: 'default'
-        });
-      } else {
-        setVideos(videoData);
-      }
-    } catch (error) {
+      await VideoService.addVideo({
+        title: youtubeTitle,
+        url: youtubeUrl,
+        description: youtubeDescription,
+        type: 'youtube',
+        video_controls: videoControls
+      });
+      setYoutubeTitle('');
+      setYoutubeUrl('');
+      setYoutubeDescription('');
+      setVideoControls({
+        allowPause: true,
+        allowVolumeControl: true,
+        allowSeek: true,
+        allowFullscreen: true,
+        allowKeyboardControls: true,
+        showControls: true,
+        autoplay: false,
+        muted: false
+      });
+      await loadVideos();
       toast({
-        title: 'Erro',
-        description: 'Falha ao carregar vídeos',
-        variant: 'destructive'
+        title: "Vídeo do YouTube adicionado!",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao adicionar vídeo do YouTube",
+        description: error.message,
       });
     } finally {
-      setLoading(false);
+      setIsAdding(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      url: '',
-      description: '',
-      thumbnail: ''
-    });
-    setVideoControls(VideoService.getDefaultVideoControls());
-    setEditingVideo(null);
-    setVideoInputMode('url');
-  };
-
-  const handleAddVideo = () => {
-    resetForm();
-    setIsAddDialogOpen(true);
-  };
-
-  const handleEditVideo = (video: Video) => {
-    setFormData({
-      title: video.title,
-      url: video.url,
-      description: video.description || '',
-      thumbnail: video.thumbnail || ''
-    });
-    setVideoControls(video.video_controls || VideoService.getDefaultVideoControls());
-    // Mapear corretamente os tipos para o modo de entrada
-    if (video.type === 'upload') {
-      setVideoInputMode('upload');
-    } else if (video.type === 'atomicat') {
-      setVideoInputMode('atomicat');
-    } else {
-      setVideoInputMode('url'); // YouTube e outros
-    }
-    setEditingVideo(video);
-    setIsAddDialogOpen(true);
-  };
-
-  const handleUploadComplete = (uploadedUrl: string) => {
-    setFormData(prev => ({ ...prev, url: uploadedUrl }));
-    setVideoInputMode('upload');
-  };
-
-  const handleSaveVideo = async () => {
+  const handleAddAtomicatVideo = async () => {
+    setIsAdding(true);
     try {
-      if (!formData.title.trim() || !formData.url.trim()) {
-        toast({
-          title: 'Erro',
-          description: 'Título e vídeo são obrigatórios',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      // Processar URL baseado no modo
-      let processedUrl = formData.url;
-      let videoType: 'youtube' | 'upload' | 'atomicat' = 'youtube';
-      
-      if (videoInputMode === 'url') {
-        processedUrl = VideoService.convertYouTubeUrl(formData.url);
-        videoType = VideoService.determineVideoType(processedUrl);
-      } else if (videoInputMode === 'atomicat') {
-        processedUrl = VideoService.processAtomicatUrl(formData.url);
-        videoType = 'atomicat';
-      } else {
-        videoType = 'upload';
-      }
-
-      if (editingVideo) {
-        await VideoService.updateVideo(editingVideo.id, {
-          title: formData.title,
-          url: processedUrl,
-          type: videoType,
-          description: formData.description || undefined,
-          thumbnail: formData.thumbnail || undefined,
-          video_controls: videoControls
-        });
-        toast({
-          title: 'Sucesso',
-          description: 'Vídeo atualizado com sucesso'
-        });
-      } else {
-        await VideoService.addVideo({
-          title: formData.title,
-          url: processedUrl,
-          type: videoType,
-          description: formData.description || undefined,
-          thumbnail: formData.thumbnail || undefined,
-          video_controls: videoControls
-        });
-        toast({
-          title: 'Sucesso',
-          description: 'Vídeo adicionado com sucesso'
-        });
-      }
-
-      setIsAddDialogOpen(false);
-      resetForm();
-      loadVideos();
-    } catch (error) {
-      toast({
-        title: 'Erro',
-        description: 'Falha ao salvar vídeo',
-        variant: 'destructive'
+      await VideoService.addVideo({
+        title: atomicatTitle,
+        url: atomicatInput,
+        description: atomicatDescription,
+        type: 'atomicat',
+        video_controls: videoControls
       });
+      setAtomicatTitle('');
+      setAtomicatInput('');
+      setAtomicatDescription('');
+      setVideoControls({
+        allowPause: true,
+        allowVolumeControl: true,
+        allowSeek: true,
+        allowFullscreen: true,
+        allowKeyboardControls: true,
+        showControls: true,
+        autoplay: false,
+        muted: false
+      });
+      await loadVideos();
+      toast({
+        title: "Vídeo da Atomicat adicionado!",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao adicionar vídeo da Atomicat",
+        description: error.message,
+      });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!uploadFile) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Por favor, selecione um arquivo para upload.",
+      });
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      const uploadResult = await VideoUploadService.uploadVideo(uploadFile);
+      if (uploadResult.success && uploadResult.url) {
+        await VideoService.addVideo({
+          title: uploadTitle,
+          url: uploadResult.url,
+          description: uploadDescription,
+          type: 'upload',
+          video_controls: videoControls
+        });
+
+        setUploadTitle('');
+        setUploadFile(null);
+        setUploadDescription('');
+        setVideoControls({
+          allowPause: true,
+          allowVolumeControl: true,
+          allowSeek: true,
+          allowFullscreen: true,
+          allowKeyboardControls: true,
+          showControls: true,
+          autoplay: false,
+          muted: false
+        });
+        await loadVideos();
+        toast({
+          title: "Vídeo enviado com sucesso!",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro no upload",
+          description: uploadResult.error || "Falha ao enviar o vídeo.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao adicionar vídeo",
+        description: error.message,
+      });
+    } finally {
+      setIsAdding(false);
     }
   };
 
   const handleDeleteVideo = async (videoId: string) => {
-    if (!confirm('Tem certeza que deseja remover este vídeo?')) return;
-
+    setIsDeleting(true);
     try {
       await VideoService.deleteVideo(videoId);
+      await loadVideos();
       toast({
-        title: 'Sucesso',
-        description: 'Vídeo removido com sucesso'
+        title: "Vídeo removido com sucesso!",
       });
-      loadVideos();
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: 'Erro',
-        description: 'Falha ao remover vídeo',
-        variant: 'destructive'
+        variant: "destructive",
+        title: "Erro ao remover vídeo",
+        description: error.message,
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const handleToggleActive = async (videoId: string) => {
+  const handleSetActiveVideo = async (videoId: string) => {
     try {
-      const newActiveId = videos.active_video_id === videoId ? null : videoId;
-      await VideoService.setActiveVideo(newActiveId);
-      
+      await VideoService.setActiveVideo(videoId);
+      await loadVideos();
       toast({
-        title: 'Sucesso',
-        description: newActiveId 
-          ? 'Vídeo ativado na landing page' 
-          : 'Vídeo desativado da landing page'
+        title: "Vídeo ativo atualizado!",
       });
-      loadVideos();
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: 'Erro',
-        description: 'Falha ao alterar status do vídeo',
-        variant: 'destructive'
+        variant: "destructive",
+        title: "Erro ao definir vídeo ativo",
+        description: error.message,
       });
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  const handleUpdateVideoControls = async (videoId: string, controls: Partial<VideoControls>) => {
+    setIsUpdating(true);
+    try {
+      await VideoService.updateVideo(videoId, { video_controls: { ...videoControls, ...controls } });
+      await loadVideos();
+      toast({
+        title: "Controles de vídeo atualizados!",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar controles de vídeo",
+        description: error.message,
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Gerenciar Vídeos</h2>
-          <p className="text-muted-foreground">
-            Controle os vídeos exibidos na página inicial (YouTube, Atomicat ou uploads locais)
-          </p>
-          {videos.active_video_id && (
-            <div className="mt-2">
-              <Badge variant="outline" className="text-green-600 border-green-600">
-                <Play className="h-3 w-3 mr-1" />
-                Vídeo ativo na landing page
-              </Badge>
-            </div>
-          )}
-        </div>
-        
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAddVideo}>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Vídeo
-            </Button>
-          </DialogTrigger>
-          
-          <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingVideo ? 'Editar Vídeo' : 'Novo Vídeo'}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Seleção do Tipo de Vídeo */}
-              <div className="lg:col-span-2">
-                <Tabs value={videoInputMode} onValueChange={(value) => setVideoInputMode(value as 'url' | 'upload' | 'atomicat')}>
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="url" className="flex items-center gap-2">
-                      <Link className="h-4 w-4" />
-                      YouTube
-                    </TabsTrigger>
-                    <TabsTrigger value="atomicat" className="flex items-center gap-2">
-                      <ExternalLink className="h-4 w-4" />
-                      Atomicat
-                    </TabsTrigger>
-                    <TabsTrigger value="upload" className="flex items-center gap-2">
-                      <Upload className="h-4 w-4" />
-                      Upload Local
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="url" className="space-y-4 mt-4">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="title">Título *</Label>
-                        <Input
-                          id="title"
-                          value={formData.title}
-                          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                          placeholder="Título do vídeo"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="url">URL do YouTube *</Label>
-                        <Input
-                          id="url"
-                          value={formData.url}
-                          onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
-                          placeholder="https://youtube.com/watch?v=..."
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Aceita URLs do YouTube, será convertida automaticamente para embed
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="description">Descrição</Label>
-                        <Textarea
-                          id="description"
-                          value={formData.description}
-                          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                          placeholder="Descrição do vídeo"
-                          rows={3}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="thumbnail">URL da Thumbnail</Label>
-                        <Input
-                          id="thumbnail"
-                          value={formData.thumbnail}
-                          onChange={(e) => setFormData(prev => ({ ...prev, thumbnail: e.target.value }))}
-                          placeholder="https://..."
-                        />
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="atomicat" className="space-y-4 mt-4">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="title">Título *</Label>
-                        <Input
-                          id="title"
-                          value={formData.title}
-                          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                          placeholder="Título do vídeo"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="url">URL ou Código Embed da Atomicat *</Label>
-                        <Textarea
-                          id="url"
-                          value={formData.url}
-                          onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
-                          placeholder="https://atomicat.com.br/... ou código <iframe>..."
-                          rows={4}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Cole a URL do vídeo ou o código embed completo da Atomicat
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="description">Descrição</Label>
-                        <Textarea
-                          id="description"
-                          value={formData.description}
-                          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                          placeholder="Descrição do vídeo"
-                          rows={3}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="thumbnail">URL da Thumbnail</Label>
-                        <Input
-                          id="thumbnail"
-                          value={formData.thumbnail}
-                          onChange={(e) => setFormData(prev => ({ ...prev, thumbnail: e.target.value }))}
-                          placeholder="https://..."
-                        />
-                      </div>
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="upload" className="mt-4">
-                    {!formData.url ? (
-                      <VideoUploadForm
-                        onUploadComplete={handleUploadComplete}
-                        onCancel={() => setVideoInputMode('url')}
-                      />
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                          <p className="text-sm text-green-800">
-                            ✅ Vídeo enviado com sucesso! Agora adicione as informações abaixo.
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="title">Título *</Label>
-                          <Input
-                            id="title"
-                            value={formData.title}
-                            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                            placeholder="Título do vídeo"
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="description">Descrição</Label>
-                          <Textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Descrição do vídeo"
-                            rows={3}
-                          />
-                        </div>
-                        
-                        <Button
-                          variant="outline"
-                          onClick={() => setFormData(prev => ({ ...prev, url: '' }))}
-                        >
-                          Escolher Outro Vídeo
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </div>
-
-              {/* Painel de Controles */}
-              {(videoInputMode === 'url' || videoInputMode === 'atomicat' || formData.url) && (
-                <div className="lg:col-span-2">
-                  <VideoControlsPanel
-                    controls={videoControls}
-                    onChange={setVideoControls}
-                  />
-                </div>
-              )}
-            </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleSaveVideo}
-                disabled={!formData.title || !formData.url}
-              >
-                {editingVideo ? 'Atualizar' : 'Adicionar'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <h2 className="text-2xl font-bold">Gerenciar Vídeos</h2>
+        <SyncStatusIndicator />
       </div>
 
-      {/* Lista de Vídeos */}
-      <div className="grid gap-4">
-        {videos.videos.length === 0 ? (
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="list">Lista de Vídeos</TabsTrigger>
+          <TabsTrigger value="youtube">YouTube</TabsTrigger>
+          <TabsTrigger value="upload">Upload Local</TabsTrigger>
+          <TabsTrigger value="atomicat">Atomicat</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="space-y-4">
           <Card>
-            <CardContent className="py-8 text-center">
-              <div className="mb-4">
-                <Play className="h-16 w-16 mx-auto text-muted-foreground/50" />
+            <CardHeader>
+              <CardTitle>Vídeos Cadastrados</CardTitle>
+              <CardDescription>
+                Lista de todos os vídeos cadastrados no sistema.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                {videos.map((video) => (
+                  <div key={video.id} className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">{video.title}</h3>
+                      <p className="text-sm text-muted-foreground">{video.type} - {video.url}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={activeVideoId === video.id ? "secondary" : "outline"}
+                        onClick={() => handleSetActiveVideo(video.id)}
+                      >
+                        {activeVideoId === video.id ? 'Ativo' : 'Definir como Ativo'}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleDeleteVideo(video.id)}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? 'Removendo...' : 'Remover'}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <h3 className="text-lg font-semibold mb-2">Nenhum vídeo cadastrado</h3>
-              <p className="text-muted-foreground mb-4">
-                Adicione vídeos do YouTube, Atomicat ou faça upload para exibir na página inicial do seu site.
-              </p>
-              <Button className="mt-4" onClick={handleAddVideo}>
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Primeiro Vídeo
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="youtube" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Adicionar Vídeo do YouTube</CardTitle>
+              <CardDescription>
+                Preencha os campos abaixo para adicionar um novo vídeo do YouTube.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="youtube-title">Título do Vídeo</Label>
+                <Input
+                  id="youtube-title"
+                  placeholder="Digite o título do vídeo"
+                  value={youtubeTitle}
+                  onChange={(e) => setYoutubeTitle(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="youtube-url">URL do Vídeo</Label>
+                <Input
+                  id="youtube-url"
+                  placeholder="Cole a URL do vídeo do YouTube"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="youtube-description">Descrição (Opcional)</Label>
+                <Textarea
+                  id="youtube-description"
+                  placeholder="Digite uma descrição para o vídeo"
+                  value={youtubeDescription}
+                  onChange={(e) => setYoutubeDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <Button
+                onClick={handleAddYouTubeVideo}
+                disabled={!youtubeTitle.trim() || !youtubeUrl.trim() || isAdding}
+                className="w-full"
+              >
+                {isAdding ? 'Adicionando...' : 'Adicionar Vídeo'}
               </Button>
             </CardContent>
           </Card>
-        ) : (
-          <>
-            {!videos.active_video_id && (
-              <Card className="border-amber-200 bg-amber-50">
-                <CardContent className="py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                      <Eye className="h-4 w-4 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-amber-800">Nenhum vídeo ativo</p>
-                      <p className="text-sm text-amber-600">Clique em "Ativar" em um dos vídeos abaixo para exibi-lo na landing page.</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {videos.videos.map((video) => (
-            <Card key={video.id} className="relative">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CardTitle className="text-lg truncate">
-                        {video.title}
-                      </CardTitle>
-                      <Badge variant={
-                        video.type === 'upload' ? 'default' : 
-                        video.type === 'atomicat' ? 'destructive' : 'secondary'
-                      }>
-                        {video.type === 'upload' ? 'Local' : 
-                         video.type === 'atomicat' ? 'Atomicat' : 'YouTube'}
-                      </Badge>
-                      {videos.active_video_id === video.id && (
-                        <Badge variant="default" className="bg-green-600 hover:bg-green-700">
-                          <Play className="h-3 w-3 mr-1" />
-                          Na Landing Page
-                        </Badge>
-                      )}
-                    </div>
-                    {video.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {video.description}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      variant={videos.active_video_id === video.id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleToggleActive(video.id)}
-                      className={videos.active_video_id === video.id ? 'bg-green-600 hover:bg-green-700 text-white' : 'hover:bg-green-50 hover:text-green-600 hover:border-green-600'}
-                    >
-                      {videos.active_video_id === video.id ? (
-                        <>
-                          <EyeOff className="h-4 w-4 mr-1" />
-                          Desativar
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-4 w-4 mr-1" />
-                          Ativar
-                        </>
-                      )}
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditVideo(video)}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteVideo(video.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
+        </TabsContent>
+
+        <TabsContent value="upload" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload de Vídeo Local</CardTitle>
+              <CardDescription>
+                Selecione um arquivo de vídeo do seu computador para enviar.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="upload-title">Título do Vídeo</Label>
+                <Input
+                  id="upload-title"
+                  placeholder="Digite o título do vídeo"
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="upload-file">Arquivo de Vídeo</Label>
+                <Input
+                  type="file"
+                  id="upload-file"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      setUploadFile(e.target.files[0]);
+                    }
+                  }}
+                />
+                {uploadFile && (
+                  <p className="text-sm text-muted-foreground">
+                    Arquivo selecionado: {uploadFile.name}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="upload-description">Descrição (Opcional)</Label>
+                <Textarea
+                  id="upload-description"
+                  placeholder="Digite uma descrição para o vídeo"
+                  value={uploadDescription}
+                  onChange={(e) => setUploadDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <Button
+                onClick={handleUpload}
+                disabled={!uploadTitle.trim() || !uploadFile || isAdding}
+                className="w-full"
+              >
+                {isAdding ? 'Enviando...' : 'Enviar Vídeo'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="atomicat" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Adicionar Vídeo da Atomicat</CardTitle>
+              <CardDescription>
+                Cole a URL do vídeo da Atomicat ou o código embed completo (HTML com iframe ou video-js).
+                <br />
+                <span className="text-muted-foreground text-sm">
+                  💡 Dica: Se você tem um código HTML completo com scripts, cole ele inteiro para melhor compatibilidade.
+                </span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="atomicat-input">URL ou Código Embed da Atomicat</Label>
+                <Textarea
+                  id="atomicat-input"
+                  placeholder="Cole aqui a URL ou código HTML completo da Atomicat..."
+                  value={atomicatInput}
+                  onChange={(e) => setAtomicatInput(e.target.value)}
+                  rows={6}
+                />
+              </div>
               
-              <CardContent>
-                <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                  {video.type === 'upload' ? (
-                    <video
-                      src={video.url}
-                      className="w-full h-full object-cover"
-                      controls
-                      title={video.title}
-                    />
-                  ) : video.type === 'atomicat' ? (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      {video.url.includes('<iframe') ? (
-                        <div 
-                          className="w-full h-full" 
-                          dangerouslySetInnerHTML={{ __html: video.url }}
-                        />
-                      ) : (
-                        <iframe
-                          src={video.url}
-                          className="w-full h-full"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          title={video.title}
-                        />
-                      )}
-                    </div>
-                  ) : (
-                    <iframe
-                      src={video.url}
-                      className="w-full h-full"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      title={video.title}
-                    />
-                  )}
-                </div>
-                
-                <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Criado em: {new Date(video.created_at).toLocaleDateString('pt-BR')}</span>
-                  {video.type === 'youtube' && (
-                    <a 
-                      href={video.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      Ver no YouTube
-                    </a>
-                  )}
-                  {video.type === 'atomicat' && (
-                    <span className="text-primary">
-                      Vídeo da Atomicat
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            ))}
-          </>
-        )}
-      </div>
+              <div className="space-y-2">
+                <Label htmlFor="atomicat-title">Título do Vídeo</Label>
+                <Input
+                  id="atomicat-title"
+                  placeholder="Digite o título do vídeo"
+                  value={atomicatTitle}
+                  onChange={(e) => setAtomicatTitle(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="atomicat-description">Descrição (Opcional)</Label>
+                <Textarea
+                  id="atomicat-description"
+                  placeholder="Digite uma descrição para o vídeo"
+                  value={atomicatDescription}
+                  onChange={(e) => setAtomicatDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <Button 
+                onClick={handleAddAtomicatVideo} 
+                disabled={!atomicatInput.trim() || !atomicatTitle.trim() || isAdding}
+                className="w-full"
+              >
+                {isAdding ? 'Adicionando...' : 'Adicionar Vídeo da Atomicat'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <VideoControlsPanel
+        controls={videoControls}
+        onControlsChange={setVideoControls}
+      />
     </div>
+  );
+};
+
+interface VideoControlsPanelProps {
+  controls: VideoControls;
+  onControlsChange: (controls: VideoControls) => void;
+}
+
+const VideoControlsPanel: React.FC<VideoControlsPanelProps> = ({ controls, onControlsChange }) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Controles do Vídeo</CardTitle>
+        <CardDescription>
+          Ajuste as configurações de controle do vídeo.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="allowPause">Permitir Pausa</Label>
+          <Switch
+            id="allowPause"
+            checked={controls.allowPause}
+            onCheckedChange={(checked) => onControlsChange({ ...controls, allowPause: checked })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="allowVolumeControl">Permitir Controle de Volume</Label>
+          <Switch
+            id="allowVolumeControl"
+            checked={controls.allowVolumeControl}
+            onCheckedChange={(checked) => onControlsChange({ ...controls, allowVolumeControl: checked })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="allowSeek">Permitir Seek</Label>
+          <Switch
+            id="allowSeek"
+            checked={controls.allowSeek}
+            onCheckedChange={(checked) => onControlsChange({ ...controls, allowSeek: checked })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="allowFullscreen">Permitir Tela Cheia</Label>
+          <Switch
+            id="allowFullscreen"
+            checked={controls.allowFullscreen}
+            onCheckedChange={(checked) => onControlsChange({ ...controls, allowFullscreen: checked })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="allowKeyboardControls">Permitir Controles do Teclado</Label>
+          <Switch
+            id="allowKeyboardControls"
+            checked={controls.allowKeyboardControls}
+            onCheckedChange={(checked) => onControlsChange({ ...controls, allowKeyboardControls: checked })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="showControls">Mostrar Controles</Label>
+          <Switch
+            id="showControls"
+            checked={controls.showControls}
+            onCheckedChange={(checked) => onControlsChange({ ...controls, showControls: checked })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="autoplay">Autoplay</Label>
+          <Switch
+            id="autoplay"
+            checked={controls.autoplay}
+            onCheckedChange={(checked) => onControlsChange({ ...controls, autoplay: checked })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="muted">Muted</Label>
+          <Switch
+            id="muted"
+            checked={controls.muted}
+            onCheckedChange={(checked) => onControlsChange({ ...controls, muted: checked })}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 };

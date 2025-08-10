@@ -103,34 +103,38 @@ export default function LandingPage() {
               <div className="mb-8">
                 <div className="max-w-4xl mx-auto px-2">
                   <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
-                    {activeVideo.type === 'atomicat' ? (
-                      // Renderização específica para vídeos da Atomicat
-                      VideoService.isAtomicatHtml(activeVideo.url) ? (
-                        <div 
-                          key={videoKey}
-                          className="absolute top-0 left-0 w-full h-full shadow-2xl"
-                          dangerouslySetInnerHTML={{ __html: activeVideo.url }}
-                          style={{
-                            pointerEvents: videoControlsSettings.pointerEvents
-                          }}
-                        />
-                      ) : (
-                        <iframe
-                          key={videoKey}
-                          className="absolute top-0 left-0 w-full h-full shadow-2xl"
-                          src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
-                            ...activeVideo.video_controls,
-                            autoplay: false
-                          })}
-                          title={activeVideo.title}
-                          frameBorder="0"
-                          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen={videoControlsSettings.allowFullscreen}
-                          style={{
-                            pointerEvents: videoControlsSettings.pointerEvents
-                          }}
-                        />
-                      )
+                    {activeVideo.type === 'atomicat' && VideoService.isAtomicatHtml(activeVideo.url) ? (
+                      // Renderização específica para HTML da Atomicat usando iframe com srcDoc
+                      <iframe
+                        key={videoKey}
+                        className="absolute top-0 left-0 w-full h-full shadow-2xl"
+                        srcDoc={activeVideo.url}
+                        title={activeVideo.title}
+                        frameBorder="0"
+                        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
+                        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                        allowFullScreen={videoControlsSettings.allowFullscreen}
+                        style={{
+                          pointerEvents: videoControlsSettings.pointerEvents
+                        }}
+                      />
+                    ) : activeVideo.type === 'atomicat' ? (
+                      // Renderização para URLs diretas da Atomicat
+                      <iframe
+                        key={videoKey}
+                        className="absolute top-0 left-0 w-full h-full shadow-2xl"
+                        src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
+                          ...activeVideo.video_controls,
+                          autoplay: false
+                        })}
+                        title={activeVideo.title}
+                        frameBorder="0"
+                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen={videoControlsSettings.allowFullscreen}
+                        style={{
+                          pointerEvents: videoControlsSettings.pointerEvents
+                        }}
+                      />
                     ) : (
                       // Renderização para YouTube e uploads locais
                       <iframe

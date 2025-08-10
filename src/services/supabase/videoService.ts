@@ -1,3 +1,4 @@
+
 /**
  * VideoService - Gerenciamento de vídeos da landing page
  * Responsabilidade: CRUD de vídeos e controle do vídeo ativo
@@ -264,6 +265,12 @@ export class VideoService {
     try {
       console.log('VideoService: Processando input da Atomicat:', input);
       
+      // Se o input contém HTML (iframe ou video-js), manter como HTML para renderização
+      if (this.isAtomicatHtml(input)) {
+        console.log('VideoService: Detectado HTML da Atomicat, mantendo código original');
+        return input;
+      }
+
       // Se o input contém HTML (iframe), extrair o src
       if (input.includes('<iframe') || input.includes('<video')) {
         const srcMatch = input.match(/src=['"](.*?)['"]/i);
@@ -323,8 +330,10 @@ export class VideoService {
    * Verifica se é código HTML da Atomicat
    */
   static isAtomicatHtml(input: string): boolean {
-    return (input.includes('<iframe') || input.includes('<video')) && 
-           (input.includes('atomicat') || input.includes('media.atomicat.pages.dev'));
+    return (
+      (input.includes('<iframe') || input.includes('<video') || input.includes('<video-js')) && 
+      (input.includes('atomicat') || input.includes('media.atomicat.pages.dev'))
+    );
   }
 
   /**
@@ -333,6 +342,7 @@ export class VideoService {
   static determineVideoType(input: string): 'youtube' | 'upload' | 'atomicat' {
     // Verificar se é código HTML da Atomicat primeiro
     if (this.isAtomicatHtml(input)) {
+      console.log('VideoService: Tipo detectado: atomicat (HTML)');
       return 'atomicat';
     }
 
@@ -341,6 +351,7 @@ export class VideoService {
     }
     
     if (this.isAtomicatUrl(input)) {
+      console.log('VideoService: Tipo detectado: atomicat (URL)');
       return 'atomicat';
     }
     
