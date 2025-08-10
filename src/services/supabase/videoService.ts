@@ -265,10 +265,10 @@ export class VideoService {
     try {
       console.log('VideoService: Processando input da Atomicat:', input);
       
-      // Se o input contém HTML (iframe ou video-js), manter como HTML para renderização
+      // Se o input contém HTML (iframe, video, ou video-js), manter como HTML para renderização
       if (this.isAtomicatHtml(input)) {
-        console.log('VideoService: Detectado HTML da Atomicat, mantendo código original');
-        return input;
+        console.log('VideoService: Detectado HTML da Atomicat, processando configurações');
+        return this.processAtomicatHtmlEmbed(input);
       }
 
       // Se o input contém HTML (iframe), extrair o src
@@ -295,6 +295,45 @@ export class VideoService {
     } catch (error) {
       console.error('VideoService: Erro ao processar input da Atomicat:', error);
       return input;
+    }
+  }
+
+  /**
+   * Processa HTML embed da Atomicat para garantir configurações adequadas
+   */
+  static processAtomicatHtmlEmbed(htmlContent: string): string {
+    try {
+      let processedHtml = htmlContent;
+
+      // Garantir que video-js players tenham configurações adequadas para autoplay
+      if (processedHtml.includes('<video-js')) {
+        // Adicionar atributos necessários se não existirem
+        if (!processedHtml.includes('preload=')) {
+          processedHtml = processedHtml.replace('<video-js', '<video-js preload="auto"');
+        }
+        
+        // Garantir que tenha controles básicos
+        if (!processedHtml.includes('controls=')) {
+          processedHtml = processedHtml.replace('<video-js', '<video-js controls="true"');
+        }
+      }
+
+      // Para iframes da Atomicat, garantir atributos necessários
+      if (processedHtml.includes('<iframe')) {
+        // Adicionar allow se não existir
+        if (!processedHtml.includes('allow=')) {
+          processedHtml = processedHtml.replace(
+            '<iframe',
+            '<iframe allow="autoplay; encrypted-media; picture-in-picture; fullscreen"'
+          );
+        }
+      }
+
+      console.log('VideoService: HTML da Atomicat processado para melhor compatibilidade');
+      return processedHtml;
+    } catch (error) {
+      console.error('VideoService: Erro ao processar HTML da Atomicat:', error);
+      return htmlContent;
     }
   }
 
@@ -327,13 +366,26 @@ export class VideoService {
   }
 
   /**
-   * Verifica se é código HTML da Atomicat
+   * Verifica se é código HTML da Atomicat (incluindo video-js)
    */
   static isAtomicatHtml(input: string): boolean {
-    return (
-      (input.includes('<iframe') || input.includes('<video') || input.includes('<video-js')) && 
-      (input.includes('atomicat') || input.includes('media.atomicat.pages.dev'))
-    );
+    const hasHtmlTags = input.includes('<iframe') || 
+                       input.includes('<video') || 
+                       input.includes('<video-js') ||
+                       input.includes('<script');
+    
+    const hasAtomicatReference = input.includes('atomicat') || 
+                                input.includes('media.atomicat.pages.dev') ||
+                                input.includes('vjs-') || // Video.js específico
+                                input.includes('video-js'); // Video.js tag
+    
+    const result = hasHtmlTags && hasAtomicatReference;
+    
+    if (result) {
+      console.log('VideoService: HTML da Atomicat detectado - Tags:', hasHtmlTags, 'Referências:', hasAtomicatReference);
+    }
+    
+    return result;
   }
 
   /**
@@ -437,9 +489,14 @@ export class VideoService {
         return `${embedUrl}${separator}${params.toString()}`;
       }
 
-      // Para vídeos da Atomicat, aplicar controles básicos se necessário
+      // Para vídeos da Atomicat, processar HTML adequadamente
       if (videoType === 'atomicat') {
-        // Atomicat pode ter seus próprios parâmetros de controle
+        // Se é HTML, processar e retornar o HTML processado
+        if (this.isAtomicatHtml(baseUrl)) {
+          return this.processAtomicatUrl(baseUrl);
+        }
+        
+        // Se é URL, aplicar parâmetros básicos se necessário
         const processedUrl = this.processAtomicatUrl(baseUrl);
         
         if (!controls) {

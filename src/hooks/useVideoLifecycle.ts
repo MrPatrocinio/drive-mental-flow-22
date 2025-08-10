@@ -1,3 +1,4 @@
+
 /**
  * useVideoLifecycle Hook
  * Responsabilidade: Gerenciar ciclo de vida dos vídeos na landing page
@@ -6,7 +7,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Video } from '@/services/supabase/videoService';
+import { Video, VideoService } from '@/services/supabase/videoService';
 
 interface VideoLifecycleResult {
   isVideoReady: boolean;
@@ -35,16 +36,27 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
     }
     
     // Forçar limpeza de iframes anteriores
-    const existingIframes = document.querySelectorAll('iframe[src*="youtube.com"]');
+    const existingIframes = document.querySelectorAll('iframe[src*="youtube.com"], iframe[srcDoc*="atomicat"], iframe[src*="atomicat"]');
     existingIframes.forEach(iframe => {
       try {
-        // Pausar vídeo via postMessage se possível
-        (iframe as HTMLIFrameElement).contentWindow?.postMessage(
-          '{"event":"command","func":"pauseVideo","args":""}',
-          '*'
-        );
+        // Pausar vídeo via postMessage se possível (YouTube)
+        if (iframe.src?.includes('youtube.com')) {
+          (iframe as HTMLIFrameElement).contentWindow?.postMessage(
+            '{"event":"command","func":"pauseVideo","args":""}',
+            '*'
+          );
+        }
+        
+        // Para Atomicat, tentar pausar via postMessage genérico
+        if (iframe.src?.includes('atomicat') || iframe.getAttribute('srcDoc')?.includes('atomicat')) {
+          console.log('VideoLifecycle: Limpando iframe da Atomicat');
+          (iframe as HTMLIFrameElement).contentWindow?.postMessage(
+            JSON.stringify({ action: 'pause' }),
+            '*'
+          );
+        }
       } catch (error) {
-        console.log('Video cleanup message failed:', error);
+        console.log('VideoLifecycle: Limpeza de vídeo message failed:', error);
       }
     });
 
@@ -70,7 +82,11 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
       return; // Mesmo vídeo já carregado, não fazer nada
     }
 
-    console.log('VideoLifecycle: Carregando novo vídeo:', newVideoId);
+    console.log('VideoLifecycle: Carregando novo vídeo:', {
+      id: newVideoId,
+      type: activeVideo.type,
+      isAtomicatHtml: activeVideo.type === 'atomicat' ? VideoService.isAtomicatHtml(activeVideo.url) : false
+    });
 
     // Resetar estado primeiro
     setIsVideoReady(false);
@@ -85,11 +101,17 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
     setVideoKey(newKey);
     currentVideoRef.current = newVideoId;
 
-    // Aguardar um pouco antes de marcar como pronto
+    // Para vídeos da Atomicat, aguardar um pouco mais para scripts carregarem
+    const loadingDelay = activeVideo.type === 'atomicat' ? 300 : 100;
+    
+    // Aguardar antes de marcar como pronto
     cleanupTimeoutRef.current = setTimeout(() => {
       setIsVideoReady(true);
-      console.log('VideoLifecycle: Vídeo pronto para reprodução');
-    }, 100);
+      console.log('VideoLifecycle: Vídeo pronto para reprodução', {
+        type: activeVideo.type,
+        delay: loadingDelay
+      });
+    }, loadingDelay);
 
     // Cleanup no unmount
     return () => {
@@ -97,7 +119,7 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
         clearTimeout(cleanupTimeoutRef.current);
       }
     };
-  }, [activeVideo?.id]); // Apenas dependência do ID do vídeo
+  }, [activeVideo?.id, activeVideo?.type]); // Incluir tipo na dependência para debug
 
   // Cleanup geral no unmount do componente
   useEffect(() => {

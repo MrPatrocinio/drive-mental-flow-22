@@ -104,39 +104,53 @@ export default function LandingPage() {
                 <div className="max-w-4xl mx-auto px-2">
                   <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
                     {activeVideo.type === 'atomicat' && VideoService.isAtomicatHtml(activeVideo.url) ? (
-                      // Renderização específica para HTML da Atomicat usando iframe com srcDoc
+                      // Renderização específica para HTML da Atomicat com permissões expandidas
                       <iframe
                         key={videoKey}
                         className="absolute top-0 left-0 w-full h-full shadow-2xl"
                         srcDoc={activeVideo.url}
                         title={activeVideo.title}
                         frameBorder="0"
-                        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
-                        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+                        allow="autoplay; encrypted-media; picture-in-picture; fullscreen; accelerometer; gyroscope; microphone; camera"
                         allowFullScreen={videoControlsSettings.allowFullscreen}
+                        onLoad={() => {
+                          console.log('LandingPage: Iframe da Atomicat carregado com srcDoc');
+                        }}
+                        onError={(e) => {
+                          console.error('LandingPage: Erro no iframe da Atomicat:', e);
+                        }}
                         style={{
                           pointerEvents: videoControlsSettings.pointerEvents
                         }}
                       />
                     ) : activeVideo.type === 'atomicat' ? (
-                      // Renderização para URLs diretas da Atomicat
+                      // Renderização para URLs diretas da Atomicat com permissões expandidas
                       <iframe
                         key={videoKey}
                         className="absolute top-0 left-0 w-full h-full shadow-2xl"
                         src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
                           ...activeVideo.video_controls,
-                          autoplay: false
+                          autoplay: false,
+                          muted: true // Garantir muted para permitir autoplay se necessário
                         })}
                         title={activeVideo.title}
                         frameBorder="0"
-                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+                        allow="autoplay; encrypted-media; picture-in-picture; fullscreen; accelerometer; gyroscope; microphone; camera"
                         allowFullScreen={videoControlsSettings.allowFullscreen}
+                        onLoad={() => {
+                          console.log('LandingPage: Iframe da Atomicat carregado com src URL');
+                        }}
+                        onError={(e) => {
+                          console.error('LandingPage: Erro no iframe da Atomicat URL:', e);
+                        }}
                         style={{
                           pointerEvents: videoControlsSettings.pointerEvents
                         }}
                       />
                     ) : (
-                      // Renderização para YouTube e uploads locais
+                      // Renderização para YouTube e uploads locais (sem mudanças)
                       <iframe
                         key={videoKey}
                         className="absolute top-0 left-0 w-full h-full shadow-2xl"
