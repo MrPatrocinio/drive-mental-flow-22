@@ -39,18 +39,20 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
     const existingIframes = document.querySelectorAll('iframe[src*="youtube.com"], iframe[srcDoc*="atomicat"], iframe[src*="atomicat"]');
     existingIframes.forEach(iframe => {
       try {
+        const iframeElement = iframe as HTMLIFrameElement;
+        
         // Pausar vídeo via postMessage se possível (YouTube)
-        if (iframe.src?.includes('youtube.com')) {
-          (iframe as HTMLIFrameElement).contentWindow?.postMessage(
+        if (iframeElement.src?.includes('youtube.com')) {
+          iframeElement.contentWindow?.postMessage(
             '{"event":"command","func":"pauseVideo","args":""}',
             '*'
           );
         }
         
         // Para Atomicat, tentar pausar via postMessage genérico
-        if (iframe.src?.includes('atomicat') || iframe.getAttribute('srcDoc')?.includes('atomicat')) {
+        if (iframeElement.src?.includes('atomicat') || iframeElement.getAttribute('srcDoc')?.includes('atomicat')) {
           console.log('VideoLifecycle: Limpando iframe da Atomicat');
-          (iframe as HTMLIFrameElement).contentWindow?.postMessage(
+          iframeElement.contentWindow?.postMessage(
             JSON.stringify({ action: 'pause' }),
             '*'
           );
