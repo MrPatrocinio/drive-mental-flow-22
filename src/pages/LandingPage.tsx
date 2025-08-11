@@ -9,7 +9,6 @@ import { FieldService } from "@/services/supabase/fieldService";
 import { useDataSync } from "@/hooks/useDataSync";
 import { useVideoControls } from "@/hooks/useVideoControls";
 import { useVideoLifecycle } from "@/hooks/useVideoLifecycle";
-import { useAtomicatScript } from "@/hooks/useAtomicatScript";
 import { PricingDisplay } from "@/components/PricingDisplay";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
@@ -25,7 +24,6 @@ export default function LandingPage() {
   // Hooks para controles e lifecycle de vídeo
   const videoControlsSettings = useVideoControls(activeVideo?.video_controls);
   const { isVideoReady, videoKey, cleanupPreviousVideo } = useVideoLifecycle(activeVideo);
-  const { isLoaded: scriptsLoaded, isLoading: scriptsLoading, loadScripts } = useAtomicatScript();
 
   // Get dynamic icon component
   const getIconComponent = (iconName: string) => {
@@ -49,12 +47,6 @@ export default function LandingPage() {
       if (videoData?.id !== activeVideo?.id) {
         console.log('LandingPage: Novo vídeo detectado:', videoData?.id);
         setActiveVideo(videoData);
-        
-        // Carregar scripts da Atomicat se necessário
-        if (videoData && videoData.type === 'atomicat' && VideoService.isAtomicatHtml(videoData.url)) {
-          console.log('LandingPage: Carregando scripts da Atomicat para novo vídeo');
-          await loadScripts(videoData.url);
-        }
       }
       
       setFields(fieldsData.map(field => ({
@@ -67,7 +59,7 @@ export default function LandingPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeVideo?.id, loadScripts]);
+  }, [activeVideo?.id]);
 
   useEffect(() => {
     loadContent();
@@ -86,33 +78,33 @@ export default function LandingPage() {
 
     const isAtomicatHtml = activeVideo.type === 'atomicat' && VideoService.isAtomicatHtml(activeVideo.url);
     const isAtomicatUrl = activeVideo.type === 'atomicat' && !VideoService.isAtomicatHtml(activeVideo.url);
+    const isHLS = VideoService.isHLSStream(activeVideo.url);
 
-    // Para HTML da Atomicat, sincronizar controles e renderizar com srcDoc
+    // Para HTML da Atomicat, usar data URL com permissões otimizadas
     if (isAtomicatHtml) {
-      const syncedHtml = VideoService.syncVideoControlsWithHtml(activeVideo.url, {
+      const videoUrl = VideoService.generateVideoUrlWithControls(activeVideo.url, {
         ...activeVideo.video_controls,
         autoplay: false, // Evitar autoplay inicial
         muted: true // Garantir muted para HLS
       });
 
-      console.log('LandingPage: Renderizando Atomicat HTML', {
-        scriptsLoaded,
-        scriptsLoading,
-        isHLS: VideoService.isHLSStream(activeVideo.url)
+      console.log('LandingPage: Renderizando Atomicat HTML com data URL', {
+        isHLS,
+        dataUrlLength: videoUrl.length
       });
 
       return (
         <iframe
           key={videoKey}
           className="absolute top-0 left-0 w-full h-full shadow-2xl"
-          srcDoc={syncedHtml}
+          src={videoUrl}
           title={activeVideo.title}
           frameBorder="0"
-          sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
-          allow="autoplay; encrypted-media; picture-in-picture; fullscreen; accelerometer; gyroscope; microphone; camera"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-downloads allow-storage-access-by-user-activation"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen; accelerometer; gyroscope; microphone; camera; cross-origin-isolated"
           allowFullScreen={videoControlsSettings.allowFullscreen}
           onLoad={() => {
-            console.log('LandingPage: Iframe da Atomicat carregado com srcDoc');
+            console.log('LandingPage: Iframe da Atomicat carregado com data URL');
           }}
           onError={(e) => {
             console.error('LandingPage: Erro no iframe da Atomicat:', e);
@@ -137,8 +129,8 @@ export default function LandingPage() {
           })}
           title={activeVideo.title}
           frameBorder="0"
-          sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
-          allow="autoplay; encrypted-media; picture-in-picture; fullscreen; accelerometer; gyroscope; microphone; camera"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-downloads allow-storage-access-by-user-activation"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen; accelerometer; gyroscope; microphone; camera; cross-origin-isolated"
           allowFullScreen={videoControlsSettings.allowFullscreen}
           onLoad={() => {
             console.log('LandingPage: Iframe da Atomicat carregado com src URL');
@@ -203,16 +195,6 @@ export default function LandingPage() {
               <div className="mb-8">
                 <div className="max-w-4xl mx-auto px-2">
                   <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
-                    {/* Loading indicator para scripts da Atomicat */}
-                    {activeVideo.type === 'atomicat' && VideoService.isAtomicatHtml(activeVideo.url) && scriptsLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                        <div className="text-white text-center">
-                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
-                          <p>Carregando player...</p>
-                        </div>
-                      </div>
-                    )}
-
                     {renderVideoPlayer()}
 
                     {/* Overlay transparente para bloquear interações quando necessário */}

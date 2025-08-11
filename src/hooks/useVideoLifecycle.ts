@@ -36,7 +36,7 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
     }
     
     // Forçar limpeza de iframes anteriores
-    const existingIframes = document.querySelectorAll('iframe[src*="youtube.com"], iframe[srcDoc*="atomicat"], iframe[src*="atomicat"]');
+    const existingIframes = document.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="data:text/html"], iframe[src*="atomicat"]');
     existingIframes.forEach(iframe => {
       try {
         const iframeElement = iframe as HTMLIFrameElement;
@@ -49,9 +49,9 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
           );
         }
         
-        // Para Atomicat, tentar pausar via postMessage genérico
-        if (iframeElement.src?.includes('atomicat') || iframeElement.getAttribute('srcDoc')?.includes('atomicat')) {
-          console.log('VideoLifecycle: Limpando iframe da Atomicat');
+        // Para Atomicat/data URL, tentar pausar via postMessage genérico
+        if (iframeElement.src?.includes('atomicat') || iframeElement.src?.includes('data:text/html')) {
+          console.log('VideoLifecycle: Limpando iframe da Atomicat (data URL)');
           
           // Tentar diferentes comandos de pausa para Video.js
           const pauseCommands = [
@@ -105,7 +105,7 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
       type: activeVideo.type,
       isAtomicatHtml,
       isHLS,
-      hasScripts: isAtomicatHtml ? VideoService.extractAtomicatScripts(activeVideo.url).length > 0 : false
+      willUseDataUrl: isAtomicatHtml
     });
 
     // Resetar estado primeiro
@@ -121,14 +121,16 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
     setVideoKey(newKey);
     currentVideoRef.current = newVideoId;
 
-    // Para vídeos da Atomicat com HLS, aguardar mais tempo para scripts/player carregarem
+    // Para vídeos da Atomicat com data URL, aguardar mais tempo para carregamento
     let loadingDelay = 100;
     
     if (isAtomicatVideo) {
-      if (isHLS) {
-        loadingDelay = 800; // HLS precisa de mais tempo
+      if (isAtomicatHtml && isHLS) {
+        loadingDelay = 1000; // Data URL + HLS precisa de mais tempo
       } else if (isAtomicatHtml) {
-        loadingDelay = 500; // HTML com scripts precisa de tempo médio
+        loadingDelay = 600; // Data URL precisa de tempo médio
+      } else if (isHLS) {
+        loadingDelay = 800; // HLS direto precisa de tempo
       } else {
         loadingDelay = 300; // URLs diretas precisam de menos tempo
       }
@@ -137,7 +139,10 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
     console.log('VideoLifecycle: Delay de carregamento definido:', {
       type: activeVideo.type,
       delay: loadingDelay,
-      reason: isHLS ? 'HLS Stream' : isAtomicatHtml ? 'HTML with scripts' : isAtomicatVideo ? 'Atomicat URL' : 'Standard video'
+      reason: isAtomicatHtml && isHLS ? 'Data URL + HLS' : 
+              isAtomicatHtml ? 'Data URL com scripts' : 
+              isHLS ? 'HLS Stream' : 
+              isAtomicatVideo ? 'Atomicat URL' : 'Standard video'
     });
     
     // Aguardar antes de marcar como pronto
@@ -147,7 +152,8 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
         type: activeVideo.type,
         delay: loadingDelay,
         isAtomicatVideo,
-        isHLS
+        isHLS,
+        usingDataUrl: isAtomicatHtml
       });
     }, loadingDelay);
 
