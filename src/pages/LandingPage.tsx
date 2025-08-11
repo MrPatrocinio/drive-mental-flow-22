@@ -200,7 +200,7 @@ export default function LandingPage() {
                     {/* Overlay transparente para bloquear interações quando necessário */}
                     {videoControlsSettings.shouldShowOverlay && (
                       <div 
-                        className="absolute inset-0"
+                        className="absolute inset-0 overflow-hidden"
                         style={{ pointerEvents: 'auto', background: 'transparent' }}
                         onContextMenu={videoControlsSettings.preventContextMenu ? (e) => e.preventDefault() : undefined}
                       />
