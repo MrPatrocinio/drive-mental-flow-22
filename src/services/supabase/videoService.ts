@@ -1,4 +1,3 @@
-
 /**
  * VideoService - Gerenciamento de vídeos da landing page
  * Responsabilidade: CRUD de vídeos e controle do vídeo ativo
@@ -305,14 +304,42 @@ export class VideoService {
     try {
       let processedHtml = htmlContent;
 
-      // Garantir que video-js players tenham configurações adequadas para autoplay
-      if (processedHtml.includes('<video-js')) {
-        // Adicionar atributos necessários se não existirem
-        if (!processedHtml.includes('preload=')) {
-          processedHtml = processedHtml.replace('<video-js', '<video-js preload="auto"');
+      // Detectar se é HLS (.m3u8)
+      const isHLS = processedHtml.includes('.m3u8') || processedHtml.includes('application/x-mpegURL');
+      
+      console.log('VideoService: Processando HTML da Atomicat', {
+        isHLS,
+        hasVideoJs: processedHtml.includes('<video-js'),
+        hasScript: processedHtml.includes('<script')
+      });
+
+      // Para vídeos HLS, garantir configurações específicas
+      if (isHLS) {
+        // Garantir que video-js players tenham muted=true para autoplay HLS
+        if (processedHtml.includes('<video-js')) {
+          // Adicionar ou substituir muted=true
+          if (processedHtml.includes('muted=')) {
+            processedHtml = processedHtml.replace(/muted=['"]?[^'">\s]*['"]?/gi, 'muted="true"');
+          } else {
+            processedHtml = processedHtml.replace('<video-js', '<video-js muted="true"');
+          }
+
+          // Garantir preload="auto" para HLS
+          if (!processedHtml.includes('preload=')) {
+            processedHtml = processedHtml.replace('<video-js', '<video-js preload="auto"');
+          }
+
+          // Garantir data-setup para Video.js
+          if (!processedHtml.includes('data-setup=')) {
+            processedHtml = processedHtml.replace('<video-js', '<video-js data-setup="{}"');
+          }
         }
-        
-        // Garantir que tenha controles básicos
+
+        console.log('VideoService: Configurações HLS aplicadas');
+      }
+
+      // Garantir que tenha controles básicos se for video-js
+      if (processedHtml.includes('<video-js')) {
         if (!processedHtml.includes('controls=')) {
           processedHtml = processedHtml.replace('<video-js', '<video-js controls="true"');
         }
@@ -326,6 +353,14 @@ export class VideoService {
             '<iframe',
             '<iframe allow="autoplay; encrypted-media; picture-in-picture; fullscreen"'
           );
+        }
+      }
+
+      // Garantir que scripts da Atomicat tenham os atributos corretos
+      if (processedHtml.includes('<script') && processedHtml.includes('atomicat')) {
+        // Adicionar defer se não tiver async nem defer
+        if (!processedHtml.includes('async') && !processedHtml.includes('defer')) {
+          processedHtml = processedHtml.replace(/<script([^>]*src[^>]*atomicat[^>]*)>/gi, '<script$1 defer>');
         }
       }
 
@@ -377,7 +412,8 @@ export class VideoService {
     const hasAtomicatReference = input.includes('atomicat') || 
                                 input.includes('media.atomicat.pages.dev') ||
                                 input.includes('vjs-') || // Video.js específico
-                                input.includes('video-js'); // Video.js tag
+                                input.includes('video-js') || // Video.js tag
+                                input.includes('.m3u8'); // HLS stream
     
     const result = hasHtmlTags && hasAtomicatReference;
     
@@ -386,6 +422,13 @@ export class VideoService {
     }
     
     return result;
+  }
+
+  /**
+   * Verifica se é streaming HLS (.m3u8)
+   */
+  static isHLSStream(input: string): boolean {
+    return input.includes('.m3u8') || input.includes('application/x-mpegURL');
   }
 
   /**
@@ -527,6 +570,95 @@ export class VideoService {
     } catch (error) {
       console.error('VideoService: Erro ao gerar URL com controles:', error);
       return this.processVideoUrl(baseUrl);
+    }
+  }
+
+  /**
+   * Extrai URLs de scripts da Atomicat do HTML
+   */
+  static extractAtomicatScripts(htmlContent: string): string[] {
+    const scripts: string[] = [];
+    
+    try {
+      // Buscar por tags script com src
+      const scriptMatches = htmlContent.match(/<script[^>]+src=['"](.*?)['"][^>]*>/gi);
+      
+      if (scriptMatches) {
+        scriptMatches.forEach(scriptTag => {
+          const srcMatch = scriptTag.match(/src=['"](.*?)['"]/i);
+          if (srcMatch && srcMatch[1]) {
+            const scriptUrl = srcMatch[1];
+            // Verificar se é script da Atomicat
+            if (scriptUrl.includes('atomicat') || scriptUrl.includes('video') || scriptUrl.includes('vjs')) {
+              scripts.push(scriptUrl);
+            }
+          }
+        });
+      }
+
+      console.log('VideoService: Scripts da Atomicat extraídos:', scripts);
+    } catch (error) {
+      console.error('VideoService: Erro ao extrair scripts:', error);
+    }
+    
+    return scripts;
+  }
+
+  /**
+   * Sincroniza controles do vídeo com HTML da Atomicat
+   */
+  static syncVideoControlsWithHtml(htmlContent: string, controls?: VideoControls): string {
+    if (!controls || !this.isAtomicatHtml(htmlContent)) {
+      return htmlContent;
+    }
+
+    try {
+      let syncedHtml = htmlContent;
+
+      // Para HLS/autoplay funcionar, muted deve ser true
+      if (this.isHLSStream(htmlContent) && controls.autoplay) {
+        console.log('VideoService: Forçando muted=true para HLS autoplay');
+        controls = { ...controls, muted: true };
+      }
+
+      // Aplicar configurações ao video-js
+      if (syncedHtml.includes('<video-js')) {
+        // Muted
+        if (controls.muted) {
+          if (syncedHtml.includes('muted=')) {
+            syncedHtml = syncedHtml.replace(/muted=['"]?[^'">\s]*['"]?/gi, 'muted="true"');
+          } else {
+            syncedHtml = syncedHtml.replace('<video-js', '<video-js muted="true"');
+          }
+        }
+
+        // Autoplay (só funciona com muted para HLS)
+        if (controls.autoplay && controls.muted) {
+          if (syncedHtml.includes('autoplay=')) {
+            syncedHtml = syncedHtml.replace(/autoplay=['"]?[^'">\s]*['"]?/gi, 'autoplay="true"');
+          } else {
+            syncedHtml = syncedHtml.replace('<video-js', '<video-js autoplay="true"');
+          }
+        }
+
+        // Controls
+        if (syncedHtml.includes('controls=')) {
+          syncedHtml = syncedHtml.replace(/controls=['"]?[^'">\s]*['"]?/gi, `controls="${controls.showControls}"`);
+        } else {
+          syncedHtml = syncedHtml.replace('<video-js', `<video-js controls="${controls.showControls}"`);
+        }
+      }
+
+      console.log('VideoService: Controles sincronizados com HTML', {
+        muted: controls.muted,
+        autoplay: controls.autoplay,
+        showControls: controls.showControls
+      });
+
+      return syncedHtml;
+    } catch (error) {
+      console.error('VideoService: Erro ao sincronizar controles:', error);
+      return htmlContent;
     }
   }
 }

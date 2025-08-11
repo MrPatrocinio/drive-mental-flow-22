@@ -52,10 +52,22 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
         // Para Atomicat, tentar pausar via postMessage genérico
         if (iframeElement.src?.includes('atomicat') || iframeElement.getAttribute('srcDoc')?.includes('atomicat')) {
           console.log('VideoLifecycle: Limpando iframe da Atomicat');
-          iframeElement.contentWindow?.postMessage(
-            JSON.stringify({ action: 'pause' }),
-            '*'
-          );
+          
+          // Tentar diferentes comandos de pausa para Video.js
+          const pauseCommands = [
+            { action: 'pause' },
+            { command: 'pause' },
+            { method: 'pause' },
+            { videojs: { method: 'pause' } }
+          ];
+
+          pauseCommands.forEach(command => {
+            try {
+              iframeElement.contentWindow?.postMessage(JSON.stringify(command), '*');
+            } catch (err) {
+              // Ignorar erros de postMessage
+            }
+          });
         }
       } catch (error) {
         console.log('VideoLifecycle: Limpeza de vídeo message failed:', error);
@@ -84,10 +96,16 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
       return; // Mesmo vídeo já carregado, não fazer nada
     }
 
+    const isAtomicatVideo = activeVideo.type === 'atomicat';
+    const isAtomicatHtml = isAtomicatVideo && VideoService.isAtomicatHtml(activeVideo.url);
+    const isHLS = isAtomicatVideo && VideoService.isHLSStream(activeVideo.url);
+
     console.log('VideoLifecycle: Carregando novo vídeo:', {
       id: newVideoId,
       type: activeVideo.type,
-      isAtomicatHtml: activeVideo.type === 'atomicat' ? VideoService.isAtomicatHtml(activeVideo.url) : false
+      isAtomicatHtml,
+      isHLS,
+      hasScripts: isAtomicatHtml ? VideoService.extractAtomicatScripts(activeVideo.url).length > 0 : false
     });
 
     // Resetar estado primeiro
@@ -103,15 +121,33 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
     setVideoKey(newKey);
     currentVideoRef.current = newVideoId;
 
-    // Para vídeos da Atomicat, aguardar um pouco mais para scripts carregarem
-    const loadingDelay = activeVideo.type === 'atomicat' ? 300 : 100;
+    // Para vídeos da Atomicat com HLS, aguardar mais tempo para scripts/player carregarem
+    let loadingDelay = 100;
+    
+    if (isAtomicatVideo) {
+      if (isHLS) {
+        loadingDelay = 800; // HLS precisa de mais tempo
+      } else if (isAtomicatHtml) {
+        loadingDelay = 500; // HTML com scripts precisa de tempo médio
+      } else {
+        loadingDelay = 300; // URLs diretas precisam de menos tempo
+      }
+    }
+    
+    console.log('VideoLifecycle: Delay de carregamento definido:', {
+      type: activeVideo.type,
+      delay: loadingDelay,
+      reason: isHLS ? 'HLS Stream' : isAtomicatHtml ? 'HTML with scripts' : isAtomicatVideo ? 'Atomicat URL' : 'Standard video'
+    });
     
     // Aguardar antes de marcar como pronto
     cleanupTimeoutRef.current = setTimeout(() => {
       setIsVideoReady(true);
       console.log('VideoLifecycle: Vídeo pronto para reprodução', {
         type: activeVideo.type,
-        delay: loadingDelay
+        delay: loadingDelay,
+        isAtomicatVideo,
+        isHLS
       });
     }, loadingDelay);
 
@@ -121,7 +157,7 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
         clearTimeout(cleanupTimeoutRef.current);
       }
     };
-  }, [activeVideo?.id, activeVideo?.type]); // Incluir tipo na dependência para debug
+  }, [activeVideo?.id, activeVideo?.type, cleanupPreviousVideo]);
 
   // Cleanup geral no unmount do componente
   useEffect(() => {
