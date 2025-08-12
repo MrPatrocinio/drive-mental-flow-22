@@ -1,5 +1,4 @@
-
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +23,7 @@ export const UserProtectedRoute = ({
   const { isAuthenticated, isLoading, user } = useSupabaseAuth();
   const { subscribed, createSubscription, checkSubscription } = useSubscription();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Verificar assinatura quando usuário autenticar
   useEffect(() => {

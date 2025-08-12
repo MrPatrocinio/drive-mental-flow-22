@@ -46,6 +46,7 @@ export default function AudioPlayerPage() {
             url: "", // Precisaria buscar a URL real do áudio
             field_id: playlistAudio.fieldId,
             tags: [],
+            is_premium: false, // Default para playlist
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
