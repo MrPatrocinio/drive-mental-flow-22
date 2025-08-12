@@ -8,6 +8,7 @@ export interface Audio {
   duration: string;
   field_id: string;
   tags: string[];
+  is_premium: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -18,6 +19,7 @@ export interface AudioInsert {
   duration: string;
   field_id: string;
   tags?: string[];
+  is_premium?: boolean;
 }
 
 export interface AudioUpdate {
@@ -26,6 +28,7 @@ export interface AudioUpdate {
   duration?: string;
   field_id?: string;
   tags?: string[];
+  is_premium?: boolean;
 }
 
 export interface AudioWithFile {
@@ -36,8 +39,13 @@ export interface AudioWithFile {
   tags?: string[];
   url?: string;
   file?: File;
+  is_premium?: boolean;
 }
 
+/**
+ * Serviço para operações com áudios
+ * Princípio SRP: Responsável apenas por operações de dados de áudio
+ */
 export class AudioService {
   static async getAll(): Promise<Audio[]> {
     console.log('AudioService: Buscando todos os áudios');

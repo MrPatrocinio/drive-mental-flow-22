@@ -1,9 +1,9 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/RefreshButton";
-import { Play, Clock, ArrowRight, Settings } from "lucide-react";
-import { AddToPlaylistButton } from "@/components/playlist/AddToPlaylistButton";
+import { Play, Clock, Crown } from "lucide-react";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { DriveMentalConfigPanel } from "@/components/DriveMentalConfigPanel";
 import { DriveMentalConfig } from "@/services/driveMentalProgrammingService";
@@ -11,8 +11,10 @@ import { FieldService, Field } from "@/services/supabase/fieldService";
 import { AudioService, Audio } from "@/services/supabase/audioService";
 import { AudioCard } from "@/components/AudioCard";
 import { TagFilter } from "@/components/TagFilter";
+import { PremiumContentGate } from "@/components/subscription/PremiumContentGate";
 import { useToast } from "@/hooks/use-toast";
 import { useDataSync } from "@/hooks/useDataSync";
+import { useContentAccess } from "@/services/subscriptionAccessService";
 import * as Icons from "lucide-react";
 
 export default function FieldPage() {
@@ -26,6 +28,7 @@ export default function FieldPage() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { canAccessAudio } = useContentAccess();
 
   useEffect(() => {
     if (fieldId) {
@@ -85,10 +88,16 @@ export default function FieldPage() {
     );
   }, [audios, selectedTags]);
 
+  // Separar áudios gratuitos e premium
+  const { freeAudios, premiumAudios } = useMemo(() => {
+    const free = filteredAudios.filter(audio => !audio.is_premium);
+    const premium = filteredAudios.filter(audio => audio.is_premium);
+    return { freeAudios: free, premiumAudios: premium };
+  }, [filteredAudios]);
+
   // Calcular duração total
   const totalDuration = useMemo(() => {
     if (!audios.length) return "0h 0min";
-    // Parsear durações no formato "MM:SS" para calcular total
     const totalSeconds = audios.reduce((total, audio) => {
       const [minutes, seconds] = audio.duration.split(':').map(Number);
       return total + (minutes * 60) + (seconds || 0);
@@ -129,6 +138,16 @@ export default function FieldPage() {
   }
 
   const handlePlayAudio = (audio: Audio) => {
+    // Verificar acesso antes de reproduzir
+    if (!canAccessAudio(audio.is_premium)) {
+      toast({
+        title: "Acesso Restrito",
+        description: "Este áudio é exclusivo para assinantes premium.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     navigate(`/campo/${fieldId}/audio/${audio.id}`);
   };
 
@@ -144,6 +163,50 @@ export default function FieldPage() {
   };
 
   const FieldIcon = (Icons as any)[field.icon_name] || Icons.Circle;
+
+  const renderAudioSection = (title: string, audios: Audio[], icon: React.ReactNode) => {
+    if (audios.length === 0) return null;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          {icon}
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <span className="text-sm text-muted-foreground">({audios.length})</span>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {audios.map((audio, index) => (
+            <div 
+              key={audio.id}
+              className="animate-fade-in"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              {audio.is_premium ? (
+                <PremiumContentGate
+                  isPremium={audio.is_premium}
+                  contentTitle={audio.title}
+                  showPreview={true}
+                >
+                  <AudioCard
+                    audio={audio}
+                    onPlay={handlePlayAudio}
+                    showTags={true}
+                  />
+                </PremiumContentGate>
+              ) : (
+                <AudioCard
+                  audio={audio}
+                  onPlay={handlePlayAudio}
+                  showTags={true}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen hero-gradient">
@@ -187,7 +250,7 @@ export default function FieldPage() {
             </div>
 
             {/* Lista de Áudios */}
-            <div className="flex-1">
+            <div className="flex-1 space-y-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold">
                   Áudios Disponíveis
@@ -208,20 +271,20 @@ export default function FieldPage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredAudios.map((audio, index) => (
-                    <div 
-                      key={audio.id}
-                      className="animate-fade-in"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <AudioCard
-                        audio={audio}
-                        onPlay={handlePlayAudio}
-                        showTags={true}
-                      />
-                    </div>
-                  ))}
+                <div className="space-y-8">
+                  {/* Áudios Gratuitos */}
+                  {renderAudioSection(
+                    "Conteúdo Gratuito",
+                    freeAudios,
+                    <Play className="h-5 w-5 text-green-500" />
+                  )}
+                  
+                  {/* Áudios Premium */}
+                  {renderAudioSection(
+                    "Conteúdo Premium",
+                    premiumAudios,
+                    <Crown className="h-5 w-5 text-primary" />
+                  )}
                 </div>
               )}
             </div>
