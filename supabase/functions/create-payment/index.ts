@@ -8,6 +8,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper logging function for enhanced debugging
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[CREATE-PAYMENT] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -20,14 +26,29 @@ serve(async (req) => {
   );
 
   try {
-    console.log("[CREATE-PAYMENT] Function started");
+    logStep("Function started");
 
     // Get user data from request body (for guest checkout)
     const { email, name } = await req.json();
-    console.log("[CREATE-PAYMENT] Payment request for:", { email, name });
+    logStep("Payment request received", { email, hasName: !!name });
 
-    if (!email) {
-      throw new Error("Email é obrigatório");
+    // Enhanced input validation
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      throw new Error("Email é obrigatório e deve ser uma string válida");
+    }
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      throw new Error("Nome é obrigatório e deve ser uma string válida");
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      throw new Error("Email deve ter um formato válido");
+    }
+
+    if (name.trim().length < 2) {
+      throw new Error("Nome deve ter pelo menos 2 caracteres");
     }
 
     // Get current pricing from Supabase
@@ -36,6 +57,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    logStep("Fetching pricing data from database");
     const { data: pricingData, error: pricingError } = await supabaseService
       .from('landing_content')
       .select('content')
@@ -47,6 +69,7 @@ serve(async (req) => {
 
     if (pricingData?.content && !pricingError) {
       const pricing = pricingData.content as any;
+      logStep("Using dynamic pricing from database", { hasPromotion: pricing.has_promotion });
       
       // Check for active promotion
       if (pricing.has_promotion && pricing.promotion_end_date && new Date(pricing.promotion_end_date) > new Date()) {
@@ -59,13 +82,15 @@ serve(async (req) => {
         if (pricing.promotion_label) {
           productName = `${productName} - ${pricing.promotion_label}`;
         }
+        logStep("Applied promotional pricing", { originalPrice, discountPercentage, finalPrice: finalPrice / 100 });
       } else {
         // Use regular price
         finalPrice = Math.round(pricing.price * 100); // Convert to centavos
+        logStep("Using regular pricing", { finalPrice: finalPrice / 100 });
       }
+    } else {
+      logStep("Using default pricing (database unavailable)", { finalPrice: finalPrice / 100 });
     }
-
-    console.log("[CREATE-PAYMENT] Using price:", finalPrice / 100, "BRL");
 
     // Initialize Stripe
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -73,15 +98,31 @@ serve(async (req) => {
       throw new Error("STRIPE_SECRET_KEY não configurada");
     }
     
-    console.log("[CREATE-PAYMENT] Stripe key found, initializing...");
+    // Validate Stripe key format
+    if (!stripeKey.startsWith('sk_')) {
+      throw new Error("STRIPE_SECRET_KEY tem formato inválido");
+    }
+
+    const isTestKey = stripeKey.startsWith('sk_test_');
+    logStep("Stripe configuration", { isTestMode: isTestKey, keyPrefix: stripeKey.substring(0, 8) + "..." });
+    
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
 
-    // Create a one-time payment session with dynamic pricing
-    console.log("[CREATE-PAYMENT] Creating checkout session...");
+    // Enhanced error handling for price validation
+    if (finalPrice < 50) { // Minimum 50 centavos
+      throw new Error("Preço inválido: valor muito baixo");
+    }
+
+    if (finalPrice > 1000000) { // Maximum R$ 10,000
+      throw new Error("Preço inválido: valor muito alto");
+    }
+
+    // Create a one-time payment session with enhanced configuration
+    logStep("Creating Stripe checkout session", { finalPrice: finalPrice / 100, productName });
     const session = await stripe.checkout.sessions.create({
-      customer_email: email,
+      customer_email: email.trim(),
       customer_creation: "always",
       line_items: [
         {
@@ -100,28 +141,58 @@ serve(async (req) => {
       success_url: `${req.headers.get("origin")}/pagamento/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/pagamento/cancelado`,
       metadata: {
-        customer_email: email,
-        customer_name: name || "",
+        customer_email: email.trim(),
+        customer_name: name.trim(),
         final_price: finalPrice.toString(),
+        environment: isTestKey ? "test" : "production",
+        created_at: new Date().toISOString(),
+      },
+      // Enhanced session configuration
+      expires_at: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
+      billing_address_collection: "auto",
+      phone_number_collection: {
+        enabled: false, // Set to true if you want to collect phone numbers
       },
     });
 
-    console.log("[CREATE-PAYMENT] Checkout session created successfully:", session.id);
+    logStep("Checkout session created successfully", { 
+      sessionId: session.id, 
+      url: session.url,
+      expiresAt: new Date(session.expires_at * 1000).toISOString()
+    });
 
     return new Response(JSON.stringify({ 
       url: session.url,
-      sessionId: session.id 
+      sessionId: session.id,
+      expiresAt: session.expires_at
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("[CREATE-PAYMENT] Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro interno do servidor";
+    logStep("ERROR in create-payment", { 
+      message: errorMessage,
+      type: error instanceof Error ? error.constructor.name : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
+    // Return user-friendly error messages
+    const friendlyErrors: Record<string, string> = {
+      "Email é obrigatório": "Por favor, insira um email válido",
+      "Nome é obrigatório": "Por favor, insira seu nome completo",
+      "STRIPE_SECRET_KEY não configurada": "Erro de configuração do sistema de pagamento",
+      "STRIPE_SECRET_KEY tem formato inválido": "Erro de configuração do sistema de pagamento"
+    };
+
+    const responseMessage = friendlyErrors[errorMessage] || "Erro no processamento do pagamento";
+    
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : "Erro interno do servidor" 
+      error: responseMessage,
+      code: error instanceof Error ? error.constructor.name : 'UnknownError'
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: 400,
     });
   }
 });

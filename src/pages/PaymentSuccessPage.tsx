@@ -1,13 +1,13 @@
-
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, CreditCard, Mail, User, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EnvironmentBadge } from "@/components/ui/environment-badge";
+import { StripePaymentService } from "@/services/stripe/stripePaymentService";
 
 export default function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
@@ -30,18 +30,17 @@ export default function PaymentSuccessPage() {
       try {
         console.log("Verificando pagamento para sessão:", sessionId);
 
-        const { data, error: functionError } = await supabase.functions.invoke('verify-payment', {
-          body: { sessionId }
-        });
+        const result = await StripePaymentService.verifyPayment(sessionId);
 
-        if (functionError) {
-          throw new Error(functionError.message || "Erro ao verificar pagamento");
+        if (!result.success) {
+          setError(result.error || "Erro ao verificar pagamento");
+          return;
         }
 
-        console.log("Dados do pagamento:", data);
-        setPaymentData(data);
+        console.log("Dados do pagamento:", result.paymentData);
+        setPaymentData(result.paymentData);
 
-        if (data.paymentStatus === "paid") {
+        if (result.paymentData?.paymentStatus === "paid") {
           toast({
             title: "Pagamento confirmado!",
             description: "Bem-vindo ao Drive Mental. Seu acesso foi liberado.",
@@ -49,7 +48,7 @@ export default function PaymentSuccessPage() {
         }
       } catch (error) {
         console.error("Erro ao verificar pagamento:", error);
-        setError(error instanceof Error ? error.message : "Erro ao verificar pagamento");
+        setError("Erro inesperado ao verificar pagamento");
       } finally {
         setIsLoading(false);
       }
@@ -70,9 +69,14 @@ export default function PaymentSuccessPage() {
       <div className="min-h-screen hero-gradient">
         <Header />
         <div className="container mx-auto px-4 py-12">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-lg">Verificando seu pagamento...</p>
+          <div className="max-w-2xl mx-auto">
+            <div className="flex justify-center mb-6">
+              <EnvironmentBadge />
+            </div>
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-lg">Verificando seu pagamento...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -85,6 +89,9 @@ export default function PaymentSuccessPage() {
         <Header />
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-2xl mx-auto">
+            <div className="flex justify-center mb-6">
+              <EnvironmentBadge />
+            </div>
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -110,6 +117,10 @@ export default function PaymentSuccessPage() {
       
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
+          <div className="flex justify-center mb-6">
+            <EnvironmentBadge />
+          </div>
+
           <div className="text-center mb-8">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
               isPaid ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
