@@ -1,7 +1,9 @@
+
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { LandingContentForm } from "@/components/admin/LandingContentForm";
 import { VideoManager } from "@/components/admin/VideoManager";
 import { DemoConfigPanel } from "@/components/admin/DemoConfigPanel";
+import { AudioConfigPanel } from "@/components/admin/AudioConfigPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/RefreshButton";
@@ -9,7 +11,7 @@ import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, Save, Play, Settings } from "lucide-react";
+import { Eye, Save, Play, Settings, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminLandingPage() {
@@ -56,11 +58,15 @@ export default function AdminLandingPage() {
 
         {/* Content Tabs */}
         <Tabs defaultValue="content" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="content">Conteúdo da Página</TabsTrigger>
             <TabsTrigger value="videos">
               <Play className="h-4 w-4 mr-2" />
               Gerenciar Vídeos
+            </TabsTrigger>
+            <TabsTrigger value="audio">
+              <Clock className="h-4 w-4 mr-2" />
+              Configurações de Áudio
             </TabsTrigger>
             <TabsTrigger value="demo">Demonstração</TabsTrigger>
           </TabsList>
@@ -154,6 +160,38 @@ export default function AdminLandingPage() {
                       <li>• Apenas um vídeo pode estar ativo por vez</li>
                       <li>• Use o botão de olho para ativar/desativar</li>
                       <li>• Vídeo ativo aparece na página inicial</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="audio" className="space-y-6">
+            <AudioConfigPanel />
+            
+            {/* Audio Help Section */}
+            <Card className="bg-gradient-to-br from-orange-500/5 to-red-500/5 border-orange-500/20">
+              <CardHeader>
+                <CardTitle className="text-lg">🎵 Sobre as Configurações de Áudio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <h4 className="font-semibold mb-2">Pausa Entre Repetições</h4>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Controla o tempo de pausa entre cada repetição do áudio principal</li>
+                      <li>• Varia de 2 a 6 segundos para melhor experiência</li>
+                      <li>• Durante a pausa, a música de fundo continua tocando</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Experiência do Usuário</h4>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Usuário vê indicador "Pausando..." durante o intervalo</li>
+                      <li>• Pode cancelar a pausa clicando em reproduzir</li>
+                      <li>• Configuração se aplica globalmente a todos os áudios</li>
                     </ul>
                   </div>
                 </div>

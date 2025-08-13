@@ -1,6 +1,7 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Music, Volume } from "lucide-react";
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Music, Volume, Clock } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { AudioPreferencesPanel } from "@/components/AudioPreferencesPanel";
 import { AudioPreferences, audioPreferencesService } from "@/services/audioPreferencesService";
@@ -45,6 +46,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     audioRef,
     playerState,
     repeatCount,
+    pauseBetweenRepeats,
     togglePlay,
     reset,
     seek,
@@ -88,6 +90,21 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       </div>
 
+      {/* Paused Between Repeats Status */}
+      {playerState.isPausedBetweenRepeats && (
+        <div className="text-center p-3 bg-primary/10 border border-primary/20 rounded-lg">
+          <div className="flex items-center justify-center gap-2 text-primary">
+            <Clock className="h-4 w-4 animate-pulse" />
+            <span className="font-medium">
+              Pausando entre repetições... ({pauseBetweenRepeats}s)
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            A música de fundo continua tocando
+          </p>
+        </div>
+      )}
+
       {/* Loading State */}
       {playerState.isLoading && <AudioLoadingIndicator />}
 
@@ -108,7 +125,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
             step={1}
             onValueChange={handleSeek}
             className="w-full"
-            disabled={!playerState.canPlay}
+            disabled={!playerState.canPlay || playerState.isPausedBetweenRepeats}
           />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{formatTime(playerState.currentTime)}</span>
@@ -208,6 +225,11 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           <span>
             Repetições: {repeatCount}/{preferences.repeatCount}
           </span>
+        )}
+        {pauseBetweenRepeats > 0 && (
+          <div className="text-xs text-muted-foreground mt-1">
+            Pausa entre repetições: {pauseBetweenRepeats}s
+          </div>
         )}
       </div>
 

@@ -1,13 +1,14 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { AudioPlayerService, AudioPlayerState } from '@/services/audioPlayerService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
+import { AudioConfigService } from '@/services/supabase/audioConfigService';
 import { useBackgroundMusic } from './useBackgroundMusic';
 import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
 /**
  * Hook customizado para gerenciar o estado do player de áudio
  * Segue o princípio de Composição sobre Herança
+ * Segue SSOT: busca configuração administrativa centralizada
  */
 export const useAudioPlayer = (
   audioUrl: string,
@@ -24,15 +25,32 @@ export const useAudioPlayer = (
     isLoading: false,
     hasError: false,
     canPlay: false,
-    isTransitioning: false
+    isTransitioning: false,
+    isPausedBetweenRepeats: false
   });
   const [repeatCount, setRepeatCount] = useState(0);
+  const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(3); // Configuração administrativa
   
   // Hook para música de fundo
   const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
   
   // Context para controlar música de fundo
   const audioPlaybackContext = useAudioPlaybackSafe();
+
+  // Carrega configuração administrativa de pausa (SSOT)
+  useEffect(() => {
+    const loadAudioConfig = async () => {
+      try {
+        const config = await AudioConfigService.getAudioConfig();
+        setPauseBetweenRepeats(config.pause_between_repeats_seconds);
+        console.log('useAudioPlayer: Configuração de pausa carregada:', config.pause_between_repeats_seconds, 'segundos');
+      } catch (error) {
+        console.error('useAudioPlayer: Erro ao carregar configuração de pausa:', error);
+      }
+    };
+
+    loadAudioConfig();
+  }, []);
 
   // Inicializa o serviço de player
   useEffect(() => {
@@ -53,9 +71,9 @@ export const useAudioPlayer = (
           const shouldContinue = preferences.repeatCount === 0 || newCount < preferences.repeatCount;
           
           if (shouldContinue && playerServiceRef.current) {
-            console.log('useAudioPlayer: Executando próxima repetição (otimizada)');
-            // Usa o método otimizado de loop
-            playerServiceRef.current.performLoop();
+            console.log(`useAudioPlayer: Executando próxima repetição com pausa de ${pauseBetweenRepeats}s`);
+            // Usa o método com pausa configurável pelo admin
+            playerServiceRef.current.performLoopWithPause(pauseBetweenRepeats);
           } else {
             console.log('useAudioPlayer: Repetições concluídas');
           }
@@ -76,7 +94,7 @@ export const useAudioPlayer = (
       console.log('useAudioPlayer: Limpando serviço');
       service.cleanup();
     };
-  }, [audioUrl, preferences.repeatCount]);
+  }, [audioUrl, preferences.repeatCount, pauseBetweenRepeats]);
 
   // Atualiza preferências de volume
   useEffect(() => {
@@ -91,25 +109,25 @@ export const useAudioPlayer = (
     }
   }, [preferences.volume, setBackgroundVolume]);
 
-  // Notifica o contexto sobre o estado do áudio principal (apenas quando não está em transição)
+  // Notifica o contexto sobre o estado do áudio principal (apenas quando não está em transição ou pausa)
   useEffect(() => {
-    if (!playerState.isTransitioning) {
+    if (!playerState.isTransitioning && !playerState.isPausedBetweenRepeats) {
       console.log('useAudioPlayer: Notificando contexto - áudio principal:', playerState.isPlaying ? 'tocando' : 'parado');
       audioPlaybackContext?.setMainAudioPlaying(playerState.isPlaying);
     } else {
-      console.log('useAudioPlayer: Em transição - não notificando contexto');
+      console.log('useAudioPlayer: Em transição/pausa - não notificando contexto');
     }
-  }, [playerState.isPlaying, playerState.isTransitioning, audioPlaybackContext]);
+  }, [playerState.isPlaying, playerState.isTransitioning, playerState.isPausedBetweenRepeats, audioPlaybackContext]);
 
   // Auto-play functionality
   useEffect(() => {
-    if (preferences.autoPlay && audioRef.current && !playerState.isPlaying && playerState.canPlay && !playerState.hasError && !playerState.isTransitioning) {
+    if (preferences.autoPlay && audioRef.current && !playerState.isPlaying && playerState.canPlay && !playerState.hasError && !playerState.isTransitioning && !playerState.isPausedBetweenRepeats) {
       console.log('useAudioPlayer: Executando auto-play');
       setTimeout(() => {
         playerServiceRef.current?.togglePlay();
       }, 200);
     }
-  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning]);
+  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isPausedBetweenRepeats]);
 
   const togglePlay = () => {
     console.log('useAudioPlayer: Toggle play solicitado');
@@ -136,6 +154,7 @@ export const useAudioPlayer = (
     audioRef,
     playerState,
     repeatCount,
+    pauseBetweenRepeats,
     togglePlay,
     reset,
     seek,
