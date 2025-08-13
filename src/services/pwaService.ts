@@ -105,7 +105,7 @@ export class PWAService {
     // Listener para prompt de instalação
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
-      this.deferredPrompt = e as PWAInstallPrompt;
+      this.deferredPrompt = e as unknown as PWAInstallPrompt;
       this.capabilities.isInstallable = true;
       this.notifyListeners();
     });

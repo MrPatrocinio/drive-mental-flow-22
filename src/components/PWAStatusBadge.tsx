@@ -12,13 +12,13 @@ import { usePWA } from "@/hooks/usePWA";
 
 interface PWAStatusBadgeProps {
   variant?: "badge" | "button";
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "default" | "lg";
   showText?: boolean;
 }
 
 export const PWAStatusBadge = ({ 
   variant = "badge", 
-  size = "md", 
+  size = "default", 
   showText = true 
 }: PWAStatusBadgeProps) => {
   const { isInstalled, isInstallable, installApp, isInstalling, platform } = usePWA();
