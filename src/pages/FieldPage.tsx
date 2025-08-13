@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,7 @@ export default function FieldPage() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { canAccessContent, hasActiveSubscription } = useContentAccess();
+  const { hasFullAccess, canAccessAudio, hasActiveSubscription } = useContentAccess();
   const { isAuthenticated } = useUser();
   const { createSubscription } = useSubscription();
 
@@ -135,9 +134,11 @@ export default function FieldPage() {
     );
   }
 
-  const handlePlayAudio = (audio: Audio) => {
-    // Verificar acesso antes de reproduzir
-    if (!canAccessContent()) {
+  const handlePlayAudio = async (audio: Audio) => {
+    // Verificar acesso ao áudio específico
+    const hasAccess = await canAccessAudio(audio.is_premium || false);
+    
+    if (!hasAccess) {
       if (!isAuthenticated) {
         toast({
           title: "Login Necessário",
@@ -186,8 +187,8 @@ export default function FieldPage() {
       );
     }
 
-    // Se usuário tem acesso, mostrar todos os áudios normalmente
-    if (canAccessContent()) {
+    // Se usuário tem acesso completo, mostrar todos os áudios normalmente
+    if (hasFullAccess()) {
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredAudios.map((audio, index) => (
@@ -207,7 +208,7 @@ export default function FieldPage() {
       );
     }
 
-    // Se usuário não tem acesso, mostrar gate de conteúdo premium
+    // Se usuário não tem acesso completo, mostrar gate de conteúdo premium
     return (
       <PremiumContentGate
         contentTitle="Áudios deste campo"
