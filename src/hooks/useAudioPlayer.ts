@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { AudioPlayerService, AudioPlayerState } from '@/services/audioPlayerService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
@@ -26,10 +27,10 @@ export const useAudioPlayer = (
     hasError: false,
     canPlay: false,
     isTransitioning: false,
-    isPausedBetweenRepeats: false
+    isInternalPause: false
   });
   const [repeatCount, setRepeatCount] = useState(0);
-  const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(3); // Configuração administrativa
+  const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(3);
   
   // Hook para música de fundo
   const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
@@ -57,7 +58,7 @@ export const useAudioPlayer = (
     if (!audioRef.current) return;
 
     console.log('useAudioPlayer: Inicializando player para:', audioUrl);
-    setRepeatCount(0); // Reset count on new audio
+    setRepeatCount(0);
 
     const service = new AudioPlayerService({
       onStateChange: setPlayerState,
@@ -72,7 +73,6 @@ export const useAudioPlayer = (
           
           if (shouldContinue && playerServiceRef.current) {
             console.log(`useAudioPlayer: Executando próxima repetição com pausa de ${pauseBetweenRepeats}s`);
-            // Usa o método com pausa configurável pelo admin
             playerServiceRef.current.performLoopWithPause(pauseBetweenRepeats);
           } else {
             console.log('useAudioPlayer: Repetições concluídas');
@@ -99,7 +99,6 @@ export const useAudioPlayer = (
   // Atualiza preferências de volume
   useEffect(() => {
     if (playerServiceRef.current) {
-      // Volume já normalizado entre 0 e 1, mínimo 1%
       const normalizedVolume = Math.max(0.01, preferences.volume / 100);
       console.log('useAudioPlayer: Definindo volume:', preferences.volume, 'normalizado:', normalizedVolume);
       playerServiceRef.current.setVolume(normalizedVolume);
@@ -109,25 +108,30 @@ export const useAudioPlayer = (
     }
   }, [preferences.volume, setBackgroundVolume]);
 
-  // Notifica o contexto sobre o estado do áudio principal (apenas quando não está em transição ou pausa)
+  // Notifica o contexto sobre o estado do áudio principal
+  // Princípio KISS: lógica simplificada - apenas considera isPlaying público
   useEffect(() => {
-    if (!playerState.isTransitioning && !playerState.isPausedBetweenRepeats) {
+    if (!playerState.isTransitioning) {
       console.log('useAudioPlayer: Notificando contexto - áudio principal:', playerState.isPlaying ? 'tocando' : 'parado');
       audioPlaybackContext?.setMainAudioPlaying(playerState.isPlaying);
-    } else {
-      console.log('useAudioPlayer: Em transição/pausa - não notificando contexto');
     }
-  }, [playerState.isPlaying, playerState.isTransitioning, playerState.isPausedBetweenRepeats, audioPlaybackContext]);
+  }, [playerState.isPlaying, playerState.isTransitioning, audioPlaybackContext]);
 
-  // Auto-play functionality
+  // Auto-play functionality (modificado para considerar pausa interna)
   useEffect(() => {
-    if (preferences.autoPlay && audioRef.current && !playerState.isPlaying && playerState.canPlay && !playerState.hasError && !playerState.isTransitioning && !playerState.isPausedBetweenRepeats) {
+    if (preferences.autoPlay && 
+        audioRef.current && 
+        !playerState.isPlaying && 
+        playerState.canPlay && 
+        !playerState.hasError && 
+        !playerState.isTransitioning &&
+        !playerState.isInternalPause) {
       console.log('useAudioPlayer: Executando auto-play');
       setTimeout(() => {
         playerServiceRef.current?.togglePlay();
       }, 200);
     }
-  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isPausedBetweenRepeats]);
+  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isInternalPause]);
 
   const togglePlay = () => {
     console.log('useAudioPlayer: Toggle play solicitado');
@@ -146,7 +150,6 @@ export const useAudioPlayer = (
 
   const setMuted = (muted: boolean) => {
     playerServiceRef.current?.setMuted(muted);
-    // Sincroniza mute com música de fundo
     setBackgroundMuted(muted);
   };
 

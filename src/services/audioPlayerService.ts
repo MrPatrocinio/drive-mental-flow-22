@@ -11,7 +11,7 @@ export interface AudioPlayerState {
   errorMessage?: string;
   canPlay: boolean;
   isTransitioning: boolean;
-  isPausedBetweenRepeats: boolean; // Novo estado para pausa entre repetições
+  isInternalPause: boolean; // Novo estado interno para controle técnico
 }
 
 export interface AudioPlayerEvents {
@@ -23,7 +23,7 @@ export interface AudioPlayerEvents {
 export class AudioPlayerService {
   private audioElement: HTMLAudioElement | null = null;
   private events: AudioPlayerEvents;
-  private pauseTimeout: NodeJS.Timeout | null = null; // Controle da pausa
+  private pauseTimeout: NodeJS.Timeout | null = null;
   private state: AudioPlayerState = {
     isPlaying: false,
     currentTime: 0,
@@ -32,7 +32,7 @@ export class AudioPlayerService {
     hasError: false,
     canPlay: false,
     isTransitioning: false,
-    isPausedBetweenRepeats: false
+    isInternalPause: false
   };
 
   constructor(events: AudioPlayerEvents) {
@@ -82,27 +82,30 @@ export class AudioPlayerService {
 
     // Eventos de reprodução
     audio.addEventListener('timeupdate', () => {
-      if (!this.state.isTransitioning && !this.state.isPausedBetweenRepeats) {
+      if (!this.state.isTransitioning && !this.state.isInternalPause) {
         this.updateState({ currentTime: audio.currentTime });
       }
     });
 
     audio.addEventListener('play', () => {
       console.log('AudioPlayerService: Reprodução iniciada');
-      this.updateState({ isPlaying: true, isTransitioning: false, isPausedBetweenRepeats: false });
+      this.updateState({ 
+        isPlaying: true, 
+        isTransitioning: false, 
+        isInternalPause: false 
+      });
     });
 
     audio.addEventListener('pause', () => {
-      // Só atualiza isPlaying se não está em transição ou pausa entre repetições
-      if (!this.state.isTransitioning && !this.state.isPausedBetweenRepeats) {
-        console.log('AudioPlayerService: Reprodução pausada');
+      // Só atualiza isPlaying se não está em pausa interna ou transição
+      if (!this.state.isInternalPause && !this.state.isTransitioning) {
+        console.log('AudioPlayerService: Reprodução pausada pelo usuário');
         this.updateState({ isPlaying: false });
       }
     });
 
     audio.addEventListener('ended', () => {
       console.log('AudioPlayerService: Áudio terminou - iniciando transição de loop');
-      // Marca como transição para evitar mudanças de estado desnecessárias
       this.updateState({ isTransitioning: true });
       this.events.onRepeatComplete?.();
     });
@@ -117,7 +120,7 @@ export class AudioPlayerService {
         errorMessage,
         canPlay: false,
         isTransitioning: false,
-        isPausedBetweenRepeats: false
+        isInternalPause: false
       });
       this.events.onError?.(errorMessage);
     });
@@ -129,7 +132,7 @@ export class AudioPlayerService {
         errorMessage: 'Reprodução interrompida - problema de conexão',
         isLoading: false,
         isTransitioning: false,
-        isPausedBetweenRepeats: false
+        isInternalPause: false
       });
     });
   }
@@ -168,9 +171,9 @@ export class AudioPlayerService {
   async togglePlay(): Promise<void> {
     if (!this.audioElement || !this.state.canPlay) return;
 
-    // Cancela pausa se usuário tentar reproduzir durante a pausa
-    if (this.state.isPausedBetweenRepeats) {
-      this.cancelPauseBetweenRepeats();
+    // Cancela pausa interna se usuário tentar reproduzir durante ela
+    if (this.state.isInternalPause) {
+      this.cancelInternalPause();
     }
 
     try {
@@ -189,7 +192,7 @@ export class AudioPlayerService {
         errorMessage,
         isPlaying: false,
         isTransitioning: false,
-        isPausedBetweenRepeats: false
+        isInternalPause: false
       });
       this.events.onError?.(errorMessage);
     }
@@ -202,35 +205,38 @@ export class AudioPlayerService {
     if (!this.audioElement) return;
     
     console.log('AudioPlayerService: Resetando áudio');
-    this.cancelPauseBetweenRepeats();
+    this.cancelInternalPause();
     this.audioElement.currentTime = 0;
     this.updateState({ 
       currentTime: 0, 
       isTransitioning: false,
-      isPausedBetweenRepeats: false
+      isInternalPause: false
     });
   }
 
   /**
-   * Executa loop com pausa configurável (novo método)
+   * Executa loop com pausa configurável (modificado para usar pausa interna)
    * Princípio SRP: responsabilidade específica para loop com pausa
+   * Princípio KISS: simplificado - mantém isPlaying=true durante pausa interna
    */
   async performLoopWithPause(pauseSeconds: number): Promise<void> {
     if (!this.audioElement) return;
 
     try {
-      console.log(`AudioPlayerService: Executando loop com pausa de ${pauseSeconds} segundos`);
+      console.log(`AudioPlayerService: Executando loop com pausa interna de ${pauseSeconds} segundos`);
       
-      // Marca como em pausa entre repetições
+      // Marca como pausa interna - isPlaying permanece true
       this.updateState({ 
         isTransitioning: false,
-        isPausedBetweenRepeats: true,
-        isPlaying: false
+        isInternalPause: true
       });
+      
+      // Pausa técnica interna
+      this.audioElement.pause();
       
       // Aguarda o tempo de pausa configurado
       this.pauseTimeout = setTimeout(async () => {
-        if (!this.audioElement) return;
+        if (!this.audioElement || !this.state.isInternalPause) return;
         
         try {
           // Reset para o início
@@ -239,13 +245,13 @@ export class AudioPlayerService {
           // Inicia reprodução
           await this.audioElement.play();
           
-          console.log('AudioPlayerService: Loop após pausa concluído com sucesso');
+          console.log('AudioPlayerService: Loop após pausa interna concluído');
         } catch (error) {
           console.error('AudioPlayerService: Erro no loop após pausa:', error);
           this.updateState({ 
             hasError: true, 
             isTransitioning: false,
-            isPausedBetweenRepeats: false,
+            isInternalPause: false,
             isPlaying: false 
           });
         }
@@ -256,7 +262,7 @@ export class AudioPlayerService {
       this.updateState({ 
         hasError: true, 
         isTransitioning: false,
-        isPausedBetweenRepeats: false,
+        isInternalPause: false,
         isPlaying: false 
       });
     }
@@ -287,19 +293,22 @@ export class AudioPlayerService {
         hasError: true, 
         isTransitioning: false,
         isPlaying: false,
-        isPausedBetweenRepeats: false
+        isInternalPause: false
       });
     }
   }
 
   /**
-   * Cancela pausa entre repetições
+   * Cancela pausa interna
    */
-  private cancelPauseBetweenRepeats(): void {
+  private cancelInternalPause(): void {
     if (this.pauseTimeout) {
       clearTimeout(this.pauseTimeout);
       this.pauseTimeout = null;
-      console.log('AudioPlayerService: Pausa entre repetições cancelada');
+      console.log('AudioPlayerService: Pausa interna cancelada');
+    }
+    if (this.state.isInternalPause) {
+      this.updateState({ isInternalPause: false });
     }
   }
 
@@ -345,7 +354,7 @@ export class AudioPlayerService {
    * Limpa os recursos
    */
   cleanup(): void {
-    this.cancelPauseBetweenRepeats();
+    this.cancelInternalPause();
     // Os event listeners são removidos automaticamente quando o elemento é destruído
     this.audioElement = null;
   }
