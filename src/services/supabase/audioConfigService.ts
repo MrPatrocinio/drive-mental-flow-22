@@ -139,7 +139,7 @@ export class AudioConfigService {
       const { data, error } = await supabase
         .from('landing_content')
         .update({ 
-          content: config,
+          content: config as any, // Cast explícito para Json
           updated_at: new Date().toISOString()
         })
         .eq('section', 'audio_config')
@@ -186,7 +186,7 @@ export class AudioConfigService {
         .from('landing_content')
         .insert({
           section: 'audio_config',
-          content: config
+          content: config as any // Cast explícito para Json
         });
 
       if (error) {
