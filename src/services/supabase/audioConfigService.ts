@@ -33,8 +33,10 @@ export class AudioConfigService {
         return DEFAULT_AUDIO_CONFIG;
       }
 
-      // Verificação segura antes do spread
-      const content = data.content || {};
+      // Verificação segura e cast explícito para garantir tipo correto
+      const content = data.content && typeof data.content === 'object' && !Array.isArray(data.content) 
+        ? data.content as Record<string, any>
+        : {};
       
       return {
         ...DEFAULT_AUDIO_CONFIG,
