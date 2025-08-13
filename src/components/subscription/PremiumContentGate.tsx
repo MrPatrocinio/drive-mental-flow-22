@@ -9,36 +9,30 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 interface PremiumContentGateProps {
   children: ReactNode;
-  isPremium: boolean;
   contentTitle?: string;
   showPreview?: boolean;
 }
 
 /**
- * Componente responsável por controlar acesso a conteúdo premium
- * Princípio SRP: Uma única responsabilidade - controle de acesso
+ * Componente responsável por controlar acesso a conteúdo
+ * Princípio SRP: Uma única responsabilidade - controle de acesso baseado em assinatura
+ * Modelo: Todo conteúdo requer assinatura ativa
  */
 export const PremiumContentGate = ({ 
   children, 
-  isPremium, 
   contentTitle = 'Este conteúdo',
   showPreview = false 
 }: PremiumContentGateProps) => {
-  const { canAccessAudio, getAccessDeniedReason } = useContentAccess();
+  const { canAccessContent, getAccessDeniedReason } = useContentAccess();
   const { createSubscription } = useSubscription();
 
-  // Conteúdo gratuito: sempre permitir acesso
-  if (!isPremium) {
+  // Usuário com assinatura ativa: permitir acesso
+  if (canAccessContent()) {
     return <>{children}</>;
   }
 
-  // Conteúdo premium com acesso: permitir acesso
-  if (canAccessAudio(isPremium)) {
-    return <>{children}</>;
-  }
-
-  // Conteúdo premium sem acesso: mostrar gate
-  const deniedReason = getAccessDeniedReason(isPremium);
+  // Usuário sem assinatura: mostrar gate
+  const deniedReason = getAccessDeniedReason();
 
   return (
     <div className="relative">
@@ -61,11 +55,11 @@ export const PremiumContentGate = ({
           <div className="space-y-2">
             <Badge variant="secondary" className="bg-primary/10 text-primary">
               <Lock className="h-3 w-3 mr-1" />
-              Conteúdo Premium
+              Conteúdo Exclusivo
             </Badge>
             
             <CardTitle className="text-xl">
-              {contentTitle} é Premium
+              {contentTitle} requer assinatura
             </CardTitle>
             
             <CardDescription className="text-sm">
@@ -80,11 +74,11 @@ export const PremiumContentGate = ({
               size="lg"
             >
               <Crown className="h-4 w-4 mr-2" />
-              Assinar Premium
+              Assinar Agora
             </Button>
             
             <p className="text-xs text-muted-foreground">
-              Acesse todo o conteúdo premium e muito mais
+              Acesse todo o conteúdo e transforme sua vida
             </p>
           </div>
         </CardContent>
