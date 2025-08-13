@@ -33,9 +33,12 @@ export class AudioConfigService {
         return DEFAULT_AUDIO_CONFIG;
       }
 
+      // Verificação segura antes do spread
+      const content = data.content || {};
+      
       return {
         ...DEFAULT_AUDIO_CONFIG,
-        ...data.content
+        ...content
       } as AudioConfig;
     } catch (error) {
       console.error('AudioConfigService: Erro ao buscar configuração:', error);
