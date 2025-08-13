@@ -14,6 +14,17 @@ const DEFAULT_AUDIO_CONFIG: AudioConfig = {
   pause_between_repeats_seconds: 3
 };
 
+/**
+ * Enum para tipos de erro específicos (DRY principle)
+ */
+enum ConfigError {
+  VALIDATION = 'VALIDATION',
+  NOT_FOUND = 'NOT_FOUND', 
+  UPDATE_FAILED = 'UPDATE_FAILED',
+  INSERT_FAILED = 'INSERT_FAILED',
+  UNKNOWN = 'UNKNOWN'
+}
+
 export class AudioConfigService {
   
   /**
@@ -26,9 +37,14 @@ export class AudioConfigService {
         .from('landing_content')
         .select('content')
         .eq('section', 'audio_config')
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error('AudioConfigService: Erro ao buscar configuração:', error);
+        return DEFAULT_AUDIO_CONFIG;
+      }
+
+      if (!data) {
         console.warn('AudioConfigService: Configuração não encontrada, usando padrão');
         return DEFAULT_AUDIO_CONFIG;
       }
@@ -49,43 +65,148 @@ export class AudioConfigService {
   }
 
   /**
-   * Atualiza configurações de áudio do administrador
-   * Princípio DRY: validação centralizada
+   * Atualiza configurações de áudio com lógica condicional robusta
+   * Princípio SRP: responsabilidade única de atualização
+   * Princípio DRY: validação e tratamento de erro centralizados
    */
-  static async updateAudioConfig(config: Partial<AudioConfig>): Promise<{ success: boolean; error?: string }> {
+  static async updateAudioConfig(config: Partial<AudioConfig>): Promise<{ success: boolean; error?: string; errorType?: ConfigError }> {
     try {
-      // Validação fail-fast
-      if (config.pause_between_repeats_seconds !== undefined) {
-        if (config.pause_between_repeats_seconds < 2 || config.pause_between_repeats_seconds > 6) {
-          return {
-            success: false,
-            error: 'Pausa deve estar entre 2 e 6 segundos'
-          };
-        }
+      // Validação fail-fast (KISS principle)
+      const validationResult = this.validateConfig(config);
+      if (!validationResult.isValid) {
+        return {
+          success: false,
+          error: validationResult.error,
+          errorType: ConfigError.VALIDATION
+        };
       }
 
       const currentConfig = await this.getAudioConfig();
       const updatedConfig = { ...currentConfig, ...config };
 
-      const { error } = await supabase
+      // Primeira tentativa: UPDATE no registro existente
+      const updateResult = await this.tryUpdateConfig(updatedConfig);
+      if (updateResult.success) {
+        console.log('AudioConfigService: Configuração atualizada com sucesso via UPDATE');
+        return { success: true };
+      }
+
+      // Se UPDATE falhou, tenta INSERT (caso registro não exista)
+      if (updateResult.errorType === ConfigError.NOT_FOUND) {
+        console.log('AudioConfigService: Registro não encontrado, tentando INSERT');
+        const insertResult = await this.tryInsertConfig(updatedConfig);
+        if (insertResult.success) {
+          console.log('AudioConfigService: Configuração criada com sucesso via INSERT');
+          return { success: true };
+        }
+        return insertResult;
+      }
+
+      // Retorna erro original do UPDATE se não foi por "não encontrado"
+      return updateResult;
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error('AudioConfigService: Erro inesperado:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        errorType: ConfigError.UNKNOWN
+      };
+    }
+  }
+
+  /**
+   * Valida configuração (SRP: responsabilidade única de validação)
+   */
+  private static validateConfig(config: Partial<AudioConfig>): { isValid: boolean; error?: string } {
+    if (config.pause_between_repeats_seconds !== undefined) {
+      if (config.pause_between_repeats_seconds < 2 || config.pause_between_repeats_seconds > 6) {
+        return {
+          isValid: false,
+          error: 'Pausa deve estar entre 2 e 6 segundos'
+        };
+      }
+    }
+    return { isValid: true };
+  }
+
+  /**
+   * Tenta atualizar configuração existente (SRP: responsabilidade única de UPDATE)
+   */
+  private static async tryUpdateConfig(config: AudioConfig): Promise<{ success: boolean; error?: string; errorType?: ConfigError }> {
+    try {
+      const { data, error } = await supabase
         .from('landing_content')
-        .upsert({
-          section: 'audio_config',
-          content: updatedConfig
-        });
+        .update({ 
+          content: config,
+          updated_at: new Date().toISOString()
+        })
+        .eq('section', 'audio_config')
+        .select();
 
       if (error) {
+        console.error('AudioConfigService: Erro no UPDATE:', error);
         return {
           success: false,
-          error: error.message
+          error: error.message,
+          errorType: ConfigError.UPDATE_FAILED
+        };
+      }
+
+      // Verifica se algum registro foi afetado
+      if (!data || data.length === 0) {
+        console.warn('AudioConfigService: Nenhum registro encontrado para UPDATE');
+        return {
+          success: false,
+          error: 'Registro não encontrado para atualização',
+          errorType: ConfigError.NOT_FOUND
         };
       }
 
       return { success: true };
+
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro no UPDATE';
+      console.error('AudioConfigService: Exceção no UPDATE:', errorMessage);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido'
+        error: errorMessage,
+        errorType: ConfigError.UPDATE_FAILED
+      };
+    }
+  }
+
+  /**
+   * Tenta inserir nova configuração (SRP: responsabilidade única de INSERT) 
+   */
+  private static async tryInsertConfig(config: AudioConfig): Promise<{ success: boolean; error?: string; errorType?: ConfigError }> {
+    try {
+      const { error } = await supabase
+        .from('landing_content')
+        .insert({
+          section: 'audio_config',
+          content: config
+        });
+
+      if (error) {
+        console.error('AudioConfigService: Erro no INSERT:', error);
+        return {
+          success: false,
+          error: error.message,
+          errorType: ConfigError.INSERT_FAILED
+        };
+      }
+
+      return { success: true };
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro no INSERT';
+      console.error('AudioConfigService: Exceção no INSERT:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        errorType: ConfigError.INSERT_FAILED
       };
     }
   }
