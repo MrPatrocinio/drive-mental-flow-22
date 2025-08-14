@@ -1,16 +1,20 @@
 
-import { useSubscription } from '@/hooks/useSubscription';
+/**
+ * SubscriptionAccessService - Serviço para verificação de acesso baseado em assinatura
+ * Versão atualizada com validações de segurança
+ * Princípios: SRP, DRY, SSOT, KISS, YAGNI
+ */
+
+import { useSecureSubscription } from '@/hooks/useSecureSubscription';
 
 /**
  * Serviço responsável por verificar acesso baseado em assinatura
  * Princípio SRP: Uma única responsabilidade - verificar acesso baseado em tipo de usuário
- * Modelo: 
- * - Usuários com assinatura ativa = acesso total
- * - Usuários não-assinantes = acesso apenas a áudios não-premium e demo
  */
 export class SubscriptionAccessService {
   /**
    * Verifica se o usuário tem acesso completo (assinatura ativa)
+   * Princípio KISS: Lógica simples e direta
    */
   static hasFullAccess(subscribed: boolean, subscriptionTier: string | null): boolean {
     return subscribed && subscriptionTier !== null;
@@ -18,9 +22,7 @@ export class SubscriptionAccessService {
 
   /**
    * Verifica se o usuário pode acessar um áudio específico
-   * Lógica: 
-   * - Se tem assinatura ativa: acesso a todos os áudios
-   * - Se não tem assinatura: apenas áudios não-premium
+   * Princípio DRY: Lógica reutilizável para verificação de acesso
    */
   static canAccessAudio(
     subscribed: boolean, 
@@ -39,6 +41,7 @@ export class SubscriptionAccessService {
 
   /**
    * Retorna o motivo pelo qual o acesso foi negado
+   * Princípio SSOT: Fonte única para mensagens de erro
    */
   static getAccessDeniedReason(subscribed: boolean, isPremium: boolean): string {
     if (!subscribed && isPremium) {
@@ -50,11 +53,11 @@ export class SubscriptionAccessService {
 }
 
 /**
- * Hook para verificação de acesso a conteúdo
+ * Hook para verificação de acesso a conteúdo usando serviço seguro
  * Princípio DRY: Reutiliza lógica de verificação em toda aplicação
  */
 export const useContentAccess = () => {
-  const { subscribed, subscription_tier } = useSubscription();
+  const { subscribed, subscription_tier } = useSecureSubscription();
 
   const hasFullAccess = () => {
     return SubscriptionAccessService.hasFullAccess(subscribed, subscription_tier);

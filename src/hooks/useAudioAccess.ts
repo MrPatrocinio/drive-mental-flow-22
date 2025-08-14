@@ -1,17 +1,22 @@
 
+/**
+ * Hook para verificação de acesso a áudios específicos - versão segura
+ * Princípios: SRP, KISS, DRY
+ */
+
 import { useState, useEffect } from 'react';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSecureSubscription } from '@/hooks/useSecureSubscription';
 import { AudioDemoService } from '@/services/audioDemoService';
 
 /**
  * Hook para verificar acesso a áudios específicos
  * Princípio SRP: Responsabilidade única - verificar acesso a áudio
- * Princípio KISS: Implementação simples e direta
+ * Usando serviços seguros
  */
 export const useAudioAccess = (audioId: string, isPremium: boolean) => {
   const [isDemoAudio, setIsDemoAudio] = useState(false);
   const [isCheckingDemo, setIsCheckingDemo] = useState(true);
-  const { subscribed, subscription_tier } = useSubscription();
+  const { subscribed, subscription_tier } = useSecureSubscription();
 
   useEffect(() => {
     const checkIfDemo = async () => {
@@ -20,7 +25,7 @@ export const useAudioAccess = (audioId: string, isPremium: boolean) => {
         const isDemo = await AudioDemoService.isDemoAudio(audioId);
         setIsDemoAudio(isDemo);
       } catch (error) {
-        console.error('Erro ao verificar se áudio é demo:', error);
+        console.error('[AUDIO_ACCESS] Erro ao verificar demo:', error);
         setIsDemoAudio(false);
       } finally {
         setIsCheckingDemo(false);
@@ -32,9 +37,10 @@ export const useAudioAccess = (audioId: string, isPremium: boolean) => {
     }
   }, [audioId]);
 
-  // Lógica de acesso simples:
-  // 1. Se tem assinatura ativa: acesso total
-  // 2. Se não tem assinatura: apenas áudios não-premium ou demo
+  /**
+   * Lógica de acesso segura
+   * Princípio KISS: Implementação simples
+   */
   const hasAccess = () => {
     // Usuário com assinatura ativa
     if (subscribed && subscription_tier) {
