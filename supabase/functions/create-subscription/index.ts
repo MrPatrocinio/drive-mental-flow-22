@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -44,9 +45,6 @@ serve(async (req) => {
     if (!user?.email) throw new Error("Usuário não autenticado ou email indisponível");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { tier = "premium" } = await req.json();
-    logStep("Subscription tier requested", { tier });
-
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
     // Check for existing customer
@@ -59,15 +57,13 @@ serve(async (req) => {
       logStep("No existing customer found, will create one during checkout");
     }
 
-    // Define pricing based on tier
-    const pricingMap = {
-      basic: { amount: 2900, name: "Drive Mental - Básico" }, // R$ 29,00
-      premium: { amount: 9700, name: "Drive Mental - Premium" }, // R$ 97,00
-      enterprise: { amount: 19700, name: "Drive Mental - Enterprise" } // R$ 197,00
+    // Plano anual único: R$ 127,00 (12.700 centavos)
+    const annualPrice = {
+      amount: 12700, // R$ 127,00 em centavos
+      name: "Drive Mental - Assinatura Anual"
     };
-
-    const pricing = pricingMap[tier as keyof typeof pricingMap] || pricingMap.premium;
-    logStep("Pricing determined", { tier, pricing });
+    
+    logStep("Annual pricing set", { pricing: annualPrice });
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -78,11 +74,11 @@ serve(async (req) => {
           price_data: {
             currency: "brl",
             product_data: { 
-              name: pricing.name,
-              description: `Assinatura mensal do ${pricing.name}`
+              name: annualPrice.name,
+              description: "Acesso completo ao Drive Mental por 1 ano"
             },
-            unit_amount: pricing.amount,
-            recurring: { interval: "month" },
+            unit_amount: annualPrice.amount,
+            recurring: { interval: "year" }, // Cobrança anual
           },
           quantity: 1,
         },
@@ -93,7 +89,7 @@ serve(async (req) => {
       metadata: {
         user_id: user.id,
         user_email: user.email,
-        subscription_tier: tier,
+        subscription_type: "annual", // Marcador para plano anual
       },
     });
 

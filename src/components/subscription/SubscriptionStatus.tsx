@@ -1,42 +1,29 @@
+
 import { Calendar, Crown, RefreshCw, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSecureSubscription } from '@/hooks/useSecureSubscription';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+/**
+ * Componente para exibir status da assinatura
+ * Princípio SRP: Uma responsabilidade - mostrar status da assinatura
+ * Princípio KISS: Interface simplificada para plano anual único
+ */
 export const SubscriptionStatus = () => {
   const { 
     subscribed, 
-    subscription_tier, 
     subscription_end, 
     isChecking, 
     checkSubscription, 
     openCustomerPortal 
-  } = useSubscription();
+  } = useSecureSubscription();
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-  };
-
-  const getTierName = (tier: string | null) => {
-    const tierNames = {
-      basic: 'Básico',
-      premium: 'Premium',
-      enterprise: 'Enterprise'
-    };
-    return tier ? tierNames[tier as keyof typeof tierNames] || tier : 'Nenhum';
-  };
-
-  const getTierColor = (tier: string | null) => {
-    const colors = {
-      basic: 'bg-blue-500',
-      premium: 'bg-purple-500',
-      enterprise: 'bg-gold-500'
-    };
-    return tier ? colors[tier as keyof typeof colors] || 'bg-gray-500' : 'bg-gray-500';
   };
 
   if (!subscribed) {
@@ -54,7 +41,7 @@ export const SubscriptionStatus = () => {
             Não Assinante
           </Badge>
           <p className="text-sm text-muted-foreground">
-            Assine agora para ter acesso completo a todos os recursos do Drive Mental.
+            Assine por apenas R$ 127,00/ano e tenha acesso completo.
           </p>
           <Button 
             onClick={checkSubscription} 
@@ -78,12 +65,12 @@ export const SubscriptionStatus = () => {
           <Crown className="h-5 w-5 text-primary" />
           Assinatura Ativa
         </CardTitle>
-        <CardDescription>Você possui acesso premium</CardDescription>
+        <CardDescription>Você possui acesso completo</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="text-center">
-          <Badge className={`${getTierColor(subscription_tier)} text-white`}>
-            Plano {getTierName(subscription_tier)}
+          <Badge className="bg-primary text-primary-foreground">
+            Plano Anual
           </Badge>
         </div>
 
@@ -97,7 +84,7 @@ export const SubscriptionStatus = () => {
           
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Plano:</span>
-            <span className="font-medium">{getTierName(subscription_tier)}</span>
+            <span className="font-medium">Anual - R$ 127,00</span>
           </div>
           
           <div className="flex items-start justify-between text-sm">
@@ -106,7 +93,7 @@ export const SubscriptionStatus = () => {
               <div className="font-medium">{formatDate(subscription_end)}</div>
               <div className="text-xs text-muted-foreground flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                Cobrança automática
+                Cobrança anual
               </div>
             </div>
           </div>
