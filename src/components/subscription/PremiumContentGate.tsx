@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Crown, Lock } from 'lucide-react';
 import { useContentAccess } from '@/services/subscriptionAccessService';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSecureSubscription } from '@/hooks/useSecureSubscription';
 
 interface PremiumContentGateProps {
   children: ReactNode;
@@ -18,9 +18,7 @@ interface PremiumContentGateProps {
 /**
  * Componente responsável por controlar acesso a conteúdo
  * Princípio SRP: Uma única responsabilidade - controle de acesso baseado em tipo de usuário
- * Modelo: 
- * - Usuários com assinatura: acesso total
- * - Usuários sem assinatura: apenas conteúdo não-premium
+ * Atualizado para usar useSecureSubscription (SSOT)
  */
 export const PremiumContentGate = ({ 
   children, 
@@ -30,7 +28,7 @@ export const PremiumContentGate = ({
   isDemoAudio = false
 }: PremiumContentGateProps) => {
   const { canAccessAudio, getAccessDeniedReason } = useContentAccess();
-  const { createSubscription } = useSubscription();
+  const { createSubscription } = useSecureSubscription();
 
   // Verificar se pode acessar este áudio específico
   if (canAccessAudio(isPremium, isDemoAudio)) {

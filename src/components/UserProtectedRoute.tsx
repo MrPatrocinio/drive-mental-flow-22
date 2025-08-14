@@ -1,6 +1,7 @@
+
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSecureSubscription } from "@/hooks/useSecureSubscription";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -15,13 +16,14 @@ interface UserProtectedRouteProps {
 /**
  * Componente responsável por proteger rotas baseado em autenticação e assinatura
  * Princípio SRP: Uma única responsabilidade - proteção de rotas
+ * Atualizado para usar useSecureSubscription (SSOT)
  */
 export const UserProtectedRoute = ({ 
   children, 
   requiresSubscription = false 
 }: UserProtectedRouteProps) => {
   const { isAuthenticated, isLoading, user } = useSupabaseAuth();
-  const { subscribed, createSubscription, checkSubscription } = useSubscription();
+  const { subscribed, createSubscription, checkSubscription } = useSecureSubscription();
   const location = useLocation();
   const navigate = useNavigate();
 
