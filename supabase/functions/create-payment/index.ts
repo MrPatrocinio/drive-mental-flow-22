@@ -51,27 +51,30 @@ serve(async (req) => {
       throw new Error("Nome deve ter pelo menos 2 caracteres");
     }
 
-    // Get current pricing from Supabase
+    // Get current pricing from Supabase with sync validation
     const supabaseService = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    logStep("Fetching pricing data from database");
+    logStep("Fetching synchronized pricing data from database");
     const { data: pricingData, error: pricingError } = await supabaseService
       .from('landing_content')
       .select('content')
       .eq('section', 'pricing')
       .single();
 
-    let finalPrice = 9700; // Default R$ 97,00 em centavos
-    let productName = "Drive Mental - Acesso Vitalício";
+    let finalPrice = 12700; // Default R$ 127,00 em centavos (valor anual padrão)
+    let productName = "Drive Mental - Acesso Anual";
 
     if (pricingData?.content && !pricingError) {
       const pricing = pricingData.content as any;
-      logStep("Using dynamic pricing from database", { hasPromotion: pricing.has_promotion });
+      logStep("Using synchronized pricing from database", { 
+        hasPromotion: pricing.has_promotion,
+        originalPrice: pricing.price
+      });
       
-      // Check for active promotion
+      // Apply pricing sync logic - check for active promotion
       if (pricing.has_promotion && pricing.promotion_end_date && new Date(pricing.promotion_end_date) > new Date()) {
         // Use discounted price
         const originalPrice = pricing.original_price || pricing.price;
@@ -82,14 +85,39 @@ serve(async (req) => {
         if (pricing.promotion_label) {
           productName = `${productName} - ${pricing.promotion_label}`;
         }
-        logStep("Applied promotional pricing", { originalPrice, discountPercentage, finalPrice: finalPrice / 100 });
+        logStep("Applied synchronized promotional pricing", { 
+          originalPrice, 
+          discountPercentage, 
+          finalPrice: finalPrice / 100,
+          promotionLabel: pricing.promotion_label 
+        });
       } else {
-        // Use regular price
-        finalPrice = Math.round(pricing.price * 100); // Convert to centavos
-        logStep("Using regular pricing", { finalPrice: finalPrice / 100 });
+        // Use regular price - convert to annual if needed
+        let regularPrice = pricing.price;
+        
+        // If price seems monthly (< R$ 50), convert to annual
+        if (regularPrice < 50) {
+          regularPrice = regularPrice * 12;
+          logStep("Converted monthly price to annual", { 
+            monthlyPrice: pricing.price, 
+            annualPrice: regularPrice 
+          });
+        }
+        
+        finalPrice = Math.round(regularPrice * 100); // Convert to centavos
+        logStep("Using synchronized regular pricing", { finalPrice: finalPrice / 100 });
       }
     } else {
-      logStep("Using default pricing (database unavailable)", { finalPrice: finalPrice / 100 });
+      logStep("Using default annual pricing (database unavailable)", { finalPrice: finalPrice / 100 });
+    }
+
+    // Validate final price for annual subscription
+    if (finalPrice < 1000) { // Minimum R$ 10,00 annual
+      logStep("Price too low, adjusting to minimum annual", { 
+        originalPrice: finalPrice / 100, 
+        adjustedPrice: 127 
+      });
+      finalPrice = 12700; // R$ 127,00 default annual
     }
 
     // Initialize Stripe
@@ -130,7 +158,7 @@ serve(async (req) => {
             currency: "brl",
             product_data: { 
               name: productName,
-              description: "Acesso completo a todos os áudios e recursos do Drive Mental"
+              description: "Acesso completo a todos os áudios e recursos do Drive Mental por 1 ano"
             },
             unit_amount: finalPrice,
           },
@@ -146,25 +174,28 @@ serve(async (req) => {
         final_price: finalPrice.toString(),
         environment: isTestKey ? "test" : "production",
         created_at: new Date().toISOString(),
+        pricing_synced: "true", // Mark as using synchronized pricing
       },
       // Enhanced session configuration
       expires_at: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
       billing_address_collection: "auto",
       phone_number_collection: {
-        enabled: false, // Set to true if you want to collect phone numbers
+        enabled: false,
       },
     });
 
     logStep("Checkout session created successfully", { 
       sessionId: session.id, 
       url: session.url,
-      expiresAt: new Date(session.expires_at * 1000).toISOString()
+      expiresAt: new Date(session.expires_at * 1000).toISOString(),
+      syncedPricing: true
     });
 
     return new Response(JSON.stringify({ 
       url: session.url,
       sessionId: session.id,
-      expiresAt: session.expires_at
+      expiresAt: session.expires_at,
+      syncedPrice: finalPrice / 100 // Return synced price for verification
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
