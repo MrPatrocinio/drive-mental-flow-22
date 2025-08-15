@@ -96,7 +96,7 @@ export const FieldPage = () => {
         const mappedAudios: AudioData[] = audiosData?.map(audio => ({
           id: audio.id,
           title: audio.title,
-          description: audio.description || undefined,
+          description: undefined, // Campo não existe na tabela audios
           file_url: audio.url, // Mapear url para file_url
           cover_image_url: undefined, // Não disponível no banco atual
           duration: audio.duration,
@@ -146,8 +146,8 @@ export const FieldPage = () => {
     )
   ).sort();
 
-  // Função para lidar com reprodução de áudio
-  const handlePlayAudio = (audio: AudioData) => {
+  // Função para lidar com reprodução de áudio - usar interface Audio do AudioCard
+  const handlePlayAudio = (audio: { id: string; title: string; duration: string; url: string; tags?: string[]; field_id?: string }) => {
     console.log('Playing audio:', audio.title);
     // Lógica de reprodução será implementada conforme necessário
   };
