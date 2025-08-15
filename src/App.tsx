@@ -12,8 +12,8 @@ import { AdminProvider } from "@/contexts/AdminContext";
 import { SupabaseAuthProvider } from "@/contexts/SupabaseAuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-// Import pages - usando named exports
-import { LandingPage } from "./pages/LandingPage";
+// Import pages - usando default exports
+import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import FieldPage from "./pages/FieldPage";
 import AudioPlayerPage from "./pages/AudioPlayerPage";
@@ -26,17 +26,17 @@ import UserLoginPage from "./pages/UserLoginPage";
 import OfflineManagementPage from "./pages/OfflineManagementPage";
 import NotFound from "./pages/NotFound";
 
-// Import admin pages - usando named exports
+// Import admin pages - usando default exports
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLandingPage from "./pages/admin/AdminLandingPage";
 import AdminAudiosPageNew from "./pages/admin/AdminAudiosPageNew";
 import AdminFieldsPageNew from "./pages/admin/AdminFieldsPageNew";
-import { AdminPricingPage } from "./pages/admin/AdminPricingPage";
-import { AdminBackgroundMusicPage } from "./pages/admin/AdminBackgroundMusicPage";
-import { AdminStatsPage } from "./pages/admin/AdminStatsPage";
-import { AdminAnalyticsPage } from "./pages/admin/AdminAnalyticsPage";
-import { AdminValidationPage } from "./pages/admin/AdminValidationPage";
+import AdminPricingPage from "./pages/admin/AdminPricingPage";
+import AdminBackgroundMusicPage from "./pages/admin/AdminBackgroundMusicPage";
+import AdminStatsPage from "./pages/admin/AdminStatsPage";
+import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
+import AdminValidationPage from "./pages/admin/AdminValidationPage";
 
 // Import protected route components
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
