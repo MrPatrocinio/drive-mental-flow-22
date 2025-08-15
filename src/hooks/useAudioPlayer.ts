@@ -109,13 +109,20 @@ export const useAudioPlayer = (
   }, [preferences.volume, setBackgroundVolume]);
 
   // Notifica o contexto sobre o estado do áudio principal
-  // Princípio KISS: lógica simplificada - apenas considera isPlaying público
+  // Princípio KISS: lógica corrigida para ignorar pausas internas e transições
   useEffect(() => {
-    if (!playerState.isTransitioning) {
+    // Durante pausas internas, não notifica mudança de estado (mantém música de fundo)
+    if (!playerState.isTransitioning && !playerState.isInternalPause) {
       console.log('useAudioPlayer: Notificando contexto - áudio principal:', playerState.isPlaying ? 'tocando' : 'parado');
       audioPlaybackContext?.setMainAudioPlaying(playerState.isPlaying);
+    } else {
+      console.log('useAudioPlayer: Ignorando notificação do contexto - em transição ou pausa interna:', {
+        isTransitioning: playerState.isTransitioning,
+        isInternalPause: playerState.isInternalPause,
+        isPlaying: playerState.isPlaying
+      });
     }
-  }, [playerState.isPlaying, playerState.isTransitioning, audioPlaybackContext]);
+  }, [playerState.isPlaying, playerState.isTransitioning, playerState.isInternalPause, audioPlaybackContext]);
 
   // Auto-play functionality (modificado para considerar pausa interna)
   useEffect(() => {
