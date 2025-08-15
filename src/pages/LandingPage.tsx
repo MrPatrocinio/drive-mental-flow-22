@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -20,7 +21,10 @@ export default function LandingPage() {
   const [fields, setFields] = useState<any[]>([]);
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
+  console.log('LandingPage: Componente renderizado', { loading, content: !!content, error });
+
   // Hooks para controles e lifecycle de vídeo
   const videoControlsSettings = useVideoControls(activeVideo?.video_controls);
   const { isVideoReady, videoKey, cleanupPreviousVideo } = useVideoLifecycle(activeVideo);
@@ -31,15 +35,101 @@ export default function LandingPage() {
     return IconComponent || Brain; // Fallback to Brain icon
   };
 
+  // Conteúdo padrão para fallback
+  const getDefaultContent = (): LandingPageContent => ({
+    hero: {
+      title: "Transforme Sua Mente",
+      titleHighlight: "Instale Drives Mentais Poderosos",
+      subtitle: "Desenvolva todo seu potencial com áudios especializados em desenvolvimento pessoal. Reprogramação mental através de técnicas comprovadas.",
+      ctaText: "Começar Agora",
+      demoText: "Ver Demo",
+      videoUrl: ""
+    },
+    features: [
+      {
+        id: "f1",
+        icon: "Brain",
+        title: "Desenvolvimento Mental",
+        description: "Técnicas avançadas de programação mental através de repetição auditiva"
+      },
+      {
+        id: "f2",
+        icon: "Users",
+        title: "Comunidade Exclusiva",
+        description: "Acesso a uma comunidade de pessoas focadas em crescimento pessoal"
+      },
+      {
+        id: "f3",
+        icon: "Award",
+        title: "Resultados Comprovados",
+        description: "Metodologia testada e aprovada por milhares de usuários"
+      }
+    ],
+    pricing: {
+      price: 97,
+      currency: "R$",
+      payment_type: "Pagamento único",
+      access_type: "Acesso vitalício",
+      benefits: [
+        "Acesso completo aos áudios especializados",
+        "Suporte especializado 24/7",
+        "Atualizações constantes de conteúdo"
+      ],
+      button_text: "Começar Agora"
+    },
+    footer: {
+      copyright: "© 2025 Drive Mental. Todos os direitos reservados.",
+      lgpdText: "Seus dados estão protegidos conforme a LGPD",
+      lgpdLink: "/lgpd",
+      privacyPolicyLink: "/politica-privacidade",
+      termsOfServiceLink: "/termos-uso"
+    }
+  });
+
   const loadContent = useCallback(async () => {
+    console.log('LandingPage: Iniciando carregamento de conteúdo');
+    
     try {
       setLoading(true);
+      setError(null);
       
-      const [landingContent, fieldsData, videoData] = await Promise.all([
-        SupabaseContentService.getLandingPageContent(),
-        FieldService.getAll(),
-        VideoService.getActiveVideo()
-      ]);
+      // Timeout para evitar loading infinito
+      const loadingTimeout = setTimeout(() => {
+        console.warn('LandingPage: Timeout no carregamento, usando conteúdo padrão');
+        setContent(getDefaultContent());
+        setFields([
+          { icon: Brain, title: "Desenvolvimento Mental", count: "5 áudios" },
+          { icon: Heart, title: "Relacionamentos", count: "3 áudios" },
+          { icon: Target, title: "Metas e Objetivos", count: "4 áudios" }
+        ]);
+        setLoading(false);
+      }, 10000); // 10 segundos de timeout
+
+      const promises = [
+        SupabaseContentService.getLandingPageContent().catch(err => {
+          console.error('LandingPage: Erro ao carregar conteúdo:', err);
+          return getDefaultContent();
+        }),
+        FieldService.getAll().catch(err => {
+          console.error('LandingPage: Erro ao carregar campos:', err);
+          return [];
+        }),
+        VideoService.getActiveVideo().catch(err => {
+          console.error('LandingPage: Erro ao carregar vídeo:', err);
+          return null;
+        })
+      ];
+
+      console.log('LandingPage: Aguardando promises...');
+      const [landingContent, fieldsData, videoData] = await Promise.all(promises);
+      
+      clearTimeout(loadingTimeout);
+      
+      console.log('LandingPage: Dados carregados', {
+        content: !!landingContent,
+        fieldsCount: fieldsData.length,
+        video: !!videoData
+      });
       
       setContent(landingContent);
       
@@ -54,14 +144,25 @@ export default function LandingPage() {
         title: field.title,
         count: `${field.audio_count} áudio${field.audio_count !== 1 ? 's' : ''}`
       })));
+
+      console.log('LandingPage: Carregamento concluído com sucesso');
     } catch (error) {
-      console.error('Error loading content:', error);
+      console.error('LandingPage: Erro no carregamento:', error);
+      setError('Erro ao carregar conteúdo. Usando dados padrão.');
+      setContent(getDefaultContent());
+      setFields([
+        { icon: Brain, title: "Desenvolvimento Mental", count: "5 áudios" },
+        { icon: Heart, title: "Relacionamentos", count: "3 áudios" },
+        { icon: Target, title: "Metas e Objetivos", count: "4 áudios" }
+      ]);
     } finally {
       setLoading(false);
+      console.log('LandingPage: Estado final de loading definido como false');
     }
   }, [activeVideo?.id]);
 
   useEffect(() => {
+    console.log('LandingPage: useEffect executado, iniciando carregamento');
     loadContent();
   }, [loadContent]);
 
@@ -165,16 +266,29 @@ export default function LandingPage() {
     );
   };
 
-  if (loading || !content) {
+  console.log('LandingPage: Renderizando página', { loading, hasContent: !!content, error });
+
+  // Loading com timeout
+  if (loading) {
+    console.log('LandingPage: Mostrando tela de loading');
     return (
       <div className="min-h-screen hero-gradient flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
           <p className="mt-4 text-lg text-muted-foreground">Carregando...</p>
+          {error && (
+            <p className="mt-2 text-sm text-yellow-600">
+              {error}
+            </p>
+          )}
         </div>
       </div>
     );
   }
+
+  // Garantir que sempre temos conteúdo para renderizar
+  const finalContent = content || getDefaultContent();
+  console.log('LandingPage: Renderizando conteúdo principal', { finalContent: !!finalContent });
 
   return (
     <div className="min-h-screen hero-gradient">
@@ -185,9 +299,9 @@ export default function LandingPage() {
         <div className="container mx-auto text-center">
           <div className="animate-fade-in">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-tight">
-              <span className="text-foreground">{content.hero.title}</span>
+              <span className="text-foreground">{finalContent.hero.title}</span>
               <br />
-              <span className="text-premium">{content.hero.titleHighlight}</span>
+              <span className="text-premium">{finalContent.hero.titleHighlight}</span>
             </h1>
             
             {/* Video Section */}
@@ -215,7 +329,7 @@ export default function LandingPage() {
               </div>
             )}
             <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed px-2">
-              {content.hero.subtitle}
+              {finalContent.hero.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-2">
               <Button 
@@ -224,7 +338,7 @@ export default function LandingPage() {
                 onClick={() => navigate('/pagamento')}
                 className="group"
               >
-                {content.hero.ctaText}
+                {finalContent.hero.ctaText}
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button 
@@ -233,7 +347,7 @@ export default function LandingPage() {
                 onClick={() => navigate('/demo')}
               >
                 <Play className="mr-2 h-5 w-5" />
-                {content.hero.demoText}
+                {finalContent.hero.demoText}
               </Button>
             </div>
           </div>
@@ -247,7 +361,7 @@ export default function LandingPage() {
             Por que escolher o <span className="text-premium">Drive Mental</span>?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {content.features.map((feature, index) => (
+            {finalContent.features.map((feature, index) => (
               <div 
                 key={feature.id} 
                 className="field-card text-center animate-fade-in"
@@ -312,7 +426,7 @@ export default function LandingPage() {
               onClick={() => navigate('/pagamento')}
               className="animate-pulse-glow"
             >
-              {content.hero.ctaText}
+              {finalContent.hero.ctaText}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
@@ -335,7 +449,7 @@ export default function LandingPage() {
               onClick={() => navigate('/pagamento')}
               className="animate-pulse-glow"
             >
-              {content.hero.ctaText}
+              {finalContent.hero.ctaText}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
@@ -347,18 +461,18 @@ export default function LandingPage() {
         <div className="container mx-auto">
           <div className="text-center space-y-4">
             <p className="text-muted-foreground">
-              {content.footer.copyright}
+              {finalContent.footer.copyright}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
-              <span className="text-muted-foreground">{content.footer.lgpdText}</span>
+              <span className="text-muted-foreground">{finalContent.footer.lgpdText}</span>
               <div className="flex gap-4">
-                <a href={content.footer.lgpdLink} className="text-primary hover:text-primary/80 transition-colors">
+                <a href={finalContent.footer.lgpdLink} className="text-primary hover:text-primary/80 transition-colors">
                   LGPD
                 </a>
-                <a href={content.footer.privacyPolicyLink} className="text-primary hover:text-primary/80 transition-colors">
+                <a href={finalContent.footer.privacyPolicyLink} className="text-primary hover:text-primary/80 transition-colors">
                   Política de Privacidade
                 </a>
-                <a href={content.footer.termsOfServiceLink} className="text-primary hover:text-primary/80 transition-colors">
+                <a href={finalContent.footer.termsOfServiceLink} className="text-primary hover:text-primary/80 transition-colors">
                   Termos de Uso
                 </a>
               </div>
