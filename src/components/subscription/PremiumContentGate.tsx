@@ -11,28 +11,34 @@ interface PremiumContentGateProps {
   children: ReactNode;
   contentTitle?: string;
   showPreview?: boolean;
+  isPremium?: boolean;
+  isDemoAudio?: boolean;
 }
 
 /**
  * Componente responsável por controlar acesso a conteúdo
- * Princípio SRP: Uma única responsabilidade - controle de acesso baseado em assinatura
- * Modelo: Todo conteúdo requer assinatura ativa
+ * Princípio SRP: Uma única responsabilidade - controle de acesso baseado em tipo de usuário
+ * Modelo: 
+ * - Usuários com assinatura: acesso total
+ * - Usuários sem assinatura: apenas conteúdo não-premium
  */
 export const PremiumContentGate = ({ 
   children, 
   contentTitle = 'Este conteúdo',
-  showPreview = false 
+  showPreview = false,
+  isPremium = true,
+  isDemoAudio = false
 }: PremiumContentGateProps) => {
-  const { canAccessContent, getAccessDeniedReason } = useContentAccess();
+  const { canAccessAudio, getAccessDeniedReason } = useContentAccess();
   const { createSubscription } = useSubscription();
 
-  // Usuário com assinatura ativa: permitir acesso
-  if (canAccessContent()) {
+  // Verificar se pode acessar este áudio específico
+  if (canAccessAudio(isPremium, isDemoAudio)) {
     return <>{children}</>;
   }
 
-  // Usuário sem assinatura: mostrar gate
-  const deniedReason = getAccessDeniedReason();
+  // Usuário sem acesso: mostrar gate apenas para conteúdo premium
+  const deniedReason = getAccessDeniedReason(isPremium);
 
   return (
     <div className="relative">
@@ -43,7 +49,7 @@ export const PremiumContentGate = ({
         </div>
       )}
       
-      {/* Overlay de upgrade */}
+      {/* Overlay de upgrade para conteúdo premium */}
       <Card className="absolute inset-0 bg-background/95 backdrop-blur-sm border-2 border-primary/20 flex items-center justify-center">
         <CardContent className="text-center space-y-6 p-8 max-w-md">
           <div className="flex justify-center">
@@ -55,7 +61,7 @@ export const PremiumContentGate = ({
           <div className="space-y-2">
             <Badge variant="secondary" className="bg-primary/10 text-primary">
               <Lock className="h-3 w-3 mr-1" />
-              Conteúdo Exclusivo
+              Conteúdo Premium
             </Badge>
             
             <CardTitle className="text-xl">
