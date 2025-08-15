@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { AudioCard } from "@/components/AudioCard";
+import { AudioCard, Audio } from "@/components/AudioCard";
 import { FieldCard } from "@/components/FieldCard";
 import { TagFilter } from "@/components/TagFilter";
 import { PricingDisplay } from "@/components/PricingDisplay";
@@ -27,30 +27,12 @@ interface LandingContent {
   }>;
 }
 
-interface AudioData {
-  id: string;
-  title: string;
-  duration: string;
-  url: string;
-  tags: string[];
-  field_id?: string;
-}
-
 interface FieldData {
   id: string;
   title: string;
   description: string;
   icon: string;
   audio_count: number;
-}
-
-interface PricingData {
-  price: number;
-  currency: string;
-  payment_type: string;
-  access_type: string;
-  benefits: string[];
-  button_text: string;
 }
 
 const DEFAULT_CONTENT: LandingContent = {
@@ -83,10 +65,9 @@ const LandingPage = () => {
   console.log('LandingPage: Componente iniciando...');
   
   const [content, setContent] = useState<LandingContent>(DEFAULT_CONTENT);
-  const [audioData, setAudioData] = useState<AudioData[]>([]);
+  const [audioData, setAudioData] = useState<Audio[]>([]);
   const [fieldData, setFieldData] = useState<FieldData[]>([]);
-  const [pricingData, setPricingData] = useState<PricingData | null>(null);
-  const [filteredAudios, setFilteredAudios] = useState<AudioData[]>([]);
+  const [filteredAudios, setFilteredAudios] = useState<Audio[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -95,11 +76,12 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   // Hook para controle de música de fundo e primeira visita
-  const {
-    shouldShowFirstVisitPrompt,
-    dismissFirstVisitPrompt,
-    toggleBackgroundMusic
-  } = useAudioPlayback();
+  const audioPlayback = useAudioPlayback();
+  
+  // Verificar se o contexto está disponível
+  const shouldShowFirstVisitPrompt = audioPlayback?.shouldShowFirstVisitPrompt || false;
+  const dismissFirstVisitPrompt = audioPlayback?.dismissFirstVisitPrompt || (() => {});
+  const toggleBackgroundMusic = audioPlayback?.toggleBackgroundMusic || (() => {});
 
   console.log('LandingPage: Estado atual:', {
     isLoading,
@@ -107,24 +89,14 @@ const LandingPage = () => {
     contentLoaded: !!content,
     audioCount: audioData.length,
     fieldCount: fieldData.length,
-    hasPricing: !!pricingData,
-    shouldShowFirstVisitPrompt
+    shouldShowFirstVisitPrompt,
+    audioPlaybackAvailable: !!audioPlayback
   });
 
   const loadContent = async () => {
     console.log('LandingPage: Iniciando carregamento de conteúdo...');
     DiagnosticService.info('LandingPage', 'Iniciando carregamento de conteúdo');
     
-    const timeout = setTimeout(() => {
-      console.warn('LandingPage: Timeout no carregamento - usando fallback');
-      setIsLoading(false);
-      toast({
-        title: "Carregamento lento",
-        description: "Alguns conteúdos podem não estar atualizados.",
-        variant: "default"
-      });
-    }, 10000);
-
     try {
       setHasError(false);
       setErrorMessage('');
@@ -133,7 +105,6 @@ const LandingPage = () => {
       const landingContent = ContentService.getLandingPageContent();
       if (landingContent) {
         console.log('LandingPage: Conteúdo da landing carregado:', landingContent);
-        // Adaptar estrutura do contentService para nossa interface
         setContent({
           hero_title: landingContent.hero.title,
           hero_subtitle: landingContent.hero.subtitle,
@@ -149,9 +120,8 @@ const LandingPage = () => {
         });
       }
 
-      // Por enquanto, usar dados mockados para áudios e campos
-      console.log('LandingPage: Usando dados mockados para demonstração');
-      const mockAudios: AudioData[] = [
+      // Dados mockados para demonstração
+      const mockAudios: Audio[] = [
         {
           id: "1",
           title: "Áudio de Demonstração 1",
@@ -187,22 +157,8 @@ const LandingPage = () => {
         }
       ];
 
-      const mockPricing: PricingData = {
-        price: 97,
-        currency: "R$",
-        payment_type: "Pagamento único",
-        access_type: "Acesso vitalício",
-        benefits: [
-          "Acesso completo aos áudios especializados",
-          "Suporte especializado 24/7",
-          "Atualizações constantes de conteúdo"
-        ],
-        button_text: "Começar Agora"
-      };
-
       setAudioData(mockAudios);
       setFieldData(mockFields);
-      setPricingData(mockPricing);
       setFilteredAudios(mockAudios);
 
       DiagnosticService.info('LandingPage', 'Carregamento concluído com sucesso');
@@ -221,7 +177,6 @@ const LandingPage = () => {
         description: "Usando conteúdo padrão. Tente recarregar a página.",
       });
     } finally {
-      clearTimeout(timeout);
       setIsLoading(false);
       console.log('LandingPage: Carregamento finalizado');
     }
@@ -238,7 +193,7 @@ const LandingPage = () => {
       setFilteredAudios(audioData);
     } else {
       const filtered = audioData.filter(audio => 
-        selectedTags.some(tag => audio.tags.includes(tag))
+        selectedTags.some(tag => audio.tags?.includes(tag))
       );
       console.log('LandingPage: Áudios filtrados:', filtered.length);
       setFilteredAudios(filtered);
@@ -251,12 +206,12 @@ const LandingPage = () => {
     dismissFirstVisitPrompt();
   };
 
-  const handleAudioPlay = (audio: AudioData) => {
+  const handleAudioPlay = (audio: Audio) => {
     console.log('LandingPage: Reproduzindo áudio:', audio.title);
     navigate(`/audio/${audio.id}`);
   };
 
-  const allTags = Array.from(new Set(audioData.flatMap(audio => audio.tags)));
+  const allTags = Array.from(new Set(audioData.flatMap(audio => audio.tags || [])));
 
   if (isLoading) {
     console.log('LandingPage: Renderizando estado de loading');
@@ -405,16 +360,14 @@ const LandingPage = () => {
       </section>
 
       {/* Pricing Section */}
-      {pricingData && (
-        <section className="py-16 px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-center text-foreground mb-12">
-              Planos e Preços
-            </h2>
-            <PricingDisplay />
-          </div>
-        </section>
-      )}
+      <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-foreground mb-12">
+            Planos e Preços
+          </h2>
+          <PricingDisplay />
+        </div>
+      </section>
     </div>
   );
 };
