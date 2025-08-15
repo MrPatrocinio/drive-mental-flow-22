@@ -17,13 +17,12 @@ interface AudioData {
   cover_image_url?: string;
   duration?: string;
   is_premium: boolean;
-  is_demo?: boolean;
   tags?: string[];
 }
 
 interface FieldData {
   id: string;
-  name: string;
+  title: string;
   description?: string;
   slug: string;
 }
@@ -57,8 +56,7 @@ export const FieldPage = () => {
         const { data: fieldData, error: fieldError } = await supabase
           .from('fields')
           .select('*')
-          .eq('slug', slug)
-          .eq('is_active', true)
+          .eq('title', slug) // Usando title como slug para compatibilidade
           .single();
 
         if (fieldError) {
@@ -68,14 +66,22 @@ export const FieldPage = () => {
         }
 
         console.log('Field found:', fieldData);
-        setField(fieldData);
+        
+        // Mapear dados do campo para interface local
+        const mappedField: FieldData = {
+          id: fieldData.id,
+          title: fieldData.title,
+          description: fieldData.description,
+          slug: fieldData.title // Usando title como slug
+        };
+        
+        setField(mappedField);
 
         // Buscar áudios do campo
         const { data: audiosData, error: audiosError } = await supabase
           .from('audios')
           .select('*')
           .eq('field_id', fieldData.id)
-          .eq('is_active', true)
           .order('title');
 
         if (audiosError) {
@@ -86,10 +92,22 @@ export const FieldPage = () => {
 
         console.log('Audios found:', audiosData?.length || 0);
 
+        // Mapear dados dos áudios para interface local
+        const mappedAudios: AudioData[] = audiosData?.map(audio => ({
+          id: audio.id,
+          title: audio.title,
+          description: audio.description || undefined,
+          file_url: audio.url, // Mapear url para file_url
+          cover_image_url: undefined, // Não disponível no banco atual
+          duration: audio.duration,
+          is_premium: audio.is_premium,
+          tags: audio.tags || []
+        })) || [];
+
         // Filtrar áudios baseado na assinatura do usuário
-        const accessibleAudios = audiosData?.filter(audio => 
-          canAccessAudio(audio.is_premium || false, audio.is_demo || false)
-        ) || [];
+        const accessibleAudios = mappedAudios.filter(audio => 
+          canAccessAudio(audio.is_premium, false) // is_demo sempre false para simplicidade
+        );
 
         console.log('Accessible audios:', accessibleAudios.length);
 
@@ -127,6 +145,12 @@ export const FieldPage = () => {
       audios.flatMap(audio => audio.tags || [])
     )
   ).sort();
+
+  // Função para lidar com reprodução de áudio
+  const handlePlayAudio = (audio: AudioData) => {
+    console.log('Playing audio:', audio.title);
+    // Lógica de reprodução será implementada conforme necessário
+  };
 
   if (isLoading) {
     return (
@@ -168,7 +192,7 @@ export const FieldPage = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            {field.name}
+            {field.title}
           </h1>
           {field.description && (
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -201,14 +225,16 @@ export const FieldPage = () => {
             {filteredAudios.map((audio) => (
               <AudioCard
                 key={audio.id}
-                title={audio.title}
-                description={audio.description}
-                audioUrl={audio.file_url}
-                imageUrl={audio.cover_image_url}
-                duration={audio.duration}
-                isPremium={audio.is_premium}
-                tags={audio.tags || []}
-                field={field.name}
+                audio={{
+                  id: audio.id,
+                  title: audio.title,
+                  duration: audio.duration || '0:00',
+                  url: audio.file_url,
+                  tags: audio.tags,
+                  field_id: field.id
+                }}
+                onPlay={handlePlayAudio}
+                showTags={true}
               />
             ))}
           </div>
@@ -218,5 +244,4 @@ export const FieldPage = () => {
   );
 };
 
-// Export default para compatibilidade com App.tsx
 export default FieldPage;
