@@ -8,7 +8,7 @@
 import { realtimeConnection } from './realtimeConnection';
 import { syncDiagnostics } from './syncDiagnostics';
 
-export type DataChangeEvent = 'fields_changed' | 'audios_changed' | 'content_changed' | 'videos_changed' | 'pricing_sync';
+export type DataChangeEvent = 'fields_changed' | 'audios_changed' | 'content_changed' | 'videos_changed';
 
 interface DataChangeListener {
   (event: DataChangeEvent, payload?: any): void;

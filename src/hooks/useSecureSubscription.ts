@@ -2,8 +2,7 @@
 /**
  * Hook seguro para gerenciamento de assinaturas
  * Responsabilidade: Interface React para serviço de assinaturas seguro
- * Princípios: SRP (uma responsabilidade), DRY (reutilização), KISS (simples)
- * Simplificado para plano anual único
+ * Princípios: SRP (uma responsabilidade), DRY (reutilização)
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -51,17 +50,16 @@ export const useSecureSubscription = () => {
 
   /**
    * Cria assinatura usando Edge Function (segura)
-   * Princípio KISS: Implementação simples para plano único
-   * Sempre cria assinatura anual (não precisa mais de parâmetro tier)
+   * Princípio KISS: Implementação simples
    */
-  const createSubscription = useCallback(async (tier: string = 'annual') => {
+  const createSubscription = useCallback(async (tier: string = 'premium') => {
     try {
       setIsLoading(true);
-      console.log('[SECURE_SUBSCRIPTION] Criando checkout anual...');
+      console.log('[SECURE_SUBSCRIPTION] Criando checkout...', { tier });
       
       // Edge Function já tem acesso service_role - seguro
       const { data, error } = await supabase.functions.invoke('create-subscription', {
-        body: {} // Não precisa enviar tier, sempre será anual
+        body: { tier }
       });
       
       if (error) {

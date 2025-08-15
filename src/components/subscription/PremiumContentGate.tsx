@@ -17,9 +17,8 @@ interface PremiumContentGateProps {
 
 /**
  * Componente responsável por controlar acesso a conteúdo
- * Princípio SRP: Uma única responsabilidade - controle de acesso baseado em assinatura
- * Princípio KISS: Lógica simplificada - pagou = acesso / não pagou = gate
- * Atualizado para modelo de plano anual único
+ * Princípio SRP: Uma única responsabilidade - controle de acesso baseado em tipo de usuário
+ * Atualizado para usar useSecureSubscription (SSOT)
  */
 export const PremiumContentGate = ({ 
   children, 
@@ -74,16 +73,16 @@ export const PremiumContentGate = ({
           
           <div className="space-y-3">
             <Button 
-              onClick={() => createSubscription('annual')}
+              onClick={() => createSubscription('premium')}
               className="w-full"
               size="lg"
             >
               <Crown className="h-4 w-4 mr-2" />
-              Assinar por R$ 127/ano
+              Assinar Agora
             </Button>
             
             <p className="text-xs text-muted-foreground">
-              Acesso completo • Apenas R$ 10,58/mês
+              Acesse todo o conteúdo e transforme sua vida
             </p>
           </div>
         </CardContent>

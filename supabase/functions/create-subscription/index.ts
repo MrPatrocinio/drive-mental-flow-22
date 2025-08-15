@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -45,6 +44,9 @@ serve(async (req) => {
     if (!user?.email) throw new Error("Usuário não autenticado ou email indisponível");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    const { tier = "premium" } = await req.json();
+    logStep("Subscription tier requested", { tier });
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
     // Check for existing customer
@@ -57,86 +59,15 @@ serve(async (req) => {
       logStep("No existing customer found, will create one during checkout");
     }
 
-    // Get synchronized pricing from Supabase
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    logStep("Fetching synchronized pricing data from database");
-    const { data: pricingData, error: pricingError } = await supabaseService
-      .from('landing_content')
-      .select('content')
-      .eq('section', 'pricing')
-      .single();
-
-    // Default annual pricing: R$ 127,00 (12.700 centavos)
-    let annualPrice = {
-      amount: 12700, // R$ 127,00 em centavos
-      name: "Drive Mental - Assinatura Anual"
+    // Define pricing based on tier
+    const pricingMap = {
+      basic: { amount: 2900, name: "Drive Mental - Básico" }, // R$ 29,00
+      premium: { amount: 9700, name: "Drive Mental - Premium" }, // R$ 97,00
+      enterprise: { amount: 19700, name: "Drive Mental - Enterprise" } // R$ 197,00
     };
 
-    if (pricingData?.content && !pricingError) {
-      const pricing = pricingData.content as any;
-      logStep("Using synchronized pricing from database", { 
-        hasPromotion: pricing.has_promotion,
-        originalPrice: pricing.price
-      });
-      
-      // Apply pricing sync logic
-      if (pricing.has_promotion && pricing.promotion_end_date && new Date(pricing.promotion_end_date) > new Date()) {
-        // Use promotional price for annual subscription
-        const originalPrice = pricing.original_price || pricing.price;
-        const discountPercentage = pricing.discount_percentage || 0;
-        let discountedPrice = originalPrice - (originalPrice * discountPercentage / 100);
-        
-        // If discounted price seems monthly, convert to annual
-        if (discountedPrice < 50) {
-          discountedPrice = discountedPrice * 12;
-        }
-        
-        annualPrice.amount = Math.round(discountedPrice * 100);
-        
-        if (pricing.promotion_label) {
-          annualPrice.name = `${annualPrice.name} - ${pricing.promotion_label}`;
-        }
-        
-        logStep("Applied synchronized promotional pricing", { 
-          originalPrice, 
-          discountPercentage, 
-          finalPrice: annualPrice.amount / 100,
-          promotionLabel: pricing.promotion_label
-        });
-      } else {
-        // Use regular price, ensure it's annual
-        let regularPrice = pricing.price;
-        
-        // If price seems monthly (< R$ 50), convert to annual
-        if (regularPrice < 50) {
-          regularPrice = regularPrice * 12;
-          logStep("Converted monthly price to annual", { 
-            monthlyPrice: pricing.price, 
-            annualPrice: regularPrice 
-          });
-        }
-        
-        annualPrice.amount = Math.round(regularPrice * 100);
-        logStep("Using synchronized regular pricing", { finalPrice: annualPrice.amount / 100 });
-      }
-    } else {
-      logStep("Using default annual pricing (database unavailable)", { finalPrice: annualPrice.amount / 100 });
-    }
-
-    // Validate annual price
-    if (annualPrice.amount < 1000) { // Minimum R$ 10,00 annual
-      logStep("Price too low for annual subscription, using default", { 
-        providedPrice: annualPrice.amount / 100,
-        defaultPrice: 127
-      });
-      annualPrice.amount = 12700; // Default R$ 127,00
-    }
-    
-    logStep("Final annual pricing set", { pricing: annualPrice });
+    const pricing = pricingMap[tier as keyof typeof pricingMap] || pricingMap.premium;
+    logStep("Pricing determined", { tier, pricing });
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -147,11 +78,11 @@ serve(async (req) => {
           price_data: {
             currency: "brl",
             product_data: { 
-              name: annualPrice.name,
-              description: "Acesso completo ao Drive Mental por 1 ano"
+              name: pricing.name,
+              description: `Assinatura mensal do ${pricing.name}`
             },
-            unit_amount: annualPrice.amount,
-            recurring: { interval: "year" }, // Always annual subscription
+            unit_amount: pricing.amount,
+            recurring: { interval: "month" },
           },
           quantity: 1,
         },
@@ -162,23 +93,15 @@ serve(async (req) => {
       metadata: {
         user_id: user.id,
         user_email: user.email,
-        subscription_type: "annual",
-        pricing_synced: "true", // Mark as using synchronized pricing
-        final_amount: annualPrice.amount.toString(),
+        subscription_tier: tier,
       },
     });
 
-    logStep("Checkout session created successfully", { 
-      sessionId: session.id, 
-      url: session.url,
-      syncedPricing: true,
-      annualAmount: annualPrice.amount / 100
-    });
+    logStep("Checkout session created successfully", { sessionId: session.id, url: session.url });
 
     return new Response(JSON.stringify({ 
       url: session.url,
-      sessionId: session.id,
-      syncedPrice: annualPrice.amount / 100 // Return synced price for verification
+      sessionId: session.id 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

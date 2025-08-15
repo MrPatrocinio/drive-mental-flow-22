@@ -16,7 +16,6 @@ interface UserProtectedRouteProps {
 /**
  * Componente responsável por proteger rotas baseado em autenticação e assinatura
  * Princípio SRP: Uma única responsabilidade - proteção de rotas
- * Princípio KISS: Lógica simplificada para plano anual único
  * Atualizado para usar useSecureSubscription (SSOT)
  */
 export const UserProtectedRoute = ({ 
@@ -62,7 +61,7 @@ export const UserProtectedRoute = ({
     return <Navigate to="/admin" replace />;
   }
 
-  // Check subscription requirement (modelo simplificado)
+  // Check subscription requirement
   if (requiresSubscription && !subscribed) {
     return (
       <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
@@ -77,21 +76,18 @@ export const UserProtectedRoute = ({
             <div className="space-y-2">
               <h2 className="text-xl font-semibold">Assinatura Necessária</h2>
               <p className="text-sm text-muted-foreground">
-                Assine por apenas R$ 127,00/ano e tenha acesso completo a todos os áudios.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Equivale a apenas R$ 10,58 por mês
+                Esta área é exclusiva para assinantes premium. Faça upgrade agora e tenha acesso completo.
               </p>
             </div>
             
             <div className="space-y-3">
               <Button 
-                onClick={() => createSubscription('annual')}
+                onClick={() => createSubscription('premium')}
                 className="w-full"
                 size="lg"
               >
                 <Crown className="h-4 w-4 mr-2" />
-                Assinar Agora
+                Assinar Premium
               </Button>
               
               <Button 
@@ -100,7 +96,7 @@ export const UserProtectedRoute = ({
                 size="sm"
                 className="w-full"
               >
-                Ver Detalhes
+                Ver Planos
               </Button>
             </div>
           </CardContent>

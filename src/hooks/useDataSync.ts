@@ -1,4 +1,3 @@
-
 /**
  * useDataSync Hook
  * Responsabilidade: Interface React para sincronização de dados
@@ -14,7 +13,6 @@ interface DataSyncCallbacks {
   onAudiosChange?: () => void;
   onContentChange?: () => void;
   onVideosChange?: () => void;
-  onPricingSync?: (payload?: any) => void;
 }
 
 export const useDataSync = (callbacks: DataSyncCallbacks) => {
@@ -32,11 +30,8 @@ export const useDataSync = (callbacks: DataSyncCallbacks) => {
       case 'videos_changed':
         callbacks.onVideosChange?.();
         break;
-      case 'pricing_sync':
-        callbacks.onPricingSync?.(payload);
-        break;
     }
-  }, [callbacks.onFieldsChange, callbacks.onAudiosChange, callbacks.onContentChange, callbacks.onVideosChange, callbacks.onPricingSync]);
+  }, [callbacks.onFieldsChange, callbacks.onAudiosChange, callbacks.onContentChange, callbacks.onVideosChange]);
 
   useEffect(() => {
     const unsubscribe = dataSyncService.subscribe(handleDataChange);

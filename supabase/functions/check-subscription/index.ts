@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -78,7 +77,6 @@ serve(async (req) => {
       status: "active",
       limit: 1,
     });
-    
     const hasActiveSub = subscriptions.data.length > 0;
     let subscriptionTier = null;
     let subscriptionEnd = null;
@@ -88,9 +86,19 @@ serve(async (req) => {
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
       
-      // Para plano único anual, sempre será "annual"
-      subscriptionTier = "annual";
-      logStep("Determined subscription tier", { subscriptionTier });
+      // Determine subscription tier from price
+      const priceId = subscription.items.data[0].price.id;
+      const price = await stripe.prices.retrieve(priceId);
+      const amount = price.unit_amount || 0;
+      
+      if (amount <= 3000) {
+        subscriptionTier = "basic";
+      } else if (amount <= 10000) {
+        subscriptionTier = "premium";
+      } else {
+        subscriptionTier = "enterprise";
+      }
+      logStep("Determined subscription tier", { priceId, amount, subscriptionTier });
     } else {
       logStep("No active subscription found");
     }
