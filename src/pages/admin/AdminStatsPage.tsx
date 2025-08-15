@@ -45,9 +45,9 @@ const mockTopAudios = [
 ];
 
 const mockFieldStats = [
-  { fieldName: 'Relaxamento', audioCount: 25, totalDuration: 180 },
-  { fieldName: 'Concentração', audioCount: 18, totalDuration: 120 },
-  { fieldName: 'Sono', audioCount: 15, totalDuration: 200 }
+  { fieldId: '1', fieldName: 'Relaxamento', audioCount: 25, totalDuration: 180, usagePercentage: 42.3 },
+  { fieldId: '2', fieldName: 'Concentração', audioCount: 18, totalDuration: 120, usagePercentage: 30.5 },
+  { fieldId: '3', fieldName: 'Sono', audioCount: 15, totalDuration: 200, usagePercentage: 25.4 }
 ];
 
 const mockUsageTime = [

@@ -12,6 +12,7 @@ import { PricingPreview } from '@/components/admin/pricing/PricingPreview';
 import { PricingStats } from '@/components/admin/pricing/PricingStats';
 import { PricingSyncStatus } from '@/components/admin/pricing/PricingSyncStatus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PricingInsert } from '@/services/supabase/pricingService';
 
 // Mock data para demonstração
 const mockPricing = {
@@ -35,8 +36,10 @@ const mockPricing = {
 };
 
 const AdminPricingPage = () => {
-  const handleSubmit = (data: any) => {
+  const handleSubmit = async (data: PricingInsert): Promise<void> => {
     console.log('Dados submetidos:', data);
+    // Simulate async operation
+    await new Promise(resolve => setTimeout(resolve, 100));
   };
 
   return (
