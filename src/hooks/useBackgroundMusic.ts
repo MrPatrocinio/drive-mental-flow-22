@@ -3,6 +3,7 @@
  * useBackgroundMusic Hook
  * Responsabilidade: Interface React para o player de música de fundo
  * Princípio SRP: Apenas lógica de hook para background music
+ * Princípio KISS: Lógica simplificada - música independente
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,9 +15,8 @@ export const useBackgroundMusic = () => {
   const [state, setState] = useState<BackgroundMusicState>(backgroundMusicPlayer.getState());
   const [isEnabled, setIsEnabled] = useState(false);
   
-  // Obtém contexto com fallback seguro
+  // Obtém contexto apenas para sincronização de volume
   const audioPlaybackContext = useAudioPlaybackSafe();
-  const shouldPlayBackgroundMusic = audioPlaybackContext?.shouldPlayBackgroundMusic || false;
 
   // Carrega preferências do usuário
   useEffect(() => {
@@ -40,21 +40,20 @@ export const useBackgroundMusic = () => {
     return unsubscribe;
   }, []);
 
-  // Controla reprodução baseado no contexto de áudio principal (com lógica otimizada)
+  // Controla reprodução baseado apenas na preferência do usuário (KISS)
   useEffect(() => {
     console.log('useBackgroundMusic: Verificando estado para reprodução', {
       isEnabled,
-      shouldPlayBackgroundMusic,
       isPlaying: state.isPlaying,
       isLoading: state.isLoading,
       hasError: state.hasError,
       currentMusic: state.currentMusic?.title
     });
     
-    if (isEnabled && shouldPlayBackgroundMusic) {
-      // Deve tocar música de fundo
+    if (isEnabled) {
+      // Deve tocar música de fundo continuamente
       if (!state.isPlaying && !state.isLoading && !state.hasError) {
-        console.log('useBackgroundMusic: Iniciando reprodução (áudio principal ativo)');
+        console.log('useBackgroundMusic: Iniciando reprodução contínua');
         backgroundMusicPlayer.play().catch(error => {
           console.error('useBackgroundMusic: Erro ao iniciar reprodução:', error);
         });
@@ -62,11 +61,19 @@ export const useBackgroundMusic = () => {
     } else {
       // Deve pausar música de fundo
       if (state.isPlaying) {
-        console.log('useBackgroundMusic: Pausando reprodução (áudio principal inativo ou música desabilitada)');
+        console.log('useBackgroundMusic: Pausando reprodução (música desabilitada)');
         backgroundMusicPlayer.pause();
       }
     }
-  }, [isEnabled, shouldPlayBackgroundMusic, state.isPlaying, state.isLoading, state.hasError]);
+  }, [isEnabled, state.isPlaying, state.isLoading, state.hasError]);
+
+  // Sincroniza volume com o áudio principal
+  useEffect(() => {
+    if (audioPlaybackContext?.mainAudioVolume) {
+      console.log('useBackgroundMusic: Sincronizando volume com áudio principal:', audioPlaybackContext.mainAudioVolume);
+      setVolume(audioPlaybackContext.mainAudioVolume);
+    }
+  }, [audioPlaybackContext?.mainAudioVolume]);
 
   const toggleEnabled = useCallback((enabled: boolean) => {
     console.log('useBackgroundMusic: Toggle ativado:', enabled);

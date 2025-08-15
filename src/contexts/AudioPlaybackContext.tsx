@@ -1,16 +1,18 @@
 
 /**
  * Audio Playback Context
- * Responsabilidade: Controlar quando a música de fundo deve tocar
- * Princípio SRP: Apenas gerenciamento de estado de reprodução
+ * Responsabilidade: Apenas sincronização de volume entre áudios
+ * Princípio SRP: Removida lógica de controle de música de fundo
+ * Princípio KISS: Lógica simplificada - apenas volume
  */
 
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 interface AudioPlaybackContextType {
   isMainAudioPlaying: boolean;
   setMainAudioPlaying: (playing: boolean) => void;
-  shouldPlayBackgroundMusic: boolean;
+  mainAudioVolume: number;
+  setMainAudioVolume: (volume: number) => void;
 }
 
 const AudioPlaybackContext = createContext<AudioPlaybackContextType | null>(null);
@@ -31,41 +33,23 @@ export const useAudioPlaybackSafe = () => {
 
 export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode }) => {
   const [isMainAudioPlaying, setIsMainAudioPlaying] = useState(false);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [debouncedMainAudioPlaying, setDebouncedMainAudioPlaying] = useState(false);
+  const [mainAudioVolume, setMainAudioVolume] = useState(50);
 
   const setMainAudioPlaying = useCallback((playing: boolean) => {
     console.log('AudioPlaybackContext: Main audio playing state:', playing);
     setIsMainAudioPlaying(playing);
-
-    // Limpa timeout anterior se existir
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    if (playing) {
-      // Se está tocando, atualiza imediatamente
-      console.log('AudioPlaybackContext: Áudio principal iniciou - música de fundo deve tocar imediatamente');
-      setDebouncedMainAudioPlaying(true);
-    } else {
-      // Se parou, aguarda um delay antes de pausar música de fundo
-      // Isso evita interrupções durante loops rápidos
-      console.log('AudioPlaybackContext: Áudio principal parou - aguardando 200ms antes de pausar música de fundo');
-      debounceTimeoutRef.current = setTimeout(() => {
-        console.log('AudioPlaybackContext: Timeout concluído - pausando música de fundo');
-        setDebouncedMainAudioPlaying(false);
-        debounceTimeoutRef.current = null;
-      }, 200);
-    }
   }, []);
 
-  // Música de fundo deve tocar baseado no estado com debounce
-  const shouldPlayBackgroundMusic = debouncedMainAudioPlaying;
+  const handleSetMainAudioVolume = useCallback((volume: number) => {
+    console.log('AudioPlaybackContext: Main audio volume:', volume);
+    setMainAudioVolume(volume);
+  }, []);
 
   const value: AudioPlaybackContextType = {
     isMainAudioPlaying,
     setMainAudioPlaying,
-    shouldPlayBackgroundMusic
+    mainAudioVolume,
+    setMainAudioVolume: handleSetMainAudioVolume
   };
 
   return (
