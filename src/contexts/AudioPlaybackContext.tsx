@@ -24,6 +24,10 @@ interface AudioPlaybackContextType {
   setBackgroundVolume: (volume: number) => void;
   setBackgroundMuted: (muted: boolean) => void;
   refreshBackgroundMusic: () => Promise<void>;
+  
+  // Primeira visita
+  shouldShowFirstVisitPrompt: boolean;
+  dismissFirstVisitPrompt: () => void;
 }
 
 const AudioPlaybackContext = createContext<AudioPlaybackContextType | null>(null);
@@ -52,6 +56,7 @@ export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode 
     backgroundMusicPlayer.getState()
   );
   const [isBackgroundMusicEnabled, setIsBackgroundMusicEnabled] = useState(false);
+  const [shouldShowFirstVisitPrompt, setShouldShowFirstVisitPrompt] = useState(false);
 
   // Inicialização da música de fundo (SSOT)
   useEffect(() => {
@@ -61,15 +66,23 @@ export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode 
     const preferences = audioPreferencesService.getPreferences();
     setIsBackgroundMusicEnabled(preferences.backgroundMusicEnabled);
     
+    // Verifica se deve mostrar prompt de primeira visita
+    if (preferences.isFirstVisit) {
+      console.log('AudioPlaybackProvider: Primeira visita detectada, mostrando prompt');
+      setShouldShowFirstVisitPrompt(true);
+    }
+    
     // Configura listener de estado do player
     const unsubscribe = backgroundMusicPlayer.onStateChange(setBackgroundMusicState);
     
-    // Inicializa o player
-    backgroundMusicPlayer.initialize().then(() => {
-      console.log('AudioPlaybackProvider: Player de música de fundo inicializado');
-    }).catch(error => {
-      console.error('AudioPlaybackProvider: Erro ao inicializar player:', error);
-    });
+    // Inicializa o player apenas se música estiver habilitada
+    if (preferences.backgroundMusicEnabled) {
+      backgroundMusicPlayer.initialize().then(() => {
+        console.log('AudioPlaybackProvider: Player de música de fundo inicializado');
+      }).catch(error => {
+        console.error('AudioPlaybackProvider: Erro ao inicializar player:', error);
+      });
+    }
     
     return unsubscribe;
   }, []);
@@ -127,12 +140,22 @@ export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode 
       backgroundMusicEnabled: enabled
     });
 
+    // Se habilitando e player não inicializado, inicializa
+    if (enabled && !backgroundMusicState.currentMusic) {
+      console.log('AudioPlaybackProvider: Inicializando player para nova ativação');
+      backgroundMusicPlayer.initialize().then(() => {
+        backgroundMusicPlayer.play();
+      }).catch(error => {
+        console.error('AudioPlaybackProvider: Erro ao inicializar:', error);
+      });
+    }
+
     // Se desabilitando, para imediatamente
     if (!enabled && backgroundMusicState.isPlaying) {
       console.log('AudioPlaybackProvider: Parando música por desabilitação');
       backgroundMusicPlayer.pause();
     }
-  }, [backgroundMusicState.isPlaying]);
+  }, [backgroundMusicState.isPlaying, backgroundMusicState.currentMusic]);
 
   const setBackgroundVolume = useCallback((volume: number) => {
     console.log('AudioPlaybackProvider: Definindo volume da música de fundo:', volume);
@@ -149,6 +172,11 @@ export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode 
     await backgroundMusicPlayer.refresh();
   }, []);
 
+  const dismissFirstVisitPrompt = useCallback(() => {
+    console.log('AudioPlaybackProvider: Dismissing first visit prompt');
+    setShouldShowFirstVisitPrompt(false);
+  }, []);
+
   const value: AudioPlaybackContextType = {
     // Áudio principal
     isMainAudioPlaying,
@@ -162,7 +190,11 @@ export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode 
     toggleBackgroundMusic,
     setBackgroundVolume,
     setBackgroundMuted,
-    refreshBackgroundMusic
+    refreshBackgroundMusic,
+    
+    // Primeira visita
+    shouldShowFirstVisitPrompt,
+    dismissFirstVisitPrompt
   };
 
   return (
