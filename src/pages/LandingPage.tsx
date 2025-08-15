@@ -6,10 +6,12 @@ import { FieldCard } from "@/components/FieldCard";
 import { TagFilter } from "@/components/TagFilter";
 import { PricingDisplay } from "@/components/PricingDisplay";
 import { useToast } from "@/hooks/use-toast";
-import { contentService, AudioData, FieldData, PricingData } from "@/services/contentService";
-import { diagnosticService } from "@/services/diagnosticService";
+import { ContentService } from "@/services/contentService";
+import { DiagnosticService } from "@/services/diagnosticService";
 import { FirstVisitMusicPrompt } from "@/components/FirstVisitMusicPrompt";
 import { useAudioPlayback } from "@/contexts/AudioPlaybackContext";
+import { useNavigate } from "react-router-dom";
+import * as Icons from "lucide-react";
 
 interface LandingContent {
   hero_title: string;
@@ -23,6 +25,32 @@ interface LandingContent {
     description: string;
     icon: string;
   }>;
+}
+
+interface AudioData {
+  id: string;
+  title: string;
+  duration: string;
+  url: string;
+  tags: string[];
+  field_id?: string;
+}
+
+interface FieldData {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  audio_count: number;
+}
+
+interface PricingData {
+  price: number;
+  currency: string;
+  payment_type: string;
+  access_type: string;
+  benefits: string[];
+  button_text: string;
 }
 
 const DEFAULT_CONTENT: LandingContent = {
@@ -51,7 +79,7 @@ const DEFAULT_CONTENT: LandingContent = {
   ]
 };
 
-export const LandingPage = () => {
+const LandingPage = () => {
   console.log('LandingPage: Componente iniciando...');
   
   const [content, setContent] = useState<LandingContent>(DEFAULT_CONTENT);
@@ -64,6 +92,7 @@ export const LandingPage = () => {
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Hook para controle de música de fundo e primeira visita
   const {
@@ -84,7 +113,7 @@ export const LandingPage = () => {
 
   const loadContent = async () => {
     console.log('LandingPage: Iniciando carregamento de conteúdo...');
-    diagnosticService.logStep('content-loading-start');
+    DiagnosticService.info('LandingPage', 'Iniciando carregamento de conteúdo');
     
     const timeout = setTimeout(() => {
       console.warn('LandingPage: Timeout no carregamento - usando fallback');
@@ -101,34 +130,87 @@ export const LandingPage = () => {
       setErrorMessage('');
 
       console.log('LandingPage: Carregando conteúdo da landing...');
-      const landingContent = await contentService.getLandingContent();
+      const landingContent = ContentService.getLandingPageContent();
       if (landingContent) {
         console.log('LandingPage: Conteúdo da landing carregado:', landingContent);
-        setContent(landingContent);
+        // Adaptar estrutura do contentService para nossa interface
+        setContent({
+          hero_title: landingContent.hero.title,
+          hero_subtitle: landingContent.hero.subtitle,
+          hero_cta_text: landingContent.hero.ctaText,
+          about_title: "Sobre nós",
+          about_content: "Nossa plataforma oferece áudios especializados para desenvolvimento pessoal e mental.",
+          features_title: "Funcionalidades",
+          features: landingContent.features.map(f => ({
+            title: f.title,
+            description: f.description,
+            icon: f.icon
+          }))
+        });
       }
 
-      console.log('LandingPage: Carregando áudios...');
-      const audios = await contentService.getAudios();
-      console.log('LandingPage: Áudios carregados:', audios.length);
-      setAudioData(audios);
-      setFilteredAudios(audios);
+      // Por enquanto, usar dados mockados para áudios e campos
+      console.log('LandingPage: Usando dados mockados para demonstração');
+      const mockAudios: AudioData[] = [
+        {
+          id: "1",
+          title: "Áudio de Demonstração 1",
+          duration: "15:30",
+          url: "#",
+          tags: ["relaxamento", "meditação"],
+          field_id: "1"
+        },
+        {
+          id: "2", 
+          title: "Áudio de Demonstração 2",
+          duration: "20:45",
+          url: "#",
+          tags: ["foco", "concentração"],
+          field_id: "2"
+        }
+      ];
 
-      console.log('LandingPage: Carregando campos...');
-      const fields = await contentService.getFields();
-      console.log('LandingPage: Campos carregados:', fields.length);
-      setFieldData(fields);
+      const mockFields: FieldData[] = [
+        {
+          id: "1",
+          title: "Relaxamento",
+          description: "Técnicas de relaxamento profundo",
+          icon: "Brain",
+          audio_count: 5
+        },
+        {
+          id: "2",
+          title: "Foco Mental",
+          description: "Desenvolvimento da concentração",
+          icon: "Target",
+          audio_count: 8
+        }
+      ];
 
-      console.log('LandingPage: Carregando pricing...');
-      const pricing = await contentService.getPricing();
-      console.log('LandingPage: Pricing carregado:', pricing);
-      setPricingData(pricing);
+      const mockPricing: PricingData = {
+        price: 97,
+        currency: "R$",
+        payment_type: "Pagamento único",
+        access_type: "Acesso vitalício",
+        benefits: [
+          "Acesso completo aos áudios especializados",
+          "Suporte especializado 24/7",
+          "Atualizações constantes de conteúdo"
+        ],
+        button_text: "Começar Agora"
+      };
 
-      diagnosticService.logStep('content-loading-success');
+      setAudioData(mockAudios);
+      setFieldData(mockFields);
+      setPricingData(mockPricing);
+      setFilteredAudios(mockAudios);
+
+      DiagnosticService.info('LandingPage', 'Carregamento concluído com sucesso');
       console.log('LandingPage: Carregamento concluído com sucesso');
 
     } catch (error) {
       console.error('LandingPage: Erro no carregamento:', error);
-      diagnosticService.logError('content-loading-error', error);
+      DiagnosticService.error('LandingPage', 'Erro no carregamento', error);
       
       setHasError(true);
       setErrorMessage(error instanceof Error ? error.message : 'Erro desconhecido');
@@ -167,6 +249,11 @@ export const LandingPage = () => {
     console.log('LandingPage: Primeira escolha de música:', enableMusic);
     toggleBackgroundMusic(enableMusic);
     dismissFirstVisitPrompt();
+  };
+
+  const handleAudioPlay = (audio: AudioData) => {
+    console.log('LandingPage: Reproduzindo áudio:', audio.title);
+    navigate(`/audio/${audio.id}`);
   };
 
   const allTags = Array.from(new Set(audioData.flatMap(audio => audio.tags)));
@@ -267,7 +354,13 @@ export const LandingPage = () => {
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {fieldData.map((field) => (
-                <FieldCard key={field.id} field={field} />
+                <FieldCard 
+                  key={field.id}
+                  title={field.title}
+                  icon={(Icons as any)[field.icon] || Icons.Circle}
+                  audioCount={field.audio_count}
+                  fieldId={field.id}
+                />
               ))}
             </div>
           </div>
@@ -293,7 +386,11 @@ export const LandingPage = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAudios.map((audio) => (
-              <AudioCard key={audio.id} audio={audio} />
+              <AudioCard 
+                key={audio.id} 
+                audio={audio} 
+                onPlay={handleAudioPlay}
+              />
             ))}
           </div>
           
@@ -314,10 +411,12 @@ export const LandingPage = () => {
             <h2 className="text-3xl font-bold text-center text-foreground mb-12">
               Planos e Preços
             </h2>
-            <PricingDisplay pricing={pricingData} />
+            <PricingDisplay />
           </div>
         </section>
       )}
     </div>
   );
 };
+
+export default LandingPage;
