@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,17 +9,36 @@ import { Loader2 } from "lucide-react";
 import { useContentAccess } from "@/services/subscriptionAccessService";
 import { useDataSync } from "@/hooks/useDataSync";
 
+interface AudioData {
+  id: string;
+  title: string;
+  description?: string;
+  file_url: string;
+  cover_image_url?: string;
+  duration?: string;
+  is_premium: boolean;
+  is_demo?: boolean;
+  tags?: string[];
+}
+
+interface FieldData {
+  id: string;
+  name: string;
+  description?: string;
+  slug: string;
+}
+
 export const FieldPage = () => {
   const { slug } = useParams();
-  const [field, setField] = useState<any>(null);
-  const [audios, setAudios] = useState<any[]>([]);
-  const [filteredAudios, setFilteredAudios] = useState<any[]>([]);
+  const [field, setField] = useState<FieldData | null>(null);
+  const [audios, setAudios] = useState<AudioData[]>([]);
+  const [filteredAudios, setFilteredAudios] = useState<AudioData[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Hook para controle de acesso baseado em assinatura
-  const { canAccessAudio, getAccessDeniedReason } = useContentAccess();
+  const { canAccessAudio } = useContentAccess();
 
   // Hook para sincronização de dados
   const { syncTrigger } = useDataSync();
@@ -30,6 +50,8 @@ export const FieldPage = () => {
       try {
         setIsLoading(true);
         setError(null);
+
+        console.log('Fetching field and audios for slug:', slug);
 
         // Buscar informações do campo
         const { data: fieldData, error: fieldError } = await supabase
@@ -45,6 +67,7 @@ export const FieldPage = () => {
           return;
         }
 
+        console.log('Field found:', fieldData);
         setField(fieldData);
 
         // Buscar áudios do campo
@@ -61,10 +84,14 @@ export const FieldPage = () => {
           return;
         }
 
+        console.log('Audios found:', audiosData?.length || 0);
+
         // Filtrar áudios baseado na assinatura do usuário
-        const accessibleAudios = audiosData.filter(audio => 
+        const accessibleAudios = audiosData?.filter(audio => 
           canAccessAudio(audio.is_premium || false, audio.is_demo || false)
-        );
+        ) || [];
+
+        console.log('Accessible audios:', accessibleAudios.length);
 
         setAudios(accessibleAudios);
         setFilteredAudios(accessibleAudios);
@@ -82,7 +109,9 @@ export const FieldPage = () => {
 
   // Filtra os áudios com base nas tags selecionadas
   const handleTagFilter = (tags: string[]) => {
+    console.log('Filtering by tags:', tags);
     setSelectedTags(tags);
+    
     if (tags.length === 0) {
       setFilteredAudios(audios);
     } else {
@@ -172,7 +201,6 @@ export const FieldPage = () => {
             {filteredAudios.map((audio) => (
               <AudioCard
                 key={audio.id}
-                id={audio.id}
                 title={audio.title}
                 description={audio.description}
                 audioUrl={audio.file_url}
@@ -189,3 +217,6 @@ export const FieldPage = () => {
     </div>
   );
 };
+
+// Export default para compatibilidade com App.tsx
+export default FieldPage;
