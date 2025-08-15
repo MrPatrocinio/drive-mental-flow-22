@@ -1,4 +1,3 @@
-
 /**
  * Audio Upload Form - Formulário de upload de áudio com arquivo
  * Responsabilidade: Interface para upload e criação de áudios
@@ -10,10 +9,10 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Upload, X, Music, Crown, Users } from "lucide-react";
+import { Upload, X, Music } from "lucide-react";
 import { AudioWithFile } from "@/services/supabase/audioService";
 import { Field } from "@/services/supabase/fieldService";
 
@@ -35,8 +34,7 @@ export const AudioUploadForm = ({
   const [formData, setFormData] = useState<Omit<AudioWithFile, 'file'>>({
     title: "",
     duration: "",
-    field_id: "",
-    is_premium: false
+    field_id: ""
   });
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -55,7 +53,7 @@ export const AudioUploadForm = ({
     });
   };
 
-  const handleChange = (field: string, value: string | boolean) => {
+  const handleChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -221,35 +219,6 @@ export const AudioUploadForm = ({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Tipo de Acesso</Label>
-              <div className="flex items-center space-x-4 p-4 border rounded-lg">
-                <div className="flex items-center space-x-2 flex-1">
-                  <div className="flex items-center gap-2">
-                    {formData.is_premium ? (
-                      <Crown className="h-4 w-4 text-yellow-500" />
-                    ) : (
-                      <Users className="h-4 w-4 text-green-500" />
-                    )}
-                    <span className="text-sm font-medium">
-                      {formData.is_premium ? "Áudio Premium" : "Áudio Gratuito"}
-                    </span>
-                  </div>
-                </div>
-                <Switch
-                  checked={formData.is_premium || false}
-                  onCheckedChange={(checked) => handleChange("is_premium", checked)}
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {formData.is_premium 
-                  ? "Apenas usuários com assinatura ativa poderão acessar este áudio"
-                  : "Todos os usuários poderão acessar este áudio, incluindo visitantes na demonstração"
-                }
-              </div>
             </div>
           </div>
 

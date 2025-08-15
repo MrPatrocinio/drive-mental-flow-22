@@ -1,9 +1,8 @@
-
 import { Check, Star, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useSecureSubscription } from '@/hooks/useSecureSubscription';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const plans = [
   {
@@ -60,7 +59,7 @@ const plans = [
 ];
 
 export const SubscriptionPlans = () => {
-  const { createSubscription, isLoading, subscription_tier, subscribed } = useSecureSubscription();
+  const { createSubscription, isLoading, subscription_tier, subscribed } = useSubscription();
 
   const handleSelectPlan = (planId: string) => {
     createSubscription(planId);

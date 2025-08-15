@@ -1,11 +1,10 @@
-
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
 import { Header } from '@/components/Header';
-import { useSecureSubscription } from '@/hooks/useSecureSubscription';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export const SubscriptionPage = () => {
-  const { subscribed } = useSecureSubscription();
+  const { subscribed } = useSubscription();
 
   return (
     <div className="min-h-screen bg-background">

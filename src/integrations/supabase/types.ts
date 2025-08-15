@@ -376,33 +376,6 @@ export type Database = {
         }
         Relationships: []
       }
-      subscriber_access_log: {
-        Row: {
-          action: string
-          created_at: string | null
-          id: string
-          success: boolean
-          target_subscriber_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          action: string
-          created_at?: string | null
-          id?: string
-          success: boolean
-          target_subscriber_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          action?: string
-          created_at?: string | null
-          id?: string
-          success?: boolean
-          target_subscriber_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       subscribers: {
         Row: {
           created_at: string
@@ -447,10 +420,6 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
-      }
-      validate_subscriber_access: {
-        Args: { target_user_id: string; target_email: string }
-        Returns: boolean
       }
     }
     Enums: {

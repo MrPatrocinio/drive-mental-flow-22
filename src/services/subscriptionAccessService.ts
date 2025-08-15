@@ -1,50 +1,32 @@
 
-/**
- * SubscriptionAccessService - Serviço para verificação de acesso baseado em assinatura
- * Versão atualizada com validações de segurança
- * Princípios: SRP, DRY, SSOT, KISS, YAGNI
- */
-
-import { useSecureSubscription } from '@/hooks/useSecureSubscription';
+import { useSubscription } from '@/hooks/useSubscription';
 
 /**
  * Serviço responsável por verificar acesso baseado em assinatura
- * Princípio SRP: Uma única responsabilidade - verificar acesso baseado em tipo de usuário
+ * Princípio SRP: Uma única responsabilidade - verificar acesso premium
+ * Modelo: Usuários logados com assinatura ativa = acesso total
  */
 export class SubscriptionAccessService {
   /**
-   * Verifica se o usuário tem acesso completo (assinatura ativa)
-   * Princípio KISS: Lógica simples e direta
+   * Verifica se o usuário tem acesso a conteúdo (todos os áudios são premium)
    */
-  static hasFullAccess(subscribed: boolean, subscriptionTier: string | null): boolean {
+  static hasAccessToContent(subscribed: boolean, subscriptionTier: string | null): boolean {
     return subscribed && subscriptionTier !== null;
   }
 
   /**
-   * Verifica se o usuário pode acessar um áudio específico
-   * Princípio DRY: Lógica reutilizável para verificação de acesso
+   * Verifica se o usuário pode acessar um áudio
+   * No novo modelo: todos os áudios requerem assinatura ativa
    */
-  static canAccessAudio(
-    subscribed: boolean, 
-    subscriptionTier: string | null, 
-    isPremium: boolean,
-    isDemoAudio: boolean = false
-  ): boolean {
-    // Usuário com assinatura ativa: acesso total
-    if (this.hasFullAccess(subscribed, subscriptionTier)) {
-      return true;
-    }
-
-    // Usuário sem assinatura: apenas áudios não-premium ou demo
-    return !isPremium || isDemoAudio;
+  static canAccessAudio(subscribed: boolean, subscriptionTier: string | null): boolean {
+    return this.hasAccessToContent(subscribed, subscriptionTier);
   }
 
   /**
    * Retorna o motivo pelo qual o acesso foi negado
-   * Princípio SSOT: Fonte única para mensagens de erro
    */
-  static getAccessDeniedReason(subscribed: boolean, isPremium: boolean): string {
-    if (!subscribed && isPremium) {
+  static getAccessDeniedReason(subscribed: boolean): string {
+    if (!subscribed) {
       return 'Este conteúdo é exclusivo para assinantes. Faça login e assine para ter acesso completo.';
     }
     
@@ -53,26 +35,26 @@ export class SubscriptionAccessService {
 }
 
 /**
- * Hook para verificação de acesso a conteúdo usando serviço seguro
+ * Hook para verificação de acesso a conteúdo
  * Princípio DRY: Reutiliza lógica de verificação em toda aplicação
  */
 export const useContentAccess = () => {
-  const { subscribed, subscription_tier } = useSecureSubscription();
+  const { subscribed, subscription_tier } = useSubscription();
 
-  const hasFullAccess = () => {
-    return SubscriptionAccessService.hasFullAccess(subscribed, subscription_tier);
+  const canAccessContent = () => {
+    return SubscriptionAccessService.hasAccessToContent(subscribed, subscription_tier);
   };
 
-  const canAccessAudio = (isPremium: boolean, isDemoAudio: boolean = false) => {
-    return SubscriptionAccessService.canAccessAudio(subscribed, subscription_tier, isPremium, isDemoAudio);
+  const canAccessAudio = () => {
+    return SubscriptionAccessService.canAccessAudio(subscribed, subscription_tier);
   };
 
-  const getAccessDeniedReason = (isPremium: boolean) => {
-    return SubscriptionAccessService.getAccessDeniedReason(subscribed, isPremium);
+  const getAccessDeniedReason = () => {
+    return SubscriptionAccessService.getAccessDeniedReason(subscribed);
   };
 
   return {
-    hasFullAccess,
+    canAccessContent,
     canAccessAudio,
     getAccessDeniedReason,
     subscribed,

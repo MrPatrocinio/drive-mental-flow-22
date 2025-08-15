@@ -13,13 +13,14 @@ import { AudioList } from "@/components/admin/AudioListNew";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AudioService, Audio, AudioWithFile, AudioUpdate, AudioInsert } from "@/services/supabase/audioService";
 import { supabase } from "@/integrations/supabase/client";
 import { FieldService, Field } from "@/services/supabase/fieldService";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshButton } from "@/components/RefreshButton";
 import { AudioDiagnostics } from "@/components/admin/AudioDiagnostics";
-import { Plus, Music, Upload, Edit, BarChart3, Activity, Crown, Users } from "lucide-react";
+import { Plus, Music, Upload, Edit, BarChart3, Activity } from "lucide-react";
 
 type ViewMode = "list" | "upload" | "edit" | "diagnostics";
 
@@ -101,8 +102,7 @@ export default function AdminAudiosPageNew() {
         duration: audioData.duration,
         field_id: audioData.field_id,
         tags: audioData.tags || [],
-        url: audioUrl,
-        is_premium: audioData.is_premium || false
+        url: audioUrl
       };
       
       console.log('Criando áudio no banco:', audioInsert);
@@ -175,8 +175,7 @@ export default function AdminAudiosPageNew() {
         duration: audioData.duration,
         field_id: audioData.field_id,
         tags: audioData.tags || [],
-        url: audioUrl,
-        is_premium: audioData.is_premium || false
+        url: audioUrl
       };
       
       console.log('Atualizando áudio no banco:', audioUpdate);
@@ -239,8 +238,6 @@ export default function AdminAudiosPageNew() {
 
   const audioStats = {
     total: audios.length,
-    premium: audios.filter(audio => audio.is_premium).length,
-    free: audios.filter(audio => !audio.is_premium).length,
     byField: fields.map(field => ({
       field: field.title,
       count: audios.filter(audio => audio.field_id === field.id).length
@@ -280,7 +277,7 @@ export default function AdminAudiosPageNew() {
         return (
           <div className="space-y-6">
             {/* Estatísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total de Áudios</CardTitle>
@@ -293,31 +290,28 @@ export default function AdminAudiosPageNew() {
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Áudios Premium</CardTitle>
-                  <Crown className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{audioStats.premium}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Áudios Gratuitos</CardTitle>
-                  <Users className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{audioStats.free}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Campos Ativos</CardTitle>
                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{fields.length}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Por Campo</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1">
+                    {audioStats.byField.slice(0, 3).map((stat) => (
+                      <div key={stat.field} className="flex items-center justify-between text-sm">
+                        <span className="truncate">{stat.field}</span>
+                        <Badge variant="secondary">{stat.count}</Badge>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </div>
