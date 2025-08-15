@@ -1,18 +1,15 @@
-
 export interface AudioPreferences {
   volume: number;
   repeatCount: number; // 0 = infinite, >0 = specific number
   autoPlay: boolean;
   showProgress: boolean;
   backgroundMusicEnabled: boolean;
-  isFirstVisit: boolean; // Nova propriedade para controlar primeira visita
 }
 
 export interface AudioPreferencesService {
   getPreferences(): AudioPreferences;
   updatePreferences(preferences: Partial<AudioPreferences>): void;
   resetToDefaults(): void;
-  markFirstVisitComplete(): void;
 }
 
 const DEFAULT_PREFERENCES: AudioPreferences = {
@@ -20,8 +17,7 @@ const DEFAULT_PREFERENCES: AudioPreferences = {
   repeatCount: 0, // infinite by default
   autoPlay: false,
   showProgress: true,
-  backgroundMusicEnabled: false, // Mudado para false por padrão
-  isFirstVisit: true, // Nova propriedade - primeira visita
+  backgroundMusicEnabled: true, // Ativado por padrão
 };
 
 const STORAGE_KEY = 'audio-preferences';
@@ -70,10 +66,6 @@ class AudioPreferencesServiceImpl implements AudioPreferencesService {
 
     this.preferences = { ...this.preferences, ...updates };
     this.savePreferences();
-  }
-
-  markFirstVisitComplete(): void {
-    this.updatePreferences({ isFirstVisit: false });
   }
 
   resetToDefaults(): void {

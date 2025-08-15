@@ -1,17 +1,16 @@
 
-/**
- * Hook customizado para gerenciar o estado do player de áudio
- * Segue o princípio de Composição sobre Herança
- * Segue SSOT: busca configuração administrativa centralizada
- * Modificado: Remove controle da música de fundo, apenas sincroniza volume
- */
-
 import { useState, useRef, useEffect } from 'react';
 import { AudioPlayerService, AudioPlayerState } from '@/services/audioPlayerService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
 import { AudioConfigService } from '@/services/supabase/audioConfigService';
+import { useBackgroundMusic } from './useBackgroundMusic';
 import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
+/**
+ * Hook customizado para gerenciar o estado do player de áudio
+ * Segue o princípio de Composição sobre Herança
+ * Segue SSOT: busca configuração administrativa centralizada
+ */
 export const useAudioPlayer = (
   audioUrl: string,
   preferences: AudioPreferences,
@@ -33,7 +32,10 @@ export const useAudioPlayer = (
   const [repeatCount, setRepeatCount] = useState(0);
   const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(3);
   
-  // Context apenas para sincronização de volume
+  // Hook para música de fundo
+  const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
+  
+  // Context para controlar música de fundo
   const audioPlaybackContext = useAudioPlaybackSafe();
 
   // Carrega configuração administrativa de pausa (SSOT)
@@ -94,19 +96,20 @@ export const useAudioPlayer = (
     };
   }, [audioUrl, preferences.repeatCount, pauseBetweenRepeats]);
 
-  // Atualiza preferências de volume e sincroniza com contexto
+  // Atualiza preferências de volume
   useEffect(() => {
     if (playerServiceRef.current) {
       const normalizedVolume = Math.max(0.01, preferences.volume / 100);
       console.log('useAudioPlayer: Definindo volume:', preferences.volume, 'normalizado:', normalizedVolume);
       playerServiceRef.current.setVolume(normalizedVolume);
       
-      // Sincroniza volume com contexto (para música de fundo)
-      audioPlaybackContext?.setMainAudioVolume(preferences.volume);
+      // Sincroniza volume com música de fundo
+      setBackgroundVolume(preferences.volume);
     }
-  }, [preferences.volume, audioPlaybackContext]);
+  }, [preferences.volume, setBackgroundVolume]);
 
-  // Notifica o contexto sobre o estado do áudio principal (apenas para informação)
+  // Notifica o contexto sobre o estado do áudio principal
+  // Princípio KISS: lógica simplificada - apenas considera isPlaying público
   useEffect(() => {
     if (!playerState.isTransitioning) {
       console.log('useAudioPlayer: Notificando contexto - áudio principal:', playerState.isPlaying ? 'tocando' : 'parado');
@@ -147,6 +150,7 @@ export const useAudioPlayer = (
 
   const setMuted = (muted: boolean) => {
     playerServiceRef.current?.setMuted(muted);
+    setBackgroundMuted(muted);
   };
 
   return {

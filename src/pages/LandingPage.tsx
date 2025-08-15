@@ -1,375 +1,371 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { AudioCard, Audio } from "@/components/AudioCard";
-import { FieldCard } from "@/components/FieldCard";
-import { TagFilter } from "@/components/TagFilter";
-import { PricingDisplay } from "@/components/PricingDisplay";
-import { useToast } from "@/hooks/use-toast";
-import { ContentService } from "@/services/contentService";
-import { DiagnosticService } from "@/services/diagnosticService";
-import { FirstVisitMusicPrompt } from "@/components/FirstVisitMusicPrompt";
-import { useAudioPlayback } from "@/contexts/AudioPlaybackContext";
+import { Header } from "@/components/Header";
+import { ArrowRight, Brain, Heart, Target, DollarSign, Activity, Sparkles, Play, Users, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { SupabaseContentService, LandingPageContent } from "@/services/supabase/contentService";
+import { VideoService, Video } from "@/services/supabase/videoService";
+import { FieldService } from "@/services/supabase/fieldService";
+import { useDataSync } from "@/hooks/useDataSync";
+import { useVideoControls } from "@/hooks/useVideoControls";
+import { useVideoLifecycle } from "@/hooks/useVideoLifecycle";
+import { PricingDisplay } from "@/components/PricingDisplay";
+import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
+import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
 import * as Icons from "lucide-react";
 
-interface LandingContent {
-  hero_title: string;
-  hero_subtitle: string;
-  hero_cta_text: string;
-  about_title: string;
-  about_content: string;
-  features_title: string;
-  features: Array<{
-    title: string;
-    description: string;
-    icon: string;
-  }>;
-}
-
-interface FieldData {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  audio_count: number;
-}
-
-const DEFAULT_CONTENT: LandingContent = {
-  hero_title: "Drive Mental",
-  hero_subtitle: "Transforme sua mente com nossa plataforma de áudios especializados",
-  hero_cta_text: "Comece agora",
-  about_title: "Sobre nós",
-  about_content: "Nossa plataforma oferece áudios especializados para desenvolvimento pessoal e mental.",
-  features_title: "Funcionalidades",
-  features: [
-    {
-      title: "Áudios Especializados",
-      description: "Conteúdo profissional para seu desenvolvimento",
-      icon: "🎧"
-    },
-    {
-      title: "Campos Específicos",
-      description: "Organize por áreas de interesse",
-      icon: "📚"
-    },
-    {
-      title: "Qualidade Premium",
-      description: "Áudio de alta qualidade para melhor experiência",
-      icon: "⭐"
-    }
-  ]
-};
-
-const LandingPage = () => {
-  console.log('LandingPage: Componente iniciando...');
-  
-  const [content, setContent] = useState<LandingContent>(DEFAULT_CONTENT);
-  const [audioData, setAudioData] = useState<Audio[]>([]);
-  const [fieldData, setFieldData] = useState<FieldData[]>([]);
-  const [filteredAudios, setFilteredAudios] = useState<Audio[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  const { toast } = useToast();
+export default function LandingPage() {
   const navigate = useNavigate();
-
-  // Hook para controle de música de fundo e primeira visita
-  const audioPlayback = useAudioPlayback();
+  const [content, setContent] = useState<LandingPageContent | null>(null);
+  const [fields, setFields] = useState<any[]>([]);
+  const [activeVideo, setActiveVideo] = useState<Video | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  // Verificar se o contexto está disponível
-  const shouldShowFirstVisitPrompt = audioPlayback?.shouldShowFirstVisitPrompt || false;
-  const dismissFirstVisitPrompt = audioPlayback?.dismissFirstVisitPrompt || (() => {});
-  const toggleBackgroundMusic = audioPlayback?.toggleBackgroundMusic || (() => {});
+  // Hooks para controles e lifecycle de vídeo
+  const videoControlsSettings = useVideoControls(activeVideo?.video_controls);
+  const { isVideoReady, videoKey, cleanupPreviousVideo } = useVideoLifecycle(activeVideo);
 
-  console.log('LandingPage: Estado atual:', {
-    isLoading,
-    hasError,
-    contentLoaded: !!content,
-    audioCount: audioData.length,
-    fieldCount: fieldData.length,
-    shouldShowFirstVisitPrompt,
-    audioPlaybackAvailable: !!audioPlayback
+  // Get dynamic icon component
+  const getIconComponent = (iconName: string) => {
+    const IconComponent = (Icons as any)[iconName];
+    return IconComponent || Brain; // Fallback to Brain icon
+  };
+
+  const loadContent = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      const [landingContent, fieldsData, videoData] = await Promise.all([
+        SupabaseContentService.getLandingPageContent(),
+        FieldService.getAll(),
+        VideoService.getActiveVideo()
+      ]);
+      
+      setContent(landingContent);
+      
+      // Verificar se o vídeo realmente mudou antes de atualizar
+      if (videoData?.id !== activeVideo?.id) {
+        console.log('LandingPage: Novo vídeo detectado:', videoData?.id);
+        setActiveVideo(videoData);
+      }
+      
+      setFields(fieldsData.map(field => ({
+        icon: getIconComponent(field.icon_name),
+        title: field.title,
+        count: `${field.audio_count} áudio${field.audio_count !== 1 ? 's' : ''}`
+      })));
+    } catch (error) {
+      console.error('Error loading content:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeVideo?.id]);
+
+  useEffect(() => {
+    loadContent();
+  }, [loadContent]);
+
+  // Setup data sync
+  useDataSync({
+    onFieldsChange: loadContent,
+    onContentChange: loadContent,
+    onVideosChange: loadContent
   });
 
-  const loadContent = async () => {
-    console.log('LandingPage: Iniciando carregamento de conteúdo...');
-    DiagnosticService.info('LandingPage', 'Iniciando carregamento de conteúdo');
-    
-    try {
-      setHasError(false);
-      setErrorMessage('');
+  // Renderizar vídeo com base no tipo
+  const renderVideoPlayer = () => {
+    if (!activeVideo || !isVideoReady) return null;
 
-      console.log('LandingPage: Carregando conteúdo da landing...');
-      const landingContent = ContentService.getLandingPageContent();
-      if (landingContent) {
-        console.log('LandingPage: Conteúdo da landing carregado:', landingContent);
-        setContent({
-          hero_title: landingContent.hero.title,
-          hero_subtitle: landingContent.hero.subtitle,
-          hero_cta_text: landingContent.hero.ctaText,
-          about_title: "Sobre nós",
-          about_content: "Nossa plataforma oferece áudios especializados para desenvolvimento pessoal e mental.",
-          features_title: "Funcionalidades",
-          features: landingContent.features.map(f => ({
-            title: f.title,
-            description: f.description,
-            icon: f.icon
-          }))
-        });
-      }
+    const isAtomicatHtml = activeVideo.type === 'atomicat' && VideoService.isAtomicatHtml(activeVideo.url);
+    const isAtomicatUrl = activeVideo.type === 'atomicat' && !VideoService.isAtomicatHtml(activeVideo.url);
+    const isHLS = VideoService.isHLSStream(activeVideo.url);
 
-      // Dados mockados para demonstração
-      const mockAudios: Audio[] = [
-        {
-          id: "1",
-          title: "Áudio de Demonstração 1",
-          duration: "15:30",
-          url: "#",
-          tags: ["relaxamento", "meditação"],
-          field_id: "1"
-        },
-        {
-          id: "2", 
-          title: "Áudio de Demonstração 2",
-          duration: "20:45",
-          url: "#",
-          tags: ["foco", "concentração"],
-          field_id: "2"
-        }
-      ];
-
-      const mockFields: FieldData[] = [
-        {
-          id: "1",
-          title: "Relaxamento",
-          description: "Técnicas de relaxamento profundo",
-          icon: "Brain",
-          audio_count: 5
-        },
-        {
-          id: "2",
-          title: "Foco Mental",
-          description: "Desenvolvimento da concentração",
-          icon: "Target",
-          audio_count: 8
-        }
-      ];
-
-      setAudioData(mockAudios);
-      setFieldData(mockFields);
-      setFilteredAudios(mockAudios);
-
-      DiagnosticService.info('LandingPage', 'Carregamento concluído com sucesso');
-      console.log('LandingPage: Carregamento concluído com sucesso');
-
-    } catch (error) {
-      console.error('LandingPage: Erro no carregamento:', error);
-      DiagnosticService.error('LandingPage', 'Erro no carregamento', error);
-      
-      setHasError(true);
-      setErrorMessage(error instanceof Error ? error.message : 'Erro desconhecido');
-      
-      toast({
-        variant: "destructive",
-        title: "Erro no carregamento",
-        description: "Usando conteúdo padrão. Tente recarregar a página.",
+    // Para HTML da Atomicat, usar data URL com permissões otimizadas
+    if (isAtomicatHtml) {
+      const videoUrl = VideoService.generateVideoUrlWithControls(activeVideo.url, {
+        ...activeVideo.video_controls,
+        autoplay: false, // Evitar autoplay inicial
+        muted: true // Garantir muted para HLS
       });
-    } finally {
-      setIsLoading(false);
-      console.log('LandingPage: Carregamento finalizado');
-    }
-  };
 
-  useEffect(() => {
-    console.log('LandingPage: useEffect executando loadContent...');
-    loadContent();
-  }, []);
+      console.log('LandingPage: Renderizando Atomicat HTML com data URL', {
+        isHLS,
+        dataUrlLength: videoUrl.length
+      });
 
-  useEffect(() => {
-    console.log('LandingPage: Filtrando áudios por tags:', selectedTags);
-    if (selectedTags.length === 0) {
-      setFilteredAudios(audioData);
-    } else {
-      const filtered = audioData.filter(audio => 
-        selectedTags.some(tag => audio.tags?.includes(tag))
+      return (
+        <iframe
+          key={videoKey}
+          className="absolute top-0 left-0 w-full h-full shadow-2xl"
+          src={videoUrl}
+          title={activeVideo.title}
+          frameBorder="0"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-downloads allow-storage-access-by-user-activation"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen; accelerometer; gyroscope; microphone; camera; cross-origin-isolated"
+          allowFullScreen={videoControlsSettings.allowFullscreen}
+          onLoad={() => {
+            console.log('LandingPage: Iframe da Atomicat carregado com data URL');
+          }}
+          onError={(e) => {
+            console.error('LandingPage: Erro no iframe da Atomicat:', e);
+          }}
+          style={{
+            pointerEvents: videoControlsSettings.pointerEvents
+          }}
+        />
       );
-      console.log('LandingPage: Áudios filtrados:', filtered.length);
-      setFilteredAudios(filtered);
     }
-  }, [selectedTags, audioData]);
 
-  const handleFirstVisitChoice = (enableMusic: boolean) => {
-    console.log('LandingPage: Primeira escolha de música:', enableMusic);
-    toggleBackgroundMusic(enableMusic);
-    dismissFirstVisitPrompt();
-  };
+    // Para URLs diretas da Atomicat
+    if (isAtomicatUrl) {
+      return (
+        <iframe
+          key={videoKey}
+          className="absolute top-0 left-0 w-full h-full shadow-2xl"
+          src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
+            ...activeVideo.video_controls,
+            autoplay: false,
+            muted: true
+          })}
+          title={activeVideo.title}
+          frameBorder="0"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-downloads allow-storage-access-by-user-activation"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen; accelerometer; gyroscope; microphone; camera; cross-origin-isolated"
+          allowFullScreen={videoControlsSettings.allowFullscreen}
+          onLoad={() => {
+            console.log('LandingPage: Iframe da Atomicat carregado com src URL');
+          }}
+          onError={(e) => {
+            console.error('LandingPage: Erro no iframe da Atomicat URL:', e);
+          }}
+          style={{
+            pointerEvents: videoControlsSettings.pointerEvents
+          }}
+        />
+      );
+    }
 
-  const handleAudioPlay = (audio: Audio) => {
-    console.log('LandingPage: Reproduzindo áudio:', audio.title);
-    navigate(`/audio/${audio.id}`);
-  };
-
-  const allTags = Array.from(new Set(audioData.flatMap(audio => audio.tags || [])));
-
-  if (isLoading) {
-    console.log('LandingPage: Renderizando estado de loading');
+    // Para YouTube e uploads locais (sem mudanças)
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Carregando conteúdo...</p>
+      <iframe
+        key={videoKey}
+        className="absolute top-0 left-0 w-full h-full shadow-2xl"
+        src={VideoService.generateVideoUrlWithControls(activeVideo.url, {
+          ...activeVideo.video_controls,
+          autoplay: false
+        })}
+        title={activeVideo.title}
+        frameBorder="0"
+        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen={videoControlsSettings.allowFullscreen}
+        style={{
+          pointerEvents: videoControlsSettings.pointerEvents
+        }}
+      />
+    );
+  };
+
+  if (loading || !content) {
+    return (
+      <div className="min-h-screen hero-gradient flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <p className="mt-4 text-lg text-muted-foreground">Carregando...</p>
         </div>
       </div>
     );
   }
 
-  console.log('LandingPage: Renderizando página principal');
-
   return (
-    <div className="min-h-screen">
-      {/* Prompt de primeira visita para música de fundo */}
-      <FirstVisitMusicPrompt
-        isOpen={shouldShowFirstVisitPrompt}
-        onClose={dismissFirstVisitPrompt}
-        onMusicEnabled={handleFirstVisitChoice}
-      />
-
+    <div className="min-h-screen hero-gradient">
+      <Header />
+      
       {/* Hero Section */}
-      <section className="relative py-20 px-4 text-center card-gradient">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <h1 className="text-5xl font-bold text-foreground leading-tight">
-            {content.hero_title}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            {content.hero_subtitle}
-          </p>
-          <Button 
-            size="lg" 
-            className="px-8 py-3 text-lg"
-            onClick={() => {
-              const audiosSection = document.getElementById('audios');
-              audiosSection?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            {content.hero_cta_text}
-          </Button>
-          
-          {hasError && (
-            <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-destructive text-sm">
-                Alguns conteúdos podem não estar atualizados: {errorMessage}
-              </p>
+      <section className="py-12 md:py-20 px-4">
+        <div className="container mx-auto text-center">
+          <div className="animate-fade-in">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-tight">
+              <span className="text-foreground">{content.hero.title}</span>
+              <br />
+              <span className="text-premium">{content.hero.titleHighlight}</span>
+            </h1>
+            
+            {/* Video Section */}
+            {activeVideo && (
+              <div className="mb-8">
+                <div className="max-w-4xl mx-auto px-2">
+                  <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+                    {renderVideoPlayer()}
+
+                    {/* Overlay transparente para bloquear interações quando necessário */}
+                    {videoControlsSettings.shouldShowOverlay && (
+                      <div 
+                        className="absolute inset-0"
+                        style={{ pointerEvents: 'auto', background: 'transparent' }}
+                        onContextMenu={videoControlsSettings.preventContextMenu ? (e) => e.preventDefault() : undefined}
+                      />
+                    )}
+                  </div>
+                  {activeVideo.description && (
+                    <p className="text-center text-muted-foreground mt-4 max-w-2xl mx-auto text-sm md:text-base px-2">
+                      {activeVideo.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed px-2">
+              {content.hero.subtitle}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center px-2">
+              <Button 
+                variant="premium" 
+                size="lg" 
+                onClick={() => navigate('/pagamento')}
+                className="group"
+              >
+                {content.hero.ctaText}
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => navigate('/demo')}
+              >
+                <Play className="mr-2 h-5 w-5" />
+                {content.hero.demoText}
+              </Button>
             </div>
-          )}
+          </div>
         </div>
       </section>
 
-      {/* About Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center space-y-6">
-          <h2 className="text-3xl font-bold text-foreground">
-            {content.about_title}
+      {/* Features */}
+      <section className="py-12 md:py-20 px-4">
+        <div className="container mx-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12 px-2">
+            Por que escolher o <span className="text-premium">Drive Mental</span>?
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            {content.about_content}
-          </p>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-16 px-4 card-gradient">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-foreground mb-12">
-            {content.features_title}
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {content.features.map((feature, index) => (
-              <div key={index} className="text-center space-y-4">
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold text-foreground">
-                  {feature.title}
-                </h3>
-                <p className="text-muted-foreground">
-                  {feature.description}
-                </p>
+              <div 
+                key={feature.id} 
+                className="field-card text-center animate-fade-in"
+                style={{ animationDelay: `${index * 0.2}s` }}
+              >
+                <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  {React.createElement(getIconComponent(feature.icon), { className: "h-8 w-8 text-primary" })}
+                </div>
+                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                <p className="text-muted-foreground">{feature.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Fields Section */}
-      {fieldData.length > 0 && (
-        <section className="py-16 px-4">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-bold text-center text-foreground mb-12">
-              Campos Disponíveis
-            </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {fieldData.map((field) => (
-                <FieldCard 
-                  key={field.id}
-                  title={field.title}
-                  icon={(Icons as any)[field.icon] || Icons.Circle}
-                  audioCount={field.audio_count}
-                  fieldId={field.id}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Audios Section */}
-      <section id="audios" className="py-16 px-4 card-gradient">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-foreground mb-12">
-            Áudios Disponíveis
+      {/* Campos Disponíveis */}
+      <section className="py-12 md:py-20 px-4">
+        <div className="container mx-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 px-2">
+            Campos de <span className="text-premium">Desenvolvimento</span>
           </h2>
-          
-          {allTags.length > 0 && (
-            <div className="mb-8">
-              <TagFilter
-                availableTags={allTags}
-                selectedTags={selectedTags}
-                onTagsChange={setSelectedTags}
-              />
-            </div>
-          )}
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAudios.map((audio) => (
-              <AudioCard 
-                key={audio.id} 
-                audio={audio} 
-                onPlay={handleAudioPlay}
-              />
+          <p className="text-center text-muted-foreground mb-8 md:mb-12 text-base md:text-lg px-2 max-w-2xl mx-auto">
+            Escolha sua área de foco e comece sua jornada de transformação
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {fields.map((field, index) => (
+              <div 
+                key={index} 
+                className="field-card group cursor-pointer animate-fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 smooth-transition">
+                    <field.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">{field.title}</h3>
+                    <p className="text-sm text-muted-foreground">{field.count}</p>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-          
-          {filteredAudios.length === 0 && audioData.length > 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
-                Nenhum áudio encontrado com as tags selecionadas.
-              </p>
-            </div>
-          )}
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-foreground mb-12">
-            Planos e Preços
+      <section className="py-12 md:py-20 px-4">
+        <div className="container mx-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 px-2">
+            Invista em seu <span className="text-premium">Desenvolvimento</span>
           </h2>
+          <p className="text-center text-muted-foreground mb-8 md:mb-12 text-base md:text-lg px-2 max-w-2xl mx-auto">
+            Comece sua transformação hoje mesmo
+          </p>
           <PricingDisplay />
+          <div className="text-center mt-8">
+            <Button 
+              variant="premium" 
+              size="lg"
+              onClick={() => navigate('/pagamento')}
+              className="animate-pulse-glow"
+            >
+              {content.hero.ctaText}
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </section>
+
+      {/* CTA Final */}
+      <section className="py-12 md:py-20 px-4">
+        <div className="container mx-auto text-center">
+          <div className="card-gradient rounded-2xl p-6 md:p-12 max-w-4xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 px-2">
+              Pronto para transformar sua vida?
+            </h2>
+            <p className="text-lg md:text-xl text-muted-foreground mb-6 md:mb-8 px-2 max-w-2xl mx-auto">
+              Junte-se a milhares de pessoas que já transformaram suas vidas com o Drive Mental
+            </p>
+            <Button 
+              variant="premium" 
+              size="lg"
+              onClick={() => navigate('/pagamento')}
+              className="animate-pulse-glow"
+            >
+              {content.hero.ctaText}
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-8 px-4">
+        <div className="container mx-auto">
+          <div className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              {content.footer.copyright}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
+              <span className="text-muted-foreground">{content.footer.lgpdText}</span>
+              <div className="flex gap-4">
+                <a href={content.footer.lgpdLink} className="text-primary hover:text-primary/80 transition-colors">
+                  LGPD
+                </a>
+                <a href={content.footer.privacyPolicyLink} className="text-primary hover:text-primary/80 transition-colors">
+                  Política de Privacidade
+                </a>
+                <a href={content.footer.termsOfServiceLink} className="text-primary hover:text-primary/80 transition-colors">
+                  Termos de Uso
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-};
-
-export default LandingPage;
+}
