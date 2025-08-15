@@ -1,77 +1,193 @@
 
-/**
- * Admin Pricing Page
- * Responsabilidade: Páginas administrativa para preços
- * Princípio SRP: Apenas layout da página administrativa
- */
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { PricingForm } from '@/components/admin/pricing/PricingForm';
 import { PricingPreview } from '@/components/admin/pricing/PricingPreview';
-import { PricingStats } from '@/components/admin/pricing/PricingStats';
 import { PricingSyncStatus } from '@/components/admin/pricing/PricingSyncStatus';
+import { PricingService, PricingInfo, PricingInsert } from '@/services/supabase/pricingService';
+import { PricingSyncService } from '@/services/pricingSyncService';
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PricingInsert } from '@/services/supabase/pricingService';
+import { Loader2 } from 'lucide-react';
 
-// Mock data para demonstração
-const mockPricing = {
-  id: '1',
-  price: 2990,
-  currency: 'BRL',
-  payment_type: 'one_time',
-  access_type: 'lifetime',
-  button_text: 'Assinar Agora',
-  benefits: [
-    'Acesso completo aos áudios',
-    'Qualidade premium',
-    'Suporte 24/7'
-  ],
-  promotion_label: 'Oferta Especial',
-  discount_percentage: 20,
-  promotion_end_date: '2024-12-31T23:59:59Z',
-  is_active: true,
-  created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z'
-};
+export const AdminPricingPage: React.FC = () => {
+  const [pricing, setPricing] = useState<PricingInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
+  const { toast } = useToast();
 
-const AdminPricingPage = () => {
-  const handleSubmit = async (data: PricingInsert): Promise<void> => {
-    console.log('Dados submetidos:', data);
-    // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 100));
+  const loadPricing = async () => {
+    try {
+      setIsLoading(true);
+      const data = await PricingService.get();
+      
+      if (data) {
+        setPricing(data);
+      } else {
+        // Se não existe, criar com dados padrão
+        const defaultData = PricingService.getDefaultPricing();
+        setPricing(defaultData);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar preços:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar informações de preços",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    loadPricing();
+  }, []);
+
+  const handleSave = async (data: PricingInsert) => {
+    try {
+      setIsSaving(true);
+      setErrors([]);
+
+      // Validações básicas
+      const validationErrors: string[] = [];
+      
+      if (!data.price || data.price <= 0) {
+        validationErrors.push('Preço deve ser maior que zero');
+      }
+      
+      if (!data.currency) {
+        validationErrors.push('Moeda é obrigatória');
+      }
+      
+      if (!data.payment_type) {
+        validationErrors.push('Tipo de pagamento é obrigatório');
+      }
+      
+      if (!data.access_type) {
+        validationErrors.push('Tipo de acesso é obrigatório');
+      }
+      
+      if (!data.button_text) {
+        validationErrors.push('Texto do botão é obrigatório');
+      }
+      
+      if (data.benefits.length === 0) {
+        validationErrors.push('Pelo menos um benefício é obrigatório');
+      }
+
+      if (validationErrors.length > 0) {
+        setErrors(validationErrors);
+        return;
+      }
+
+      // Salvar dados
+      const savedPricing = await PricingService.save(data);
+      setPricing(savedPricing);
+
+      // Sincronizar automaticamente com Stripe
+      console.log('[ADMIN_PRICING] Iniciando sincronização automática');
+      const syncResult = await PricingSyncService.syncPricingData(savedPricing);
+      
+      if (syncResult.success) {
+        toast({
+          title: "Sucesso",
+          description: "Informações de preços atualizadas e sincronizadas com sucesso!",
+        });
+      } else {
+        toast({
+          title: "Parcialmente Salvo",
+          description: `Preços salvos, mas erro na sincronização: ${syncResult.error}`,
+          variant: "destructive",
+        });
+      }
+
+    } catch (error) {
+      console.error('Erro ao salvar preços:', error);
+      setErrors(['Erro ao salvar informações de preços']);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar informações de preços",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSyncSuccess = (success: boolean) => {
+    if (success) {
+      // Recarregar dados após sincronização bem-sucedida
+      loadPricing();
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-foreground">Gerenciamento de Preços</h1>
-          <PricingSyncStatus pricing={mockPricing} />
-        </div>
-        
-        <Tabs defaultValue="form" className="w-full">
-          <TabsList>
-            <TabsTrigger value="form">Configurar</TabsTrigger>
+        <Card>
+          <CardHeader>
+            <CardTitle>Gerenciar Preços e Condições</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Configure as informações de preços que aparecerão na página principal.
+              Os preços são sincronizados automaticamente com o Stripe.
+            </p>
+          </CardHeader>
+        </Card>
+
+        <Tabs defaultValue="edit" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="edit">Editar</TabsTrigger>
             <TabsTrigger value="preview">Visualizar</TabsTrigger>
-            <TabsTrigger value="stats">Estatísticas</TabsTrigger>
+            <TabsTrigger value="sync">Sincronização</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="form">
-            <PricingForm onSubmit={handleSubmit} />
+
+          <TabsContent value="edit" className="mt-6">
+            {pricing && (
+              <PricingForm
+                initialData={pricing}
+                onSubmit={handleSave}
+                isLoading={isSaving}
+                errors={errors}
+              />
+            )}
           </TabsContent>
-          
-          <TabsContent value="preview">
-            <PricingPreview pricing={mockPricing} />
+
+          <TabsContent value="preview" className="mt-6">
+            {pricing && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-center">Preview - Como aparecerá na página</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <PricingPreview pricing={pricing} />
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
-          
-          <TabsContent value="stats">
-            <PricingStats pricingData={mockPricing} />
+
+          <TabsContent value="sync" className="mt-6">
+            <PricingSyncStatus 
+              pricing={pricing} 
+              onSync={handleSyncSuccess}
+            />
           </TabsContent>
         </Tabs>
       </div>
     </AdminLayout>
   );
 };
-
-export default AdminPricingPage;

@@ -12,7 +12,7 @@ import { AdminProvider } from "@/contexts/AdminContext";
 import { SupabaseAuthProvider } from "@/contexts/SupabaseAuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-// Import pages - usando default exports
+// Import pages
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import FieldPage from "./pages/FieldPage";
@@ -21,12 +21,12 @@ import DemoPage from "./pages/DemoPage";
 import PaymentPage from "./pages/PaymentPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentCancelPage from "./pages/PaymentCancelPage";
-import { SubscriptionPage } from "./pages/SubscriptionPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
 import UserLoginPage from "./pages/UserLoginPage";
 import OfflineManagementPage from "./pages/OfflineManagementPage";
 import NotFound from "./pages/NotFound";
 
-// Import admin pages - usando default exports
+// Import admin pages
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLandingPage from "./pages/admin/AdminLandingPage";
