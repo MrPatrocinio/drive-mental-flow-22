@@ -1,3 +1,4 @@
+
 /**
  * Admin Background Music Page
  * Responsabilidade: Página administrativa para música de fundo
@@ -8,10 +9,12 @@ import React from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { BackgroundMusicList } from '@/components/admin/BackgroundMusicList';
 
-export const AdminBackgroundMusicPage = () => {
+const AdminBackgroundMusicPage = () => {
   return (
     <AdminLayout>
       <BackgroundMusicList />
     </AdminLayout>
   );
 };
+
+export default AdminBackgroundMusicPage;
