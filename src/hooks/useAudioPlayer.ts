@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { AudioPlayerService, AudioPlayerState } from '@/services/audioPlayerService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
@@ -7,7 +8,8 @@ import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
 /**
  * Hook customizado para gerenciar o estado do player de áudio
- * CORREÇÃO: Notifica contexto apenas para monitoramento, sem afetar música de fundo
+ * Segue o princípio de Composição sobre Herança
+ * Segue SSOT: busca configuração administrativa centralizada
  */
 export const useAudioPlayer = (
   audioUrl: string,
@@ -33,7 +35,7 @@ export const useAudioPlayer = (
   // Hook para música de fundo
   const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
   
-  // Context para monitoramento apenas (não afeta música de fundo)
+  // Context para controlar música de fundo
   const audioPlaybackContext = useAudioPlaybackSafe();
 
   // Carrega configuração administrativa de pausa (SSOT)
@@ -109,11 +111,12 @@ export const useAudioPlayer = (
     }
   }, [preferences.volume, setBackgroundVolume]);
 
-  // Notifica o contexto APENAS para monitoramento (não afeta música de fundo)
+  // Notifica o contexto sobre o estado do áudio principal
+  // Princípio KISS: lógica corrigida para ignorar pausas internas e transições
   useEffect(() => {
-    // Durante pausas internas, não notifica mudança de estado
+    // Durante pausas internas, não notifica mudança de estado (mantém música de fundo)
     if (!playerState.isTransitioning && !playerState.isInternalPause) {
-      console.log('useAudioPlayer: Notificando contexto - áudio principal (apenas monitoramento):', playerState.isPlaying ? 'tocando' : 'parado');
+      console.log('useAudioPlayer: Notificando contexto - áudio principal:', playerState.isPlaying ? 'tocando' : 'parado');
       audioPlaybackContext?.setMainAudioPlaying(playerState.isPlaying);
     } else {
       console.log('useAudioPlayer: Ignorando notificação do contexto - em transição ou pausa interna:', {
