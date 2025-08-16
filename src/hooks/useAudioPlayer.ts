@@ -23,7 +23,7 @@ export const useAudioPlayer = (
     isPlaying: false,
     currentTime: 0,
     duration: 0,
-    isLoading: false,
+    isLoading: true, // Inicia como loading
     hasError: false,
     canPlay: false,
     isTransitioning: false,
@@ -31,6 +31,7 @@ export const useAudioPlayer = (
   });
   const [repeatCount, setRepeatCount] = useState(0);
   const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(3);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Hook para música de fundo
   const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
@@ -59,9 +60,17 @@ export const useAudioPlayer = (
 
     console.log('useAudioPlayer: Inicializando player para:', audioUrl);
     setRepeatCount(0);
+    setIsInitialized(false);
 
     const service = new AudioPlayerService({
-      onStateChange: setPlayerState,
+      onStateChange: (newState) => {
+        setPlayerState(newState);
+        // Marca como inicializado quando o áudio estiver pronto
+        if (newState.canPlay && !isInitialized) {
+          setIsInitialized(true);
+          console.log('useAudioPlayer: Player totalmente inicializado');
+        }
+      },
       onRepeatComplete: () => {
         console.log('useAudioPlayer: Repetição concluída');
         setRepeatCount(current => {
@@ -88,11 +97,12 @@ export const useAudioPlayer = (
     playerServiceRef.current = service;
 
     // Aplica configurações iniciais
-    service.setVolume(preferences.volume);
+    service.setVolume(preferences.volume / 100);
 
     return () => {
       console.log('useAudioPlayer: Limpando serviço');
       service.cleanup();
+      setIsInitialized(false);
     };
   }, [audioUrl, preferences.repeatCount, pauseBetweenRepeats]);
 
@@ -124,7 +134,7 @@ export const useAudioPlayer = (
     }
   }, [playerState.isPlaying, playerState.isTransitioning, playerState.isInternalPause, audioPlaybackContext]);
 
-  // Auto-play functionality (modificado para considerar pausa interna)
+  // Auto-play functionality (corrigido para aguardar inicialização completa)
   useEffect(() => {
     if (preferences.autoPlay && 
         audioRef.current && 
@@ -132,37 +142,63 @@ export const useAudioPlayer = (
         playerState.canPlay && 
         !playerState.hasError && 
         !playerState.isTransitioning &&
-        !playerState.isInternalPause) {
+        !playerState.isInternalPause &&
+        isInitialized) {
       console.log('useAudioPlayer: Executando auto-play');
       setTimeout(() => {
-        playerServiceRef.current?.togglePlay();
-      }, 200);
+        if (playerServiceRef.current) {
+          playerServiceRef.current.togglePlay();
+        }
+      }, 500); // Aumentado delay para garantir inicialização
     }
-  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isInternalPause]);
+  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isInternalPause, isInitialized]);
 
   const togglePlay = () => {
-    console.log('useAudioPlayer: Toggle play solicitado');
-    playerServiceRef.current?.togglePlay();
+    console.log('useAudioPlayer: Toggle play solicitado', {
+      canPlay: playerState.canPlay,
+      hasError: playerState.hasError,
+      isInitialized
+    });
+    
+    // Verifica se o player está realmente pronto
+    if (playerServiceRef.current && playerState.canPlay && !playerState.hasError && isInitialized) {
+      playerServiceRef.current.togglePlay();
+    } else {
+      console.warn('useAudioPlayer: Player não está pronto para reprodução');
+      if (onError) {
+        onError('Aguarde o áudio carregar completamente antes de reproduzir');
+      }
+    }
   };
 
   const reset = () => {
     console.log('useAudioPlayer: Reset solicitado');
-    playerServiceRef.current?.reset();
+    if (playerServiceRef.current) {
+      playerServiceRef.current.reset();
+    }
     setRepeatCount(0);
   };
 
   const seek = (time: number) => {
-    playerServiceRef.current?.seek(time);
+    if (playerServiceRef.current && playerState.canPlay) {
+      playerServiceRef.current.seek(time);
+    }
   };
 
   const setMuted = (muted: boolean) => {
-    playerServiceRef.current?.setMuted(muted);
+    if (playerServiceRef.current) {
+      playerServiceRef.current.setMuted(muted);
+    }
     setBackgroundMuted(muted);
   };
 
   return {
     audioRef,
-    playerState,
+    playerState: {
+      ...playerState,
+      // Adiciona estado de inicialização para componentes
+      isReady: isInitialized && playerState.canPlay && !playerState.hasError
+    },
     repeatCount,
     pauseBetweenRepeats,
     togglePlay,
