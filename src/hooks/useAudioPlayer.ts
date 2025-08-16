@@ -23,7 +23,7 @@ export const useAudioPlayer = (
     isPlaying: false,
     currentTime: 0,
     duration: 0,
-    isLoading: true, // Inicia como loading
+    isLoading: true,
     hasError: false,
     canPlay: false,
     isTransitioning: false,
@@ -31,7 +31,6 @@ export const useAudioPlayer = (
   });
   const [repeatCount, setRepeatCount] = useState(0);
   const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(3);
-  const [isInitialized, setIsInitialized] = useState(false);
   
   // Hook para música de fundo
   const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
@@ -60,16 +59,11 @@ export const useAudioPlayer = (
 
     console.log('useAudioPlayer: Inicializando player para:', audioUrl);
     setRepeatCount(0);
-    setIsInitialized(false);
 
     const service = new AudioPlayerService({
       onStateChange: (newState) => {
+        console.log('useAudioPlayer: Estado atualizado:', newState);
         setPlayerState(newState);
-        // Marca como inicializado quando o áudio estiver pronto
-        if (newState.canPlay && !isInitialized) {
-          setIsInitialized(true);
-          console.log('useAudioPlayer: Player totalmente inicializado');
-        }
       },
       onRepeatComplete: () => {
         console.log('useAudioPlayer: Repetição concluída');
@@ -102,7 +96,6 @@ export const useAudioPlayer = (
     return () => {
       console.log('useAudioPlayer: Limpando serviço');
       service.cleanup();
-      setIsInitialized(false);
     };
   }, [audioUrl, preferences.repeatCount, pauseBetweenRepeats]);
 
@@ -134,7 +127,7 @@ export const useAudioPlayer = (
     }
   }, [playerState.isPlaying, playerState.isTransitioning, playerState.isInternalPause, audioPlaybackContext]);
 
-  // Auto-play functionality (corrigido para aguardar inicialização completa)
+  // Auto-play functionality (simplificado)
   useEffect(() => {
     if (preferences.autoPlay && 
         audioRef.current && 
@@ -142,26 +135,24 @@ export const useAudioPlayer = (
         playerState.canPlay && 
         !playerState.hasError && 
         !playerState.isTransitioning &&
-        !playerState.isInternalPause &&
-        isInitialized) {
+        !playerState.isInternalPause) {
       console.log('useAudioPlayer: Executando auto-play');
       setTimeout(() => {
-        if (playerServiceRef.current) {
+        if (playerServiceRef.current && playerState.canPlay && !playerState.hasError) {
           playerServiceRef.current.togglePlay();
         }
-      }, 500); // Aumentado delay para garantir inicialização
+      }, 100);
     }
-  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isInternalPause, isInitialized]);
+  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isInternalPause]);
 
   const togglePlay = () => {
     console.log('useAudioPlayer: Toggle play solicitado', {
       canPlay: playerState.canPlay,
-      hasError: playerState.hasError,
-      isInitialized
+      hasError: playerState.hasError
     });
     
     // Verifica se o player está realmente pronto
-    if (playerServiceRef.current && playerState.canPlay && !playerState.hasError && isInitialized) {
+    if (playerServiceRef.current && playerState.canPlay && !playerState.hasError) {
       playerServiceRef.current.togglePlay();
     } else {
       console.warn('useAudioPlayer: Player não está pronto para reprodução');
@@ -192,12 +183,14 @@ export const useAudioPlayer = (
     setBackgroundMuted(muted);
   };
 
+  // Calcula isReady de forma simples e direta
+  const isReady = playerState.canPlay && !playerState.hasError && !playerState.isLoading;
+
   return {
     audioRef,
     playerState: {
       ...playerState,
-      // Adiciona estado de inicialização para componentes
-      isReady: isInitialized && playerState.canPlay && !playerState.hasError
+      isReady
     },
     repeatCount,
     pauseBetweenRepeats,

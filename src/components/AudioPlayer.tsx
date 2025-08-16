@@ -81,13 +81,13 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
 
   const handlePlayClick = () => {
     console.log('AudioPlayer: Botão play clicado', {
-      isReady: (playerState as any).isReady,
+      isReady: playerState.isReady,
       canPlay: playerState.canPlay,
       hasError: playerState.hasError,
       isLoading: playerState.isLoading
     });
     
-    if (!(playerState as any).isReady) {
+    if (!playerState.isReady) {
       toast({
         title: "Aguarde",
         description: "O áudio ainda está carregando. Tente novamente em alguns segundos.",
@@ -110,7 +110,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       </div>
 
       {/* Loading State */}
-      {(playerState.isLoading || !(playerState as any).isReady) && !playerState.hasError && (
+      {!playerState.isReady && !playerState.hasError && (
         <AudioLoadingIndicator />
       )}
 
@@ -123,7 +123,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       )}
 
       {/* Progress Bar */}
-      {preferences.showProgress && !playerState.hasError && (playerState as any).isReady && (
+      {preferences.showProgress && !playerState.hasError && playerState.isReady && (
         <div className="space-y-2">
           <Slider
             value={[playerState.currentTime]}
@@ -146,7 +146,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           variant="audio"
           size="audio"
           onClick={reset}
-          disabled={playerState.hasError || !(playerState as any).isReady}
+          disabled={playerState.hasError || !playerState.isReady}
         >
           <RotateCcw className="h-5 w-5" />
         </Button>
@@ -156,7 +156,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           size="audio"
           onClick={handlePlayClick}
           className="w-16 h-16"
-          disabled={playerState.hasError || !(playerState as any).isReady}
+          disabled={playerState.hasError || !playerState.isReady}
         >
           {playerState.isPlaying ? (
             <Pause className="h-6 w-6" />
@@ -191,7 +191,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       </div>
 
       {/* Status Indicator */}
-      {!(playerState as any).isReady && !playerState.hasError && (
+      {!playerState.isReady && !playerState.hasError && (
         <div className="text-center text-sm text-muted-foreground">
           <div className="flex items-center justify-center gap-2">
             <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
