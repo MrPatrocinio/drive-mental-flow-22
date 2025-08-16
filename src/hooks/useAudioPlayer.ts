@@ -111,19 +111,11 @@ export const useAudioPlayer = (
     }
   }, [preferences.volume, setBackgroundVolume]);
 
-  // Notifica o contexto sobre o estado do áudio principal
-  // Princípio KISS: lógica corrigida para ignorar pausas internas e transições
+  // Notifica o contexto sobre o estado do áudio principal (apenas para monitoramento)
   useEffect(() => {
-    // Durante pausas internas, não notifica mudança de estado (mantém música de fundo)
     if (!playerState.isTransitioning && !playerState.isInternalPause) {
       console.log('useAudioPlayer: Notificando contexto - áudio principal:', playerState.isPlaying ? 'tocando' : 'parado');
       audioPlaybackContext?.setMainAudioPlaying(playerState.isPlaying);
-    } else {
-      console.log('useAudioPlayer: Ignorando notificação do contexto - em transição ou pausa interna:', {
-        isTransitioning: playerState.isTransitioning,
-        isInternalPause: playerState.isInternalPause,
-        isPlaying: playerState.isPlaying
-      });
     }
   }, [playerState.isPlaying, playerState.isTransitioning, playerState.isInternalPause, audioPlaybackContext]);
 
@@ -145,15 +137,24 @@ export const useAudioPlayer = (
     }
   }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isInternalPause]);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     console.log('useAudioPlayer: Toggle play solicitado', {
       canPlay: playerState.canPlay,
-      hasError: playerState.hasError
+      hasError: playerState.hasError,
+      isPlaying: playerState.isPlaying
     });
     
     // Verifica se o player está realmente pronto
     if (playerServiceRef.current && playerState.canPlay && !playerState.hasError) {
-      playerServiceRef.current.togglePlay();
+      try {
+        await playerServiceRef.current.togglePlay();
+        console.log('useAudioPlayer: Toggle play executado com sucesso');
+      } catch (error) {
+        console.error('useAudioPlayer: Erro no toggle play:', error);
+        if (onError) {
+          onError('Erro ao reproduzir áudio');
+        }
+      }
     } else {
       console.warn('useAudioPlayer: Player não está pronto para reprodução');
       if (onError) {

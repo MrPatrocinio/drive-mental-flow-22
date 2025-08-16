@@ -79,12 +79,13 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     seek(value[0]);
   };
 
-  const handlePlayClick = () => {
+  const handlePlayClick = async () => {
     console.log('AudioPlayer: Botão play clicado', {
       isReady: playerState.isReady,
       canPlay: playerState.canPlay,
       hasError: playerState.hasError,
-      isLoading: playerState.isLoading
+      isLoading: playerState.isLoading,
+      isPlaying: playerState.isPlaying
     });
     
     if (!playerState.isReady) {
@@ -95,7 +96,17 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       return;
     }
     
-    togglePlay();
+    try {
+      await togglePlay();
+      console.log('AudioPlayer: Toggle play executado');
+    } catch (error) {
+      console.error('AudioPlayer: Erro no play:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao reproduzir o áudio. Tente novamente.",
+      });
+    }
   };
 
   return (
