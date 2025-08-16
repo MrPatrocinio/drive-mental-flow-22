@@ -3,20 +3,16 @@
  * useBackgroundMusic Hook
  * Responsabilidade: Interface React para o player de música de fundo
  * Princípio SRP: Apenas lógica de hook para background music
+ * CORREÇÃO: Lógica simplificada baseada apenas no estado isEnabled (SSOT)
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { backgroundMusicPlayer, BackgroundMusicState } from '@/services/backgroundMusicPlayerService';
 import { audioPreferencesService } from '@/services/audioPreferencesService';
-import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
 export const useBackgroundMusic = () => {
   const [state, setState] = useState<BackgroundMusicState>(backgroundMusicPlayer.getState());
   const [isEnabled, setIsEnabled] = useState(false);
-  
-  // Obtém contexto com fallback seguro
-  const audioPlaybackContext = useAudioPlaybackSafe();
-  const shouldPlayBackgroundMusic = audioPlaybackContext?.shouldPlayBackgroundMusic || false;
 
   // Carrega preferências do usuário
   useEffect(() => {
@@ -40,33 +36,34 @@ export const useBackgroundMusic = () => {
     return unsubscribe;
   }, []);
 
-  // Controla reprodução baseado no contexto de áudio principal (com lógica otimizada)
+  // CORREÇÃO IMPLEMENTADA: Controla reprodução baseado APENAS no estado isEnabled
+  // Princípio SSOT: isEnabled é a única fonte da verdade para música de fundo
+  // Princípio KISS: Lógica simplificada - música toca quando habilitada
   useEffect(() => {
     console.log('useBackgroundMusic: Verificando estado para reprodução', {
       isEnabled,
-      shouldPlayBackgroundMusic,
       isPlaying: state.isPlaying,
       isLoading: state.isLoading,
       hasError: state.hasError,
       currentMusic: state.currentMusic?.title
     });
     
-    if (isEnabled && shouldPlayBackgroundMusic) {
-      // Deve tocar música de fundo
+    if (isEnabled) {
+      // Música de fundo está habilitada - deve tocar
       if (!state.isPlaying && !state.isLoading && !state.hasError) {
-        console.log('useBackgroundMusic: Iniciando reprodução (áudio principal ativo)');
+        console.log('useBackgroundMusic: Iniciando reprodução (música habilitada)');
         backgroundMusicPlayer.play().catch(error => {
           console.error('useBackgroundMusic: Erro ao iniciar reprodução:', error);
         });
       }
     } else {
-      // Deve pausar música de fundo
+      // Música de fundo está desabilitada - deve pausar
       if (state.isPlaying) {
-        console.log('useBackgroundMusic: Pausando reprodução (áudio principal inativo ou música desabilitada)');
+        console.log('useBackgroundMusic: Pausando reprodução (música desabilitada pelo usuário)');
         backgroundMusicPlayer.pause();
       }
     }
-  }, [isEnabled, shouldPlayBackgroundMusic, state.isPlaying, state.isLoading, state.hasError]);
+  }, [isEnabled, state.isPlaying, state.isLoading, state.hasError]);
 
   const toggleEnabled = useCallback((enabled: boolean) => {
     console.log('useBackgroundMusic: Toggle ativado:', enabled);
