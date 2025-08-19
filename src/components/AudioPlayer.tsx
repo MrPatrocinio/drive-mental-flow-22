@@ -54,6 +54,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
   } = useAudioPlayer(audioUrl, preferences, onRepeatComplete, handleError);
 
   const handleRetry = () => {
+    console.log('AudioPlayer: Tentativa de retry solicitada');
     if (audioRef.current) {
       audioRef.current.load();
     }
@@ -69,7 +70,13 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     setPlayerMuted(newMuted);
   };
 
+  // Função de formatação de tempo segura
   const formatTime = (time: number) => {
+    // Verifica se o valor é válido
+    if (!time || isNaN(time) || !isFinite(time)) {
+      return '0:00';
+    }
+    
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -85,20 +92,26 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       canPlay: playerState.canPlay,
       hasError: playerState.hasError,
       isLoading: playerState.isLoading,
-      isPlaying: playerState.isPlaying
+      isPlaying: playerState.isPlaying,
+      duration: playerState.duration
     });
     
     if (!playerState.isReady) {
+      const message = playerState.hasError 
+        ? "Erro no áudio. Tente recarregar a página."
+        : "O áudio ainda está carregando. Aguarde alguns segundos e tente novamente.";
+        
       toast({
-        title: "Aguarde",
-        description: "O áudio ainda está carregando. Tente novamente em alguns segundos.",
+        title: playerState.hasError ? "Erro" : "Aguarde",
+        description: message,
+        variant: playerState.hasError ? "destructive" : "default"
       });
       return;
     }
     
     try {
       await togglePlay();
-      console.log('AudioPlayer: Toggle play executado');
+      console.log('AudioPlayer: Toggle play executado com sucesso');
     } catch (error) {
       console.error('AudioPlayer: Erro no play:', error);
       toast({
@@ -201,12 +214,14 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         <BackgroundMusicToggle />
       </div>
 
-      {/* Status Indicator */}
-      {!playerState.isReady && !playerState.hasError && (
+      {/* Status Indicator - MELHORADO */}
+      {(!playerState.isReady && !playerState.hasError) && (
         <div className="text-center text-sm text-muted-foreground">
           <div className="flex items-center justify-center gap-2">
             <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
-            <span>Preparando áudio...</span>
+            <span>
+              {playerState.isLoading ? 'Carregando áudio...' : 'Preparando reprodução...'}
+            </span>
           </div>
         </div>
       )}
