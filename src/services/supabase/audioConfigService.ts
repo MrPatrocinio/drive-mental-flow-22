@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -71,7 +70,7 @@ export class AudioConfigService {
    */
   static async updateAudioConfig(config: Partial<AudioConfig>): Promise<{ success: boolean; error?: string; errorType?: ConfigError }> {
     try {
-      // Validação fail-fast (KISS principle)
+      // Validação fail-fast (KISS principle) - agora inclui pausa zero
       const validationResult = this.validateConfig(config);
       if (!validationResult.isValid) {
         return {
@@ -118,13 +117,15 @@ export class AudioConfigService {
 
   /**
    * Valida configuração (SRP: responsabilidade única de validação)
+   * Atualizada para aceitar pausa zero (sem pausas)
    */
   private static validateConfig(config: Partial<AudioConfig>): { isValid: boolean; error?: string } {
     if (config.pause_between_repeats_seconds !== undefined) {
-      if (config.pause_between_repeats_seconds < 2 || config.pause_between_repeats_seconds > 6) {
+      // MODIFICAÇÃO: Agora aceita valor 0 (sem pausas) até 6 segundos
+      if (config.pause_between_repeats_seconds < 0 || config.pause_between_repeats_seconds > 6) {
         return {
           isValid: false,
-          error: 'Pausa deve estar entre 2 e 6 segundos'
+          error: 'Pausa deve estar entre 0 (sem pausas) e 6 segundos'
         };
       }
     }

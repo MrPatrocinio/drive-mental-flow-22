@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { AudioConfigService, AudioConfig } from '@/services/supabase/audioConfigService';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Save, RefreshCw } from 'lucide-react';
+import { Clock, Save, RefreshCw, Zap } from 'lucide-react';
 
 /**
  * Painel administrativo para configuração de áudio
@@ -47,9 +47,13 @@ export const AudioConfigPanel: React.FC = () => {
       const result = await AudioConfigService.updateAudioConfig(config);
       
       if (result.success) {
+        const pauseText = config.pause_between_repeats_seconds === 0 
+          ? "sem pausas (execução contínua)" 
+          : `${config.pause_between_repeats_seconds} segundos de pausa`;
+        
         toast({
           title: "Configuração salva!",
-          description: `Pausa entre repetições definida para ${config.pause_between_repeats_seconds} segundos.`
+          description: `Configurado para repetições ${pauseText}.`
         });
         console.log('AudioConfigPanel: Configuração salva com sucesso');
       } else {
@@ -78,6 +82,13 @@ export const AudioConfigPanel: React.FC = () => {
     }));
   };
 
+  const handleZeroPause = () => {
+    setConfig(prev => ({
+      ...prev,
+      pause_between_repeats_seconds: 0
+    }));
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -97,6 +108,8 @@ export const AudioConfigPanel: React.FC = () => {
     );
   }
 
+  const isZeroPause = config.pause_between_repeats_seconds === 0;
+
   return (
     <Card>
       <CardHeader>
@@ -107,32 +120,54 @@ export const AudioConfigPanel: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <h4 className="text-sm font-medium mb-4">Pausa Entre Repetições</h4>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium">Pausa Entre Repetições</h4>
+            <Button
+              variant={isZeroPause ? "default" : "outline"}
+              size="sm"
+              onClick={handleZeroPause}
+              className="flex items-center gap-2"
+            >
+              <Zap className="h-4 w-4" />
+              Sem Pausas
+            </Button>
+          </div>
+          
           <p className="text-sm text-muted-foreground mb-4">
-            Define quantos segundos de pausa haverá entre cada repetição do áudio principal. 
-            A música de fundo continua tocando normalmente durante esta pausa.
+            {isZeroPause ? (
+              <span className="text-primary font-medium">
+                🚀 Modo contínuo ativado: As repetições acontecerão imediatamente, sem pausas. 
+                A música de fundo continua tocando normalmente.
+              </span>
+            ) : (
+              <>
+                Define quantos segundos de pausa haverá entre cada repetição do áudio principal. 
+                A música de fundo continua tocando normalmente durante esta pausa.
+              </>
+            )}
           </p>
           
           <div className="space-y-3">
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground min-w-[4ch]">2s</span>
+              <span className="text-sm text-muted-foreground min-w-[4ch]">0s</span>
               <Slider
                 value={[config.pause_between_repeats_seconds]}
                 onValueChange={handlePauseChange}
-                min={2}
+                min={0}
                 max={6}
                 step={0.5}
                 className="flex-1"
+                disabled={false}
               />
               <span className="text-sm text-muted-foreground min-w-[4ch]">6s</span>
             </div>
             
             <div className="text-center">
-              <span className="text-lg font-semibold text-primary">
-                {config.pause_between_repeats_seconds}s
+              <span className={`text-lg font-semibold ${isZeroPause ? 'text-primary' : 'text-foreground'}`}>
+                {isZeroPause ? 'Sem pausas' : `${config.pause_between_repeats_seconds}s`}
               </span>
               <p className="text-xs text-muted-foreground">
-                Pausa atual entre repetições
+                {isZeroPause ? 'Execução contínua' : 'Pausa atual entre repetições'}
               </p>
             </div>
           </div>
@@ -167,9 +202,10 @@ export const AudioConfigPanel: React.FC = () => {
             💡 Como funciona
           </h5>
           <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-            <li>• Quando um áudio principal termina, há uma pausa antes da próxima repetição</li>
-            <li>• Durante esta pausa, a música de fundo continua tocando normalmente</li>
-            <li>• O usuário vê um indicador "Pausando..." durante este período</li>
+            <li>• <strong>0s (Sem pausas):</strong> Repetições acontecem imediatamente após o áudio terminar</li>
+            <li>• <strong>&gt;0s:</strong> Há uma pausa entre repetições, ideal para reflexão</li>
+            <li>• Durante qualquer pausa, a música de fundo continua tocando normalmente</li>
+            <li>• O usuário vê indicadores visuais durante pausas programadas</li>
             <li>• A configuração se aplica globalmente a todos os áudios principais</li>
           </ul>
         </div>

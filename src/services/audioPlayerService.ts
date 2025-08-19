@@ -97,7 +97,6 @@ export class AudioPlayerService {
     });
 
     audio.addEventListener('pause', () => {
-      // CORREÇÃO: Verifica se é pausa interna ANTES de atualizar estado
       console.log('AudioPlayerService: Evento pause detectado', {
         isInternalPause: this.state.isInternalPause,
         isTransitioning: this.state.isTransitioning,
@@ -224,19 +223,22 @@ export class AudioPlayerService {
   }
 
   /**
-   * Executa loop com pausa configurável (CORREÇÃO IMPLEMENTADA)
+   * Executa loop com pausa configurável - MODIFICADO para suportar pausa zero
    * Princípio SRP: responsabilidade específica para loop com pausa
-   * Princípio KISS: lógica sincronizada para evitar condições de corrida
-   * Princípio SSOT: estado centralizado para controle de pausas internas
+   * Princípio KISS: lógica diferenciada para pausa zero vs. pausa configurada
    */
   async performLoopWithPause(pauseSeconds: number): Promise<void> {
     if (!this.audioElement) return;
 
     try {
+      // NOVA LÓGICA: Se pauseSeconds é 0, executa loop imediato
+      if (pauseSeconds === 0) {
+        console.log('AudioPlayerService: Executando loop contínuo (sem pausas)');
+        return await this.performLoop();
+      }
+
       console.log(`AudioPlayerService: Executando loop com pausa interna de ${pauseSeconds} segundos`);
       
-      // CORREÇÃO: Atualiza estado de forma síncrona ANTES de pausar
-      // Isso garante que o event listener 'pause' veja o estado correto
       this.updateState({ 
         isTransitioning: false,
         isInternalPause: true,
@@ -246,10 +248,7 @@ export class AudioPlayerService {
       // Aguarda um ciclo de event loop para garantir sincronização
       await new Promise(resolve => setTimeout(resolve, 0));
       
-      console.log('AudioPlayerService: Estado atualizado - pausando áudio tecnicamente', {
-        isInternalPause: this.state.isInternalPause,
-        isPlaying: this.state.isPlaying
-      });
+      console.log('AudioPlayerService: Estado atualizado - pausando áudio tecnicamente');
       
       // Pausa técnica interna (elemento HTML apenas)
       this.audioElement.pause();
@@ -292,14 +291,15 @@ export class AudioPlayerService {
 
   /**
    * Executa loop otimizado (sem pausar o estado de reprodução)
-   * Mantido para compatibilidade com repetição imediata
+   * Usado para pausa zero ou quando não há pausas configuradas
    */
   async performLoop(): Promise<void> {
     if (!this.audioElement) return;
 
     try {
-      console.log('AudioPlayerService: Executando loop otimizado (sem pausa)');
-      // Não marca como não tocando durante o loop
+      console.log('AudioPlayerService: Executando loop contínuo (sem pausa)');
+      
+      // Marca como transição mas mantém estado de reprodução
       this.updateState({ isTransitioning: true });
       
       // Reset imediato para o início
@@ -308,7 +308,7 @@ export class AudioPlayerService {
       // Inicia reprodução sem delay
       await this.audioElement.play();
       
-      console.log('AudioPlayerService: Loop concluído com sucesso');
+      console.log('AudioPlayerService: Loop contínuo concluído com sucesso');
     } catch (error) {
       console.error('AudioPlayerService: Erro no loop:', error);
       this.updateState({ 
