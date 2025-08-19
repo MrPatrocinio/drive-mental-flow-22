@@ -31,11 +31,12 @@ export const useAudioPlayer = (
   });
   const [repeatCount, setRepeatCount] = useState(0);
   const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(3);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Refs para controle de debounce e instância única
   const onRepeatCompleteRef = useRef(onRepeatComplete);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Hook para música de fundo
   const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
@@ -48,7 +49,7 @@ export const useAudioPlayer = (
     onRepeatCompleteRef.current = onRepeatComplete;
   }, [onRepeatComplete]);
 
-  // Carrega configuração administrativa de pausa (SSOT) - OTIMIZADO
+  // Carrega configuração administrativa de pausa (SSOT)
   useEffect(() => {
     const loadAudioConfig = async () => {
       try {
@@ -57,21 +58,19 @@ export const useAudioPlayer = (
         console.log('useAudioPlayer: Configuração de pausa carregada:', config.pause_between_repeats_seconds, 'segundos');
       } catch (error) {
         console.error('useAudioPlayer: Erro ao carregar configuração de pausa:', error);
-        setPauseBetweenRepeats(3); // Fallback padrão
+        setPauseBetweenRepeats(3);
       }
     };
 
     loadAudioConfig();
   }, []);
 
-  // Callback debounced para repetição - APRIMORADO
+  // Callback debounced para repetição
   const handleRepeatComplete = useCallback(() => {
-    // Cancela timeout anterior se existir
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
 
-    // Implementa debounce de 300ms para evitar chamadas duplicadas
     debounceTimeoutRef.current = setTimeout(() => {
       console.log('useAudioPlayer: Executando onRepeatComplete (debounced)');
       
@@ -79,12 +78,10 @@ export const useAudioPlayer = (
         const newCount = current + 1;
         console.log('useAudioPlayer: Incrementando contador:', newCount);
         
-        // Chama callback externo se existir
         if (onRepeatCompleteRef.current) {
           onRepeatCompleteRef.current();
         }
         
-        // Verifica se deve continuar repetindo
         const shouldContinue = preferences.repeatCount === 0 || newCount < preferences.repeatCount;
         
         if (shouldContinue && playerServiceRef.current) {
@@ -99,43 +96,41 @@ export const useAudioPlayer = (
     }, 300);
   }, [preferences.repeatCount, pauseBetweenRepeats]);
 
-  // Inicializa o serviço de player - ESTABILIZADO
+  // Inicializa o serviço de player - CORRIGIDO E ESTABILIZADO
   useEffect(() => {
-    if (!audioRef.current || !audioUrl) {
-      console.log('useAudioPlayer: Aguardando elemento de áudio ou URL');
+    if (!audioUrl) {
+      console.log('useAudioPlayer: URL não fornecida');
       return;
     }
 
-    console.log('useAudioPlayer: Iniciando inicialização estabilizada do player para:', audioUrl);
-
-    // Limpa timeout de inicialização anterior
-    if (initializationTimeoutRef.current) {
-      clearTimeout(initializationTimeoutRef.current);
-    }
-
-    // Limpa serviço anterior se existir
-    if (playerServiceRef.current) {
-      console.log('useAudioPlayer: Limpando serviço anterior');
-      playerServiceRef.current.cleanup();
-      playerServiceRef.current = null;
-    }
-
-    // Reset do contador
-    setRepeatCount(0);
-
-    // Delay pequeno para garantir que o DOM está estável
-    initializationTimeoutRef.current = setTimeout(() => {
+    console.log('useAudioPlayer: Iniciando inicialização para URL:', audioUrl);
+    
+    // Aguarda o elemento de áudio estar disponível
+    const initializePlayer = () => {
       if (!audioRef.current) {
-        console.warn('useAudioPlayer: Elemento de áudio não disponível após timeout');
+        console.log('useAudioPlayer: Elemento de áudio ainda não disponível, aguardando...');
+        setTimeout(initializePlayer, 50);
         return;
       }
 
+      console.log('useAudioPlayer: Elemento de áudio encontrado, inicializando serviço');
+
+      // Limpa serviço anterior se existir
+      if (playerServiceRef.current) {
+        console.log('useAudioPlayer: Limpando serviço anterior');
+        playerServiceRef.current.cleanup();
+      }
+
+      // Reset dos estados
+      setRepeatCount(0);
+      setIsInitialized(false);
+
       try {
-        console.log('useAudioPlayer: Criando novo serviço de áudio');
+        console.log('useAudioPlayer: Criando novo AudioPlayerService');
         
         const service = new AudioPlayerService({
           onStateChange: (newState) => {
-            console.log('useAudioPlayer: Estado atualizado:', newState);
+            console.log('useAudioPlayer: Estado atualizado pelo serviço:', newState);
             setPlayerState(newState);
           },
           onRepeatComplete: handleRepeatComplete,
@@ -149,44 +144,64 @@ export const useAudioPlayer = (
 
         service.initialize(audioRef.current);
         playerServiceRef.current = service;
+        setIsInitialized(true);
 
         // Aplica volume inicial
         const normalizedVolume = Math.max(0.01, preferences.volume / 100);
         service.setVolume(normalizedVolume);
 
-        console.log('useAudioPlayer: Inicialização estabilizada concluída');
+        console.log('useAudioPlayer: Inicialização concluída com sucesso');
+
+        // Timeout de segurança para detectar problemas de carregamento
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+        }
+        
+        loadingTimeoutRef.current = setTimeout(() => {
+          if (playerServiceRef.current && !playerState.canPlay && !playerState.hasError) {
+            console.warn('useAudioPlayer: Timeout de carregamento atingido');
+            if (onError) {
+              onError('Timeout ao carregar áudio. Verifique sua conexão e tente novamente.');
+            }
+          }
+        }, 10000); // 10 segundos de timeout
+
       } catch (error) {
         console.error('useAudioPlayer: Erro na inicialização:', error);
+        setIsInitialized(false);
         if (onError) {
           onError('Erro ao inicializar player de áudio');
         }
       }
-    }, 100);
+    };
+
+    initializePlayer();
 
     return () => {
       console.log('useAudioPlayer: Executando cleanup');
-      if (initializationTimeoutRef.current) {
-        clearTimeout(initializationTimeoutRef.current);
-      }
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
+      }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
       }
       if (playerServiceRef.current) {
         playerServiceRef.current.cleanup();
         playerServiceRef.current = null;
       }
+      setIsInitialized(false);
     };
   }, [audioUrl, handleRepeatComplete]);
 
   // Atualiza preferências de volume
   useEffect(() => {
-    if (playerServiceRef.current && playerState.canPlay) {
+    if (playerServiceRef.current && playerState.canPlay && isInitialized) {
       const normalizedVolume = Math.max(0.01, preferences.volume / 100);
       console.log('useAudioPlayer: Atualizando volume:', preferences.volume, 'normalizado:', normalizedVolume);
       playerServiceRef.current.setVolume(normalizedVolume);
       setBackgroundVolume(preferences.volume);
     }
-  }, [preferences.volume, playerState.canPlay, setBackgroundVolume]);
+  }, [preferences.volume, playerState.canPlay, isInitialized, setBackgroundVolume]);
 
   // Notifica o contexto sobre o estado do áudio principal
   useEffect(() => {
@@ -196,7 +211,7 @@ export const useAudioPlayer = (
     }
   }, [playerState.isPlaying, playerState.isTransitioning, playerState.isInternalPause, audioPlaybackContext]);
 
-  // Auto-play functionality - MELHORADO
+  // Auto-play functionality
   useEffect(() => {
     if (preferences.autoPlay && 
         playerServiceRef.current && 
@@ -204,10 +219,11 @@ export const useAudioPlayer = (
         playerState.canPlay && 
         !playerState.hasError && 
         !playerState.isTransitioning &&
-        !playerState.isInternalPause) {
+        !playerState.isInternalPause &&
+        isInitialized) {
       console.log('useAudioPlayer: Executando auto-play');
       const autoPlayTimeout = setTimeout(() => {
-        if (playerServiceRef.current && playerState.canPlay && !playerState.hasError) {
+        if (playerServiceRef.current && playerState.canPlay && !playerState.hasError && isInitialized) {
           console.log('useAudioPlayer: Iniciando auto-play com delay');
           playerServiceRef.current.togglePlay().catch(error => {
             console.error('useAudioPlayer: Erro no auto-play:', error);
@@ -217,7 +233,7 @@ export const useAudioPlayer = (
       
       return () => clearTimeout(autoPlayTimeout);
     }
-  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isInternalPause, playerState.isPlaying]);
+  }, [preferences.autoPlay, playerState.canPlay, playerState.hasError, playerState.isTransitioning, playerState.isInternalPause, playerState.isPlaying, isInitialized]);
 
   const togglePlay = async () => {
     console.log('useAudioPlayer: Toggle play solicitado', {
@@ -225,10 +241,11 @@ export const useAudioPlayer = (
       canPlay: playerState.canPlay,
       hasError: playerState.hasError,
       isPlaying: playerState.isPlaying,
-      isLoading: playerState.isLoading
+      isLoading: playerState.isLoading,
+      isInitialized
     });
     
-    if (!playerServiceRef.current) {
+    if (!playerServiceRef.current || !isInitialized) {
       const errorMsg = 'Player não inicializado. Aguarde alguns segundos e tente novamente.';
       console.error('useAudioPlayer:', errorMsg);
       if (onError) {
@@ -261,33 +278,35 @@ export const useAudioPlayer = (
 
   const reset = () => {
     console.log('useAudioPlayer: Reset solicitado');
-    if (playerServiceRef.current) {
+    if (playerServiceRef.current && isInitialized) {
       playerServiceRef.current.reset();
     }
     setRepeatCount(0);
   };
 
   const seek = (time: number) => {
-    if (playerServiceRef.current && playerState.canPlay && !playerState.hasError) {
+    if (playerServiceRef.current && playerState.canPlay && !playerState.hasError && isInitialized) {
       playerServiceRef.current.seek(time);
     }
   };
 
   const setMuted = (muted: boolean) => {
-    if (playerServiceRef.current) {
+    if (playerServiceRef.current && isInitialized) {
       playerServiceRef.current.setMuted(muted);
     }
     setBackgroundMuted(muted);
   };
 
-  // Calcula isReady de forma robusta
-  const isReady = playerState.canPlay && 
+  // Calcula isReady de forma mais robusta - CORRIGIDO
+  const isReady = isInitialized && 
+                 playerState.canPlay && 
                  !playerState.hasError && 
                  !playerState.isLoading && 
                  !!playerServiceRef.current &&
                  playerState.duration > 0;
 
-  console.log('useAudioPlayer: Estado isReady:', isReady, {
+  console.log('useAudioPlayer: Estado final isReady:', isReady, {
+    isInitialized,
     canPlay: playerState.canPlay,
     hasError: playerState.hasError,
     isLoading: playerState.isLoading,

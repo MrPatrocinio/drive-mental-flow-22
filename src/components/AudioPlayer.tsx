@@ -70,10 +70,9 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     setPlayerMuted(newMuted);
   };
 
-  // Função de formatação de tempo segura
+  // Função de formatação de tempo corrigida
   const formatTime = (time: number) => {
-    // Verifica se o valor é válido
-    if (!time || isNaN(time) || !isFinite(time)) {
+    if (!time || isNaN(time) || !isFinite(time) || time < 0) {
       return '0:00';
     }
     
@@ -97,14 +96,20 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     });
     
     if (!playerState.isReady) {
-      const message = playerState.hasError 
-        ? "Erro no áudio. Tente recarregar a página."
-        : "O áudio ainda está carregando. Aguarde alguns segundos e tente novamente.";
+      let message = "O áudio ainda está carregando. Aguarde alguns segundos e tente novamente.";
+      let variant: "default" | "destructive" = "default";
+      
+      if (playerState.hasError) {
+        message = "Erro no áudio. Tente recarregar a página.";
+        variant = "destructive";
+      } else if (playerState.isLoading) {
+        message = "Carregando áudio, aguarde...";
+      }
         
       toast({
         title: playerState.hasError ? "Erro" : "Aguarde",
         description: message,
-        variant: playerState.hasError ? "destructive" : "default"
+        variant
       });
       return;
     }
@@ -133,9 +138,14 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       </div>
 
-      {/* Loading State */}
+      {/* Loading State - MELHORADO */}
       {!playerState.isReady && !playerState.hasError && (
-        <AudioLoadingIndicator />
+        <div className="text-center py-4">
+          <AudioLoadingIndicator />
+          <div className="mt-2 text-sm text-muted-foreground">
+            {playerState.isLoading ? 'Carregando áudio...' : 'Preparando reprodução...'}
+          </div>
+        </div>
       )}
 
       {/* Error State */}
@@ -146,8 +156,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         />
       )}
 
-      {/* Progress Bar */}
-      {preferences.showProgress && !playerState.hasError && playerState.isReady && (
+      {/* Progress Bar - só mostra quando ready */}
+      {preferences.showProgress && playerState.isReady && (
         <div className="space-y-2">
           <Slider
             value={[playerState.currentTime]}
@@ -170,7 +180,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           variant="audio"
           size="audio"
           onClick={reset}
-          disabled={playerState.hasError || !playerState.isReady}
+          disabled={!playerState.isReady}
         >
           <RotateCcw className="h-5 w-5" />
         </Button>
@@ -180,7 +190,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           size="audio"
           onClick={handlePlayClick}
           className="w-16 h-16"
-          disabled={playerState.hasError || !playerState.isReady}
+          disabled={!playerState.isReady}
         >
           {playerState.isPlaying ? (
             <Pause className="h-6 w-6" />
@@ -193,7 +203,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           variant="audio"
           size="audio"
           onClick={handleMuteToggle}
-          disabled={playerState.hasError}
+          disabled={!playerState.isReady}
         >
           {isMuted ? (
             <VolumeX className="h-5 w-5" />
@@ -210,41 +220,46 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           <Settings className="h-5 w-5" />
         </Button>
 
-        {/* Background Music Toggle */}
         <BackgroundMusicToggle />
       </div>
 
       {/* Status Indicator - MELHORADO */}
-      {(!playerState.isReady && !playerState.hasError) && (
+      {!playerState.isReady && (
         <div className="text-center text-sm text-muted-foreground">
           <div className="flex items-center justify-center gap-2">
-            <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
-            <span>
-              {playerState.isLoading ? 'Carregando áudio...' : 'Preparando reprodução...'}
-            </span>
+            {!playerState.hasError && (
+              <>
+                <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
+                <span>
+                  {playerState.isLoading ? 'Carregando áudio...' : 'Preparando reprodução...'}
+                </span>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* Volume Control */}
-      <div className="flex items-center gap-3">
-        <Volume2 className="h-4 w-4 text-muted-foreground" />
-        <Slider
-          value={[preferences.volume]}
-          max={100}
-          step={1}
-          onValueChange={(value) => {
-            const newVolume = Math.max(1, value[0]);
-            const newPreferences = { ...preferences, volume: newVolume };
-            setPreferences(newPreferences);
-            audioPreferencesService.updatePreferences({ volume: newVolume });
-          }}
-          className="flex-1"
-        />
-        <span className="text-xs text-muted-foreground min-w-[3ch]">
-          {preferences.volume}%
-        </span>
-      </div>
+      {/* Volume Control - só mostra quando ready */}
+      {playerState.isReady && (
+        <div className="flex items-center gap-3">
+          <Volume2 className="h-4 w-4 text-muted-foreground" />
+          <Slider
+            value={[preferences.volume]}
+            max={100}
+            step={1}
+            onValueChange={(value) => {
+              const newVolume = Math.max(1, value[0]);
+              const newPreferences = { ...preferences, volume: newVolume };
+              setPreferences(newPreferences);
+              audioPreferencesService.updatePreferences({ volume: newVolume });
+            }}
+            className="flex-1"
+          />
+          <span className="text-xs text-muted-foreground min-w-[3ch]">
+            {preferences.volume}%
+          </span>
+        </div>
+      )}
 
       {/* Background Music Status */}
       {backgroundMusicEnabled && (
@@ -259,21 +274,23 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       )}
 
-      {/* Repeat Count Display */}
-      <div className="text-center text-sm text-muted-foreground">
-        {preferences.repeatCount === 0 ? (
-          <span>Repetição infinita ativada</span>
-        ) : (
-          <span>
-            Repetições: {repeatCount}/{preferences.repeatCount}
-          </span>
-        )}
-        {pauseBetweenRepeats > 0 && (
-          <div className="text-xs text-muted-foreground mt-1">
-            Pausa entre repetições: {pauseBetweenRepeats}s
-          </div>
-        )}
-      </div>
+      {/* Repeat Count Display - só mostra quando ready */}
+      {playerState.isReady && (
+        <div className="text-center text-sm text-muted-foreground">
+          {preferences.repeatCount === 0 ? (
+            <span>Repetição infinita ativada</span>
+          ) : (
+            <span>
+              Repetições: {repeatCount}/{preferences.repeatCount}
+            </span>
+          )}
+          {pauseBetweenRepeats > 0 && (
+            <div className="text-xs text-muted-foreground mt-1">
+              Pausa entre repetições: {pauseBetweenRepeats}s
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Preferences Panel */}
       <AudioPreferencesPanel
