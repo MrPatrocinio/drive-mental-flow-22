@@ -24,6 +24,7 @@ export class AudioPlayerService {
   private audioElement: HTMLAudioElement | null = null;
   private events: AudioPlayerEvents;
   private pauseTimeout: NodeJS.Timeout | null = null;
+  private isLoopExecuting: boolean = false; // NOVA FLAG DE PROTEÇÃO
   private state: AudioPlayerState = {
     isPlaying: false,
     currentTime: 0,
@@ -113,12 +114,19 @@ export class AudioPlayerService {
     });
 
     audio.addEventListener('ended', () => {
-      console.log('AudioPlayerService: Áudio terminou - iniciando transição de loop');
-      this.updateState({ isTransitioning: true });
-      this.events.onRepeatComplete?.();
+      console.log('AudioPlayerService: Áudio terminou - verificando se deve executar loop');
+      
+      // PROTEÇÃO: Só executa se não há loop em andamento
+      if (!this.isLoopExecuting) {
+        console.log('AudioPlayerService: Iniciando transição de loop');
+        this.updateState({ isTransitioning: true });
+        this.events.onRepeatComplete?.();
+      } else {
+        console.log('AudioPlayerService: Loop já em execução, ignorando evento ended');
+      }
     });
 
-    // Eventos de erro
+    // Eventos de erro - MELHORADOS
     audio.addEventListener('error', (e) => {
       const errorMessage = this.getAudioErrorMessage(audio.error);
       console.error('AudioPlayerService: Erro no áudio:', errorMessage);
@@ -131,6 +139,15 @@ export class AudioPlayerService {
         isInternalPause: false
       });
       this.events.onError?.(errorMessage);
+    });
+
+    // NOVO: Tratamento específico para AbortError
+    audio.addEventListener('abort', () => {
+      console.log('AudioPlayerService: Reprodução abortada - isso pode ser normal durante loops');
+      // Não considera AbortError como erro fatal se estamos executando um loop
+      if (!this.isLoopExecuting) {
+        console.warn('AudioPlayerService: AbortError inesperado fora de loop');
+      }
     });
 
     audio.addEventListener('stalled', () => {
@@ -193,6 +210,12 @@ export class AudioPlayerService {
         await this.audioElement.play();
       }
     } catch (error) {
+      // MELHORADO: Tratamento específico para AbortError
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log('AudioPlayerService: AbortError capturado (pode ser normal durante transições)');
+        return; // Não trata como erro fatal
+      }
+
       const errorMessage = error instanceof Error ? error.message : 'Erro ao reproduzir áudio';
       console.error('AudioPlayerService: Erro no togglePlay:', errorMessage);
       this.updateState({ 
@@ -214,6 +237,7 @@ export class AudioPlayerService {
     
     console.log('AudioPlayerService: Resetando áudio');
     this.cancelInternalPause();
+    this.isLoopExecuting = false; // RESET DA FLAG
     this.audioElement.currentTime = 0;
     this.updateState({ 
       currentTime: 0, 
@@ -223,15 +247,22 @@ export class AudioPlayerService {
   }
 
   /**
-   * Executa loop com pausa configurável - MODIFICADO para suportar pausa zero
-   * Princípio SRP: responsabilidade específica para loop com pausa
-   * Princípio KISS: lógica diferenciada para pausa zero vs. pausa configurada
+   * Executa loop com pausa configurável - MELHORADO com proteção contra execução simultânea
    */
   async performLoopWithPause(pauseSeconds: number): Promise<void> {
     if (!this.audioElement) return;
 
+    // PROTEÇÃO: Evita execuções simultâneas
+    if (this.isLoopExecuting) {
+      console.log('AudioPlayerService: Loop já em execução, ignorando nova solicitação');
+      return;
+    }
+
+    this.isLoopExecuting = true;
+    console.log('AudioPlayerService: Iniciando loop com proteção ativada');
+
     try {
-      // NOVA LÓGICA: Se pauseSeconds é 0, executa loop imediato
+      // Se pauseSeconds é 0, executa loop imediato
       if (pauseSeconds === 0) {
         console.log('AudioPlayerService: Executando loop contínuo (sem pausas)');
         return await this.performLoop();
@@ -255,7 +286,10 @@ export class AudioPlayerService {
       
       // Aguarda o tempo de pausa configurado
       this.pauseTimeout = setTimeout(async () => {
-        if (!this.audioElement || !this.state.isInternalPause) return;
+        if (!this.audioElement || !this.state.isInternalPause) {
+          this.isLoopExecuting = false;
+          return;
+        }
         
         try {
           console.log('AudioPlayerService: Finalizando pausa interna - reiniciando reprodução');
@@ -275,6 +309,8 @@ export class AudioPlayerService {
             isInternalPause: false,
             isPlaying: false 
           });
+        } finally {
+          this.isLoopExecuting = false;
         }
       }, pauseSeconds * 1000);
       
@@ -286,15 +322,18 @@ export class AudioPlayerService {
         isInternalPause: false,
         isPlaying: false 
       });
+      this.isLoopExecuting = false;
     }
   }
 
   /**
-   * Executa loop otimizado (sem pausar o estado de reprodução)
-   * Usado para pausa zero ou quando não há pausas configuradas
+   * Executa loop otimizado - MELHORADO
    */
   async performLoop(): Promise<void> {
-    if (!this.audioElement) return;
+    if (!this.audioElement) {
+      this.isLoopExecuting = false;
+      return;
+    }
 
     try {
       console.log('AudioPlayerService: Executando loop contínuo (sem pausa)');
@@ -310,13 +349,20 @@ export class AudioPlayerService {
       
       console.log('AudioPlayerService: Loop contínuo concluído com sucesso');
     } catch (error) {
-      console.error('AudioPlayerService: Erro no loop:', error);
-      this.updateState({ 
-        hasError: true, 
-        isTransitioning: false,
-        isPlaying: false,
-        isInternalPause: false
-      });
+      // MELHORADO: Tratamento específico para AbortError
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log('AudioPlayerService: AbortError durante loop contínuo (pode ser normal)');
+      } else {
+        console.error('AudioPlayerService: Erro no loop:', error);
+        this.updateState({ 
+          hasError: true, 
+          isTransitioning: false,
+          isPlaying: false,
+          isInternalPause: false
+        });
+      }
+    } finally {
+      this.isLoopExecuting = false;
     }
   }
 
@@ -332,6 +378,7 @@ export class AudioPlayerService {
     if (this.state.isInternalPause) {
       this.updateState({ isInternalPause: false });
     }
+    this.isLoopExecuting = false; // RESET DA FLAG
   }
 
   /**
@@ -373,10 +420,12 @@ export class AudioPlayerService {
   }
 
   /**
-   * Limpa os recursos
+   * Limpa os recursos - MELHORADO
    */
   cleanup(): void {
+    console.log('AudioPlayerService: Executando cleanup');
     this.cancelInternalPause();
+    this.isLoopExecuting = false; // RESET DA FLAG
     // Os event listeners são removidos automaticamente quando o elemento é destruído
     this.audioElement = null;
   }

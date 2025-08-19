@@ -1,5 +1,4 @@
-
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { AudioPlayerService, AudioPlayerState } from '@/services/audioPlayerService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
 import { AudioConfigService } from '@/services/supabase/audioConfigService';
@@ -32,13 +31,23 @@ export const useAudioPlayer = (
   const [repeatCount, setRepeatCount] = useState(0);
   const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(3);
   
+  // Refs para controle de debounce e instância única
+  const onRepeatCompleteRef = useRef(onRepeatComplete);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitializingRef = useRef(false);
+  
   // Hook para música de fundo
   const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
   
   // Context para controlar música de fundo
   const audioPlaybackContext = useAudioPlaybackSafe();
 
-  // Carrega configuração administrativa de pausa (SSOT)
+  // Atualiza referência do callback sem recriar o serviço
+  useEffect(() => {
+    onRepeatCompleteRef.current = onRepeatComplete;
+  }, [onRepeatComplete]);
+
+  // Carrega configuração administrativa de pausa (SSOT) - OTIMIZADO
   useEffect(() => {
     const loadAudioConfig = async () => {
       try {
@@ -53,11 +62,55 @@ export const useAudioPlayer = (
     loadAudioConfig();
   }, []);
 
-  // Inicializa o serviço de player
-  useEffect(() => {
-    if (!audioRef.current) return;
+  // Callback debounced para repetição - NOVO
+  const handleRepeatComplete = useCallback(() => {
+    // Cancela timeout anterior se existir
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
 
-    console.log('useAudioPlayer: Inicializando player para:', audioUrl);
+    // Implementa debounce de 100ms para evitar chamadas duplicadas
+    debounceTimeoutRef.current = setTimeout(() => {
+      console.log('useAudioPlayer: Executando onRepeatComplete (debounced)');
+      
+      setRepeatCount(current => {
+        const newCount = current + 1;
+        console.log('useAudioPlayer: Incrementando contador:', newCount);
+        
+        // Chama callback externo se existir
+        if (onRepeatCompleteRef.current) {
+          onRepeatCompleteRef.current();
+        }
+        
+        // Verifica se deve continuar repetindo
+        const shouldContinue = preferences.repeatCount === 0 || newCount < preferences.repeatCount;
+        
+        if (shouldContinue && playerServiceRef.current) {
+          console.log(`useAudioPlayer: Executando próxima repetição com pausa de ${pauseBetweenRepeats}s`);
+          playerServiceRef.current.performLoopWithPause(pauseBetweenRepeats);
+        } else {
+          console.log('useAudioPlayer: Repetições concluídas');
+        }
+        
+        return newCount;
+      });
+    }, 100);
+  }, [preferences.repeatCount, pauseBetweenRepeats]);
+
+  // Inicializa o serviço de player - MELHORADO
+  useEffect(() => {
+    if (!audioRef.current || isInitializingRef.current) return;
+
+    console.log('useAudioPlayer: Iniciando inicialização do player para:', audioUrl);
+    isInitializingRef.current = true;
+
+    // Limpa serviço anterior se existir
+    if (playerServiceRef.current) {
+      console.log('useAudioPlayer: Limpando serviço anterior');
+      playerServiceRef.current.cleanup();
+      playerServiceRef.current = null;
+    }
+
     setRepeatCount(0);
 
     const service = new AudioPlayerService({
@@ -65,25 +118,7 @@ export const useAudioPlayer = (
         console.log('useAudioPlayer: Estado atualizado:', newState);
         setPlayerState(newState);
       },
-      onRepeatComplete: () => {
-        console.log('useAudioPlayer: Repetição concluída');
-        setRepeatCount(current => {
-          const newCount = current + 1;
-          onRepeatComplete?.();
-          
-          // Verifica se deve continuar repetindo
-          const shouldContinue = preferences.repeatCount === 0 || newCount < preferences.repeatCount;
-          
-          if (shouldContinue && playerServiceRef.current) {
-            console.log(`useAudioPlayer: Executando próxima repetição com pausa de ${pauseBetweenRepeats}s`);
-            playerServiceRef.current.performLoopWithPause(pauseBetweenRepeats);
-          } else {
-            console.log('useAudioPlayer: Repetições concluídas');
-          }
-          
-          return newCount;
-        });
-      },
+      onRepeatComplete: handleRepeatComplete,
       onError
     });
 
@@ -93,11 +128,18 @@ export const useAudioPlayer = (
     // Aplica configurações iniciais
     service.setVolume(preferences.volume / 100);
 
+    isInitializingRef.current = false;
+    console.log('useAudioPlayer: Inicialização concluída');
+
     return () => {
-      console.log('useAudioPlayer: Limpando serviço');
+      console.log('useAudioPlayer: Limpando serviço no cleanup');
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
       service.cleanup();
+      isInitializingRef.current = false;
     };
-  }, [audioUrl, preferences.repeatCount, pauseBetweenRepeats]);
+  }, [audioUrl, handleRepeatComplete]);
 
   // Atualiza preferências de volume
   useEffect(() => {
