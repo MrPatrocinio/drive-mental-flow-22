@@ -127,6 +127,9 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     }
   };
 
+  // CORREÇÃO: Melhor lógica de quando mostrar loading
+  const showLoadingState = playerState.isLoading && !playerState.canPlay && !playerState.hasError;
+
   return (
     <div className="card-gradient rounded-xl p-6 space-y-6">
       <audio ref={audioRef} src={audioUrl} preload="auto" />
@@ -138,12 +141,12 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       </div>
 
-      {/* Loading State - MELHORADO */}
-      {!playerState.isReady && !playerState.hasError && (
+      {/* Loading State - CORRIGIDO */}
+      {showLoadingState && (
         <div className="text-center py-4">
           <AudioLoadingIndicator />
           <div className="mt-2 text-sm text-muted-foreground">
-            {playerState.isLoading ? 'Carregando áudio...' : 'Preparando reprodução...'}
+            Carregando áudio...
           </div>
         </div>
       )}
@@ -156,8 +159,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         />
       )}
 
-      {/* Progress Bar - só mostra quando ready */}
-      {preferences.showProgress && playerState.isReady && (
+      {/* Progress Bar - CORRIGIDO: mostra quando canPlay */}
+      {preferences.showProgress && playerState.canPlay && (
         <div className="space-y-2">
           <Slider
             value={[playerState.currentTime]}
@@ -174,13 +177,13 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       )}
 
-      {/* Controls */}
+      {/* Controls - CORRIGIDO: usa canPlay ao invés de isReady para liberar mais cedo */}
       <div className="flex items-center justify-center gap-4">
         <Button
           variant="audio"
           size="audio"
           onClick={reset}
-          disabled={!playerState.isReady}
+          disabled={!playerState.canPlay}
         >
           <RotateCcw className="h-5 w-5" />
         </Button>
@@ -190,7 +193,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           size="audio"
           onClick={handlePlayClick}
           className="w-16 h-16"
-          disabled={!playerState.isReady}
+          disabled={!playerState.canPlay}
         >
           {playerState.isPlaying ? (
             <Pause className="h-6 w-6" />
@@ -203,7 +206,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           variant="audio"
           size="audio"
           onClick={handleMuteToggle}
-          disabled={!playerState.isReady}
+          disabled={!playerState.canPlay}
         >
           {isMuted ? (
             <VolumeX className="h-5 w-5" />
@@ -223,24 +226,18 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         <BackgroundMusicToggle />
       </div>
 
-      {/* Status Indicator - MELHORADO */}
-      {!playerState.isReady && (
+      {/* Status Indicator - SIMPLIFICADO */}
+      {showLoadingState && (
         <div className="text-center text-sm text-muted-foreground">
           <div className="flex items-center justify-center gap-2">
-            {!playerState.hasError && (
-              <>
-                <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
-                <span>
-                  {playerState.isLoading ? 'Carregando áudio...' : 'Preparando reprodução...'}
-                </span>
-              </>
-            )}
+            <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
+            <span>Carregando áudio...</span>
           </div>
         </div>
       )}
 
-      {/* Volume Control - só mostra quando ready */}
-      {playerState.isReady && (
+      {/* Volume Control - CORRIGIDO: mostra quando canPlay */}
+      {playerState.canPlay && (
         <div className="flex items-center gap-3">
           <Volume2 className="h-4 w-4 text-muted-foreground" />
           <Slider
@@ -274,8 +271,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       )}
 
-      {/* Repeat Count Display - só mostra quando ready */}
-      {playerState.isReady && (
+      {/* Repeat Count Display - CORRIGIDO: mostra quando canPlay */}
+      {playerState.canPlay && (
         <div className="text-center text-sm text-muted-foreground">
           {preferences.repeatCount === 0 ? (
             <span>Repetição infinita ativada</span>

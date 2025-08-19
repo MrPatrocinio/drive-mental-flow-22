@@ -96,7 +96,7 @@ export const useAudioPlayer = (
     }, 300);
   }, [preferences.repeatCount, pauseBetweenRepeats]);
 
-  // Inicializa o serviço de player - CORRIGIDO E ESTABILIZADO
+  // Inicializa o serviço de player - CORREÇÃO APLICADA
   useEffect(() => {
     if (!audioUrl) {
       console.log('useAudioPlayer: URL não fornecida');
@@ -130,7 +130,12 @@ export const useAudioPlayer = (
         
         const service = new AudioPlayerService({
           onStateChange: (newState) => {
-            console.log('useAudioPlayer: Estado atualizado pelo serviço:', newState);
+            console.log('useAudioPlayer: Estado atualizado pelo serviço:', {
+              canPlay: newState.canPlay,
+              duration: newState.duration,
+              isLoading: newState.isLoading,
+              hasError: newState.hasError
+            });
             setPlayerState(newState);
           },
           onRepeatComplete: handleRepeatComplete,
@@ -164,7 +169,7 @@ export const useAudioPlayer = (
               onError('Timeout ao carregar áudio. Verifique sua conexão e tente novamente.');
             }
           }
-        }, 10000); // 10 segundos de timeout
+        }, 15000); // Aumentado para 15 segundos
 
       } catch (error) {
         console.error('useAudioPlayer: Erro na inicialização:', error);
@@ -297,13 +302,13 @@ export const useAudioPlayer = (
     setBackgroundMuted(muted);
   };
 
-  // Calcula isReady de forma mais robusta - CORRIGIDO
+  // CORREÇÃO PRINCIPAL: Calcula isReady sem depender de duration > 0
   const isReady = isInitialized && 
                  playerState.canPlay && 
                  !playerState.hasError && 
                  !playerState.isLoading && 
-                 !!playerServiceRef.current &&
-                 playerState.duration > 0;
+                 !!playerServiceRef.current;
+                 // Removido: && playerState.duration > 0
 
   console.log('useAudioPlayer: Estado final isReady:', isReady, {
     isInitialized,
@@ -311,7 +316,8 @@ export const useAudioPlayer = (
     hasError: playerState.hasError,
     isLoading: playerState.isLoading,
     hasService: !!playerServiceRef.current,
-    duration: playerState.duration
+    duration: playerState.duration,
+    RACE_CONDITION_FIX: 'Removida dependência de duration > 0'
   });
 
   return {
