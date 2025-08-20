@@ -1,3 +1,4 @@
+
 /**
  * DemoPage - Página de demonstração gratuita
  * Responsabilidade: Exibir áudio de demonstração para visitantes
@@ -10,14 +11,27 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Play, Pause, Volume2, RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { DemoService, DemoAudio } from '@/services/supabase/demoService';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
 
+// Hook seguro para navegação que funciona dentro e fora do contexto do Router
+const useSafeNavigate = () => {
+  try {
+    // Importa dinamicamente o useNavigate apenas quando necessário
+    const { useNavigate } = require('react-router-dom');
+    return useNavigate();
+  } catch (error) {
+    // Se não estiver no contexto do Router, usa window.location
+    return (path: string) => {
+      window.location.href = path;
+    };
+  }
+};
+
 export default function DemoPage() {
-  const navigate = useNavigate();
+  const navigate = useSafeNavigate();
   const [demoAudio, setDemoAudio] = useState<DemoAudio | null>(null);
   const [loading, setLoading] = useState(true);
   const [playCount, setPlayCount] = useState(0);
@@ -52,6 +66,16 @@ export default function DemoPage() {
     toast.success('Demonstração reiniciada!');
   };
 
+  // Função segura para navegação
+  const handleNavigation = (path: string) => {
+    try {
+      navigate(path);
+    } catch (error) {
+      console.warn('Navegação via Router falhou, usando window.location:', error);
+      window.location.href = path;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen hero-gradient">
@@ -76,7 +100,7 @@ export default function DemoPage() {
           <div className="max-w-2xl mx-auto">
             <Button
               variant="ghost"
-              onClick={() => navigate('/')}
+              onClick={() => handleNavigation('/')}
               className="mb-6"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -91,10 +115,10 @@ export default function DemoPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
-                <Button onClick={() => navigate('/pagamento')} className="mr-4">
+                <Button onClick={() => handleNavigation('/pagamento')} className="mr-4">
                   Ver Planos Completos
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/')}>
+                <Button variant="outline" onClick={() => handleNavigation('/')}>
                   Voltar ao Início
                 </Button>
               </CardContent>
@@ -114,7 +138,7 @@ export default function DemoPage() {
           {/* Navegação */}
           <Button
             variant="ghost"
-            onClick={() => navigate('/')}
+            onClick={() => handleNavigation('/')}
             className="mb-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -174,7 +198,7 @@ export default function DemoPage() {
               Reiniciar Contador
             </Button>
             <Button
-              onClick={() => navigate('/pagamento')}
+              onClick={() => handleNavigation('/pagamento')}
               className="flex items-center gap-2"
             >
               <Play className="h-4 w-4" />
@@ -213,7 +237,7 @@ export default function DemoPage() {
                 </div>
               </div>
               
-              <Button onClick={() => navigate('/pagamento')} size="lg" className="px-8 py-4 text-lg animate-fade-in">
+              <Button onClick={() => handleNavigation('/pagamento')} size="lg" className="px-8 py-4 text-lg animate-fade-in">
                 Sua mente Merece!
               </Button>
             </CardContent>

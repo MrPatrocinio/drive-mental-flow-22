@@ -1,115 +1,176 @@
 
 /**
- * AudioValidationService - Serviço para validar URLs de áudio
- * Responsabilidade: Verificar se URLs de áudio são válidas e acessíveis
+ * AudioValidationService - Serviço para validação de áudios
+ * Responsabilidade: Validar URLs de áudio e conectividade
  * Princípio SRP: Apenas validação de áudio
  */
 
 export interface AudioValidationResult {
   isValid: boolean;
   error?: string;
-  canPlay: boolean;
-  duration?: number;
+  statusCode?: number;
+}
+
+export interface StorageValidationResult {
+  isValid: boolean;
+  corsConfigured: boolean;
+  bucketAccessible: boolean;
+  error?: string;
 }
 
 export class AudioValidationService {
   /**
-   * Valida se uma URL de áudio é acessível e pode ser reproduzida
+   * Valida se uma URL de áudio é acessível e válida
    */
   static async validateAudioUrl(url: string): Promise<AudioValidationResult> {
     try {
       console.log('AudioValidationService: Validando URL:', url);
 
-      // Verificar se URL é válida
-      if (!url || typeof url !== 'string') {
+      // Verifica se a URL é válida
+      let validUrl: URL;
+      try {
+        validUrl = new URL(url);
+      } catch {
         return {
           isValid: false,
-          error: 'URL inválida ou não fornecida',
-          canPlay: false
+          error: 'URL inválida'
         };
       }
 
-      // Criar elemento de áudio temporário para teste
-      const audio = new Audio();
-      
-      return new Promise<AudioValidationResult>((resolve) => {
-        const timeout = setTimeout(() => {
-          audio.src = '';
-          resolve({
-            isValid: false,
-            error: 'Timeout ao carregar áudio - verifique sua conexão',
-            canPlay: false
-          });
-        }, 10000); // 10 segundos de timeout
+      // Testa conectividade com a URL
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-        audio.addEventListener('loadedmetadata', () => {
-          clearTimeout(timeout);
-          console.log('AudioValidationService: Áudio validado com sucesso');
-          resolve({
-            isValid: true,
-            canPlay: true,
-            duration: audio.duration
-          });
+      try {
+        const response = await fetch(url, {
+          method: 'HEAD',
+          signal: controller.signal,
         });
 
-        audio.addEventListener('error', (e) => {
-          clearTimeout(timeout);
-          const error = this.getAudioErrorMessage(audio.error);
-          console.error('AudioValidationService: Erro na validação:', error);
-          resolve({
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          return {
             isValid: false,
-            error,
-            canPlay: false
-          });
-        });
+            error: `Erro HTTP ${response.status}`,
+            statusCode: response.status
+          };
+        }
 
-        // Configurar CORS e carregar
-        audio.crossOrigin = 'anonymous';
-        audio.preload = 'metadata';
-        audio.src = url;
-      });
+        // Verifica se é um arquivo de áudio
+        const contentType = response.headers.get('content-type');
+        if (contentType && !contentType.startsWith('audio/')) {
+          console.warn('AudioValidationService: Tipo de conteúdo não é áudio:', contentType);
+        }
 
+        console.log('AudioValidationService: Áudio validado com sucesso');
+        return { isValid: true };
+
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            return {
+              isValid: false,
+              error: 'Timeout na validação do áudio'
+            };
+          }
+          
+          return {
+            isValid: false,
+            error: `Erro de rede: ${error.message}`
+          };
+        }
+
+        return {
+          isValid: false,
+          error: 'Erro desconhecido na validação'
+        };
+      }
     } catch (error) {
-      console.error('AudioValidationService: Erro inesperado:', error);
+      console.error('AudioValidationService: Erro na validação:', error);
       return {
         isValid: false,
-        error: 'Erro inesperado ao validar áudio',
-        canPlay: false
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
       };
     }
   }
 
   /**
-   * Converte códigos de erro em mensagens legíveis
+   * Testa conectividade básica com o Supabase
    */
-  private static getAudioErrorMessage(error: MediaError | null): string {
-    if (!error) return 'Erro desconhecido';
+  static async testSupabaseConnectivity(): Promise<AudioValidationResult> {
+    try {
+      console.log('AudioValidationService: Testando conectividade com Supabase');
+      
+      const supabaseUrl = 'https://ipdzkzlrcyrcfwvhiulc.supabase.co';
+      const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+        method: 'HEAD',
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZHpremxyY3lyY2Z3dmhpdWxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MTU4NDAsImV4cCI6MjA2ODI5MTg0MH0.Hwao9dFvdMEy8QDUzVosDtCEDWjqty5R8ZVkMPMUIAI'
+        }
+      });
 
-    switch (error.code) {
-      case MediaError.MEDIA_ERR_ABORTED:
-        return 'Carregamento cancelado';
-      case MediaError.MEDIA_ERR_NETWORK:
-        return 'Erro de rede - verifique sua conexão';
-      case MediaError.MEDIA_ERR_DECODE:
-        return 'Arquivo de áudio corrompido ou formato inválido';
-      case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-        return 'Arquivo não encontrado ou formato não suportado';
-      default:
-        return 'Erro desconhecido na reprodução';
+      if (response.ok) {
+        console.log('AudioValidationService: Conectividade com Supabase OK');
+        return { isValid: true };
+      } else {
+        return {
+          isValid: false,
+          error: `Erro de conectividade: ${response.status}`,
+          statusCode: response.status
+        };
+      }
+    } catch (error) {
+      console.error('AudioValidationService: Erro de conectividade:', error);
+      return {
+        isValid: false,
+        error: error instanceof Error ? error.message : 'Erro de conectividade'
+      };
     }
   }
 
   /**
-   * Testa conectividade básica com o Supabase Storage
+   * Valida configuração do storage (para AdminDiagnostics)
    */
-  static async testStorageConnectivity(): Promise<boolean> {
+  static async validateStorageConfiguration(): Promise<StorageValidationResult> {
     try {
+      console.log('AudioValidationService: Validando configuração do storage');
+      
+      // Testa acesso ao bucket de audios
       const testUrl = 'https://ipdzkzlrcyrcfwvhiulc.supabase.co/storage/v1/object/public/audios/';
+      
       const response = await fetch(testUrl, { method: 'HEAD' });
-      return response.ok || response.status === 404; // 404 é ok, significa que chegou no storage
+      
+      return {
+        isValid: response.ok,
+        corsConfigured: true, // Assumimos que CORS está configurado se chegou até aqui
+        bucketAccessible: response.ok,
+        error: response.ok ? undefined : `Bucket não acessível: ${response.status}`
+      };
     } catch (error) {
-      console.error('AudioValidationService: Erro ao testar conectividade:', error);
-      return false;
+      return {
+        isValid: false,
+        corsConfigured: false,
+        bucketAccessible: false,
+        error: error instanceof Error ? error.message : 'Erro de validação do storage'
+      };
+    }
+  }
+
+  /**
+   * Encontra áudios inválidos (para AdminDiagnostics)
+   */
+  static async findInvalidAudios(): Promise<{ id: string; url: string; error: string }[]> {
+    try {
+      // Esta função seria implementada com acesso ao banco de dados
+      // Por agora, retorna array vazio
+      console.log('AudioValidationService: Buscando áudios inválidos (não implementado)');
+      return [];
+    } catch (error) {
+      console.error('AudioValidationService: Erro ao buscar áudios inválidos:', error);
+      return [];
     }
   }
 }
