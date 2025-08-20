@@ -27,6 +27,12 @@ interface FieldData {
   slug: string;
 }
 
+// Função para validar UUID
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export const FieldPage = () => {
   const { slug } = useParams();
   const [field, setField] = useState<FieldData | null>(null);
@@ -44,40 +50,58 @@ export const FieldPage = () => {
 
   useEffect(() => {
     const fetchFieldAndAudios = async () => {
-      if (!slug) return;
+      if (!slug) {
+        console.error('FieldPage: Slug não fornecido');
+        setError('ID do campo não encontrado na URL');
+        setIsLoading(false);
+        return;
+      }
+
+      // Validar se o slug é um UUID válido
+      if (!isValidUUID(slug)) {
+        console.error('FieldPage: Slug não é um UUID válido:', slug);
+        setError('ID do campo inválido');
+        setIsLoading(false);
+        return;
+      }
 
       try {
         setIsLoading(true);
         setError(null);
 
-        console.log('Fetching field and audios for slug:', slug);
+        console.log('FieldPage: Buscando campo por ID:', slug);
 
-        // Buscar informações do campo
+        // Buscar informações do campo pelo ID
         const { data: fieldData, error: fieldError } = await supabase
           .from('fields')
           .select('*')
-          .eq('title', slug) // Usando title como slug para compatibilidade
+          .eq('id', slug) // Corrigido: buscar por ID ao invés de title
           .single();
 
         if (fieldError) {
-          console.error('Erro ao buscar campo:', fieldError);
-          setError('Campo não encontrado');
+          console.error('FieldPage: Erro ao buscar campo:', fieldError);
+          if (fieldError.code === 'PGRST116') {
+            setError('Campo não encontrado');
+          } else {
+            setError('Erro ao carregar informações do campo');
+          }
           return;
         }
 
-        console.log('Field found:', fieldData);
+        console.log('FieldPage: Campo encontrado:', fieldData);
         
         // Mapear dados do campo para interface local
         const mappedField: FieldData = {
           id: fieldData.id,
           title: fieldData.title,
           description: fieldData.description,
-          slug: fieldData.title // Usando title como slug
+          slug: fieldData.id // Usar ID como slug
         };
         
         setField(mappedField);
 
         // Buscar áudios do campo
+        console.log('FieldPage: Buscando áudios para o campo:', fieldData.id);
         const { data: audiosData, error: audiosError } = await supabase
           .from('audios')
           .select('*')
@@ -85,12 +109,12 @@ export const FieldPage = () => {
           .order('title');
 
         if (audiosError) {
-          console.error('Erro ao buscar áudios:', audiosError);
+          console.error('FieldPage: Erro ao buscar áudios:', audiosError);
           setError('Erro ao carregar áudios');
           return;
         }
 
-        console.log('Audios found:', audiosData?.length || 0);
+        console.log('FieldPage: Áudios encontrados:', audiosData?.length || 0);
 
         // Mapear dados dos áudios para interface local
         const mappedAudios: AudioData[] = audiosData?.map(audio => ({
@@ -109,14 +133,14 @@ export const FieldPage = () => {
           canAccessAudio(audio.is_premium, false) // is_demo sempre false para simplicidade
         );
 
-        console.log('Accessible audios:', accessibleAudios.length);
+        console.log('FieldPage: Áudios acessíveis:', accessibleAudios.length);
 
         setAudios(accessibleAudios);
         setFilteredAudios(accessibleAudios);
 
       } catch (error) {
-        console.error('Erro geral:', error);
-        setError('Erro ao carregar dados');
+        console.error('FieldPage: Erro geral:', error);
+        setError('Erro inesperado ao carregar dados');
       } finally {
         setIsLoading(false);
       }
@@ -127,7 +151,7 @@ export const FieldPage = () => {
 
   // Filtra os áudios com base nas tags selecionadas
   const handleTagFilter = (tags: string[]) => {
-    console.log('Filtering by tags:', tags);
+    console.log('FieldPage: Filtrando por tags:', tags);
     setSelectedTags(tags);
     
     if (tags.length === 0) {
@@ -148,7 +172,7 @@ export const FieldPage = () => {
 
   // Função para lidar com reprodução de áudio - usar interface Audio do AudioCard
   const handlePlayAudio = (audio: { id: string; title: string; duration: string; url: string; tags?: string[]; field_id?: string }) => {
-    console.log('Playing audio:', audio.title);
+    console.log('FieldPage: Reproduzindo áudio:', audio.title);
     // Lógica de reprodução será implementada conforme necessário
   };
 
