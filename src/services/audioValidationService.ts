@@ -1,95 +1,115 @@
-import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Serviço responsável pela validação e verificação de URLs de áudio
- * Segue o princípio SRP: apenas validação de áudios
+ * AudioValidationService - Serviço para validar URLs de áudio
+ * Responsabilidade: Verificar se URLs de áudio são válidas e acessíveis
+ * Princípio SRP: Apenas validação de áudio
  */
+
+export interface AudioValidationResult {
+  isValid: boolean;
+  error?: string;
+  canPlay: boolean;
+  duration?: number;
+}
+
 export class AudioValidationService {
   /**
-   * Verifica se uma URL de áudio é válida e acessível
+   * Valida se uma URL de áudio é acessível e pode ser reproduzida
    */
-  static async validateAudioUrl(url: string): Promise<{ isValid: boolean; error?: string }> {
-    if (!url || url.trim() === '') {
-      return { isValid: false, error: 'URL vazia' };
-    }
-
-    // Verifica se é URL fictícia (example.com)
-    if (url.includes('example.com')) {
-      return { isValid: false, error: 'URL fictícia detectada' };
-    }
-
+  static async validateAudioUrl(url: string): Promise<AudioValidationResult> {
     try {
-      // Tenta fazer uma requisição HEAD para verificar se o arquivo existe
-      const response = await fetch(url, { method: 'HEAD' });
+      console.log('AudioValidationService: Validando URL:', url);
+
+      // Verificar se URL é válida
+      if (!url || typeof url !== 'string') {
+        return {
+          isValid: false,
+          error: 'URL inválida ou não fornecida',
+          canPlay: false
+        };
+      }
+
+      // Criar elemento de áudio temporário para teste
+      const audio = new Audio();
       
-      if (!response.ok) {
-        return { isValid: false, error: `HTTP ${response.status}: ${response.statusText}` };
-      }
+      return new Promise<AudioValidationResult>((resolve) => {
+        const timeout = setTimeout(() => {
+          audio.src = '';
+          resolve({
+            isValid: false,
+            error: 'Timeout ao carregar áudio - verifique sua conexão',
+            canPlay: false
+          });
+        }, 10000); // 10 segundos de timeout
 
-      // Verifica se é um arquivo de áudio
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.startsWith('audio/')) {
-        return { isValid: false, error: 'Arquivo não é do tipo áudio' };
-      }
-
-      return { isValid: true };
-    } catch (error) {
-      return { 
-        isValid: false, 
-        error: error instanceof Error ? error.message : 'Erro desconhecido ao validar URL' 
-      };
-    }
-  }
-
-  /**
-   * Identifica áudios com URLs inválidas no banco de dados
-   */
-  static async findInvalidAudios() {
-    const { data: audios, error } = await supabase
-      .from('audios')
-      .select('id, title, url')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Erro ao buscar áudios:', error);
-      return [];
-    }
-
-    const invalidAudios = [];
-
-    for (const audio of audios || []) {
-      const validation = await this.validateAudioUrl(audio.url);
-      if (!validation.isValid) {
-        invalidAudios.push({
-          ...audio,
-          validationError: validation.error
+        audio.addEventListener('loadedmetadata', () => {
+          clearTimeout(timeout);
+          console.log('AudioValidationService: Áudio validado com sucesso');
+          resolve({
+            isValid: true,
+            canPlay: true,
+            duration: audio.duration
+          });
         });
-      }
-    }
 
-    return invalidAudios;
+        audio.addEventListener('error', (e) => {
+          clearTimeout(timeout);
+          const error = this.getAudioErrorMessage(audio.error);
+          console.error('AudioValidationService: Erro na validação:', error);
+          resolve({
+            isValid: false,
+            error,
+            canPlay: false
+          });
+        });
+
+        // Configurar CORS e carregar
+        audio.crossOrigin = 'anonymous';
+        audio.preload = 'metadata';
+        audio.src = url;
+      });
+
+    } catch (error) {
+      console.error('AudioValidationService: Erro inesperado:', error);
+      return {
+        isValid: false,
+        error: 'Erro inesperado ao validar áudio',
+        canPlay: false
+      };
+    }
   }
 
   /**
-   * Verifica se o bucket de áudios está configurado corretamente
+   * Converte códigos de erro em mensagens legíveis
    */
-  static async validateStorageConfiguration(): Promise<{ isValid: boolean; error?: string }> {
+  private static getAudioErrorMessage(error: MediaError | null): string {
+    if (!error) return 'Erro desconhecido';
+
+    switch (error.code) {
+      case MediaError.MEDIA_ERR_ABORTED:
+        return 'Carregamento cancelado';
+      case MediaError.MEDIA_ERR_NETWORK:
+        return 'Erro de rede - verifique sua conexão';
+      case MediaError.MEDIA_ERR_DECODE:
+        return 'Arquivo de áudio corrompido ou formato inválido';
+      case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+        return 'Arquivo não encontrado ou formato não suportado';
+      default:
+        return 'Erro desconhecido na reprodução';
+    }
+  }
+
+  /**
+   * Testa conectividade básica com o Supabase Storage
+   */
+  static async testStorageConnectivity(): Promise<boolean> {
     try {
-      // Tenta listar arquivos no bucket para verificar se existe e tem permissões
-      const { data, error } = await supabase.storage
-        .from('audios')
-        .list('', { limit: 1 });
-
-      if (error) {
-        return { isValid: false, error: `Erro no bucket 'audios': ${error.message}` };
-      }
-
-      return { isValid: true };
+      const testUrl = 'https://ipdzkzlrcyrcfwvhiulc.supabase.co/storage/v1/object/public/audios/';
+      const response = await fetch(testUrl, { method: 'HEAD' });
+      return response.ok || response.status === 404; // 404 é ok, significa que chegou no storage
     } catch (error) {
-      return { 
-        isValid: false, 
-        error: error instanceof Error ? error.message : 'Erro desconhecido na verificação do storage' 
-      };
+      console.error('AudioValidationService: Erro ao testar conectividade:', error);
+      return false;
     }
   }
 }

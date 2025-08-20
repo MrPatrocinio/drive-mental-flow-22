@@ -1,15 +1,14 @@
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { AudioPlayerService, AudioPlayerState } from '@/services/audioPlayerService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
 import { AudioConfigService } from '@/services/supabase/audioConfigService';
+import { AudioValidationService } from '@/services/audioValidationService';
 import { useBackgroundMusic } from './useBackgroundMusic';
 import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
 /**
  * Hook customizado para gerenciar o estado do player de áudio
- * Segue o princípio de Composição sobre Herança
- * Segue SSOT: busca configuração administrativa centralizada
+ * MELHORADO: Validação de URL e retry automático
  */
 export const useAudioPlayer = (
   audioUrl: string,
@@ -32,11 +31,14 @@ export const useAudioPlayer = (
   const [repeatCount, setRepeatCount] = useState(0);
   const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(3);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isValidatingUrl, setIsValidatingUrl] = useState(false);
   
   // Refs para controle de debounce e instância única
   const onRepeatCompleteRef = useRef(onRepeatComplete);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Hook para música de fundo
   const { setVolume: setBackgroundVolume, setMuted: setBackgroundMuted } = useBackgroundMusic();
@@ -96,7 +98,73 @@ export const useAudioPlayer = (
     }, 300);
   }, [preferences.repeatCount, pauseBetweenRepeats]);
 
-  // Inicializa o serviço de player - CORREÇÃO APLICADA
+  // Função para validar URL do áudio
+  const validateAudioUrl = async () => {
+    if (!audioUrl) return false;
+
+    setIsValidatingUrl(true);
+    console.log('useAudioPlayer: Validando URL do áudio:', audioUrl);
+
+    try {
+      // Primeiro, testar conectividade básica
+      const hasConnectivity = await AudioValidationService.testStorageConnectivity();
+      if (!hasConnectivity) {
+        if (onError) {
+          onError('Sem conexão com o servidor de áudio. Verifique sua internet.');
+        }
+        return false;
+      }
+
+      // Validar URL específica
+      const validation = await AudioValidationService.validateAudioUrl(audioUrl);
+      
+      if (!validation.isValid) {
+        console.error('useAudioPlayer: URL inválida:', validation.error);
+        if (onError) {
+          onError(validation.error || 'URL de áudio inválida');
+        }
+        return false;
+      }
+
+      console.log('useAudioPlayer: URL validada com sucesso');
+      return true;
+    } catch (error) {
+      console.error('useAudioPlayer: Erro na validação:', error);
+      if (onError) {
+        onError('Erro ao validar áudio');
+      }
+      return false;
+    } finally {
+      setIsValidatingUrl(false);
+    }
+  };
+
+  // Função de retry com backoff exponencial
+  const retryInitialization = useCallback(async () => {
+    if (retryCount >= 3) {
+      console.log('useAudioPlayer: Máximo de tentativas atingido');
+      if (onError) {
+        onError('Não foi possível carregar o áudio após várias tentativas. Verifique sua conexão.');
+      }
+      return;
+    }
+
+    const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+    console.log(`useAudioPlayer: Tentativa ${retryCount + 1} em ${delay}ms`);
+
+    setRetryCount(prev => prev + 1);
+
+    retryTimeoutRef.current = setTimeout(async () => {
+      // Validar URL antes de tentar novamente
+      const isValidUrl = await validateAudioUrl();
+      if (isValidUrl && audioRef.current) {
+        console.log('useAudioPlayer: Recarregando áudio após validação');
+        audioRef.current.load();
+      }
+    }, delay);
+  }, [retryCount, audioUrl, onError]);
+
+  // Inicializa o serviço de player - MELHORADO com validação
   useEffect(() => {
     if (!audioUrl) {
       console.log('useAudioPlayer: URL não fornecida');
@@ -104,6 +172,9 @@ export const useAudioPlayer = (
     }
 
     console.log('useAudioPlayer: Iniciando inicialização para URL:', audioUrl);
+    
+    // Reset do contador de retry para nova URL
+    setRetryCount(0);
     
     // Aguarda o elemento de áudio estar disponível
     const initializePlayer = () => {
@@ -144,6 +215,12 @@ export const useAudioPlayer = (
             if (onError) {
               onError(error);
             }
+            // Tentar retry se for erro de rede
+            if (error.toLowerCase().includes('rede') || 
+                error.toLowerCase().includes('timeout') ||
+                error.toLowerCase().includes('conexão')) {
+              retryInitialization();
+            }
           }
         });
 
@@ -157,19 +234,17 @@ export const useAudioPlayer = (
 
         console.log('useAudioPlayer: Inicialização concluída com sucesso');
 
-        // Timeout de segurança para detectar problemas de carregamento
+        // Timeout de segurança - REDUZIDO para 8 segundos
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
         
         loadingTimeoutRef.current = setTimeout(() => {
           if (playerServiceRef.current && !playerState.canPlay && !playerState.hasError) {
-            console.warn('useAudioPlayer: Timeout de carregamento atingido');
-            if (onError) {
-              onError('Timeout ao carregar áudio. Verifique sua conexão e tente novamente.');
-            }
+            console.warn('useAudioPlayer: Timeout de carregamento atingido - iniciando retry');
+            retryInitialization();
           }
-        }, 15000); // Aumentado para 15 segundos
+        }, 8000);
 
       } catch (error) {
         console.error('useAudioPlayer: Erro na inicialização:', error);
@@ -190,13 +265,17 @@ export const useAudioPlayer = (
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
       if (playerServiceRef.current) {
         playerServiceRef.current.cleanup();
         playerServiceRef.current = null;
       }
       setIsInitialized(false);
+      setRetryCount(0);
     };
-  }, [audioUrl, handleRepeatComplete]);
+  }, [audioUrl, handleRepeatComplete, retryInitialization]);
 
   // Atualiza preferências de volume
   useEffect(() => {
@@ -247,7 +326,8 @@ export const useAudioPlayer = (
       hasError: playerState.hasError,
       isPlaying: playerState.isPlaying,
       isLoading: playerState.isLoading,
-      isInitialized
+      isInitialized,
+      retryCount
     });
     
     if (!playerServiceRef.current || !isInitialized) {
@@ -260,7 +340,14 @@ export const useAudioPlayer = (
     }
 
     if (!playerState.canPlay || playerState.hasError) {
-      const errorMsg = 'Áudio não está pronto para reprodução. Verifique sua conexão e tente novamente.';
+      // Se há erro, sugerir retry
+      if (playerState.hasError && retryCount < 3) {
+        console.log('useAudioPlayer: Erro detectado, iniciando retry automático');
+        await retryInitialization();
+        return;
+      }
+      
+      const errorMsg = 'Áudio não está pronto para reprodução. Tente recarregar a página.';
       console.warn('useAudioPlayer:', errorMsg);
       if (onError) {
         onError(errorMsg);
@@ -287,6 +374,7 @@ export const useAudioPlayer = (
       playerServiceRef.current.reset();
     }
     setRepeatCount(0);
+    setRetryCount(0);
   };
 
   const seek = (time: number) => {
@@ -302,13 +390,13 @@ export const useAudioPlayer = (
     setBackgroundMuted(muted);
   };
 
-  // CORREÇÃO PRINCIPAL: Calcula isReady sem depender de duration > 0
+  // Calcula isReady
   const isReady = isInitialized && 
                  playerState.canPlay && 
                  !playerState.hasError && 
                  !playerState.isLoading && 
-                 !!playerServiceRef.current;
-                 // Removido: && playerState.duration > 0
+                 !!playerServiceRef.current &&
+                 !isValidatingUrl;
 
   console.log('useAudioPlayer: Estado final isReady:', isReady, {
     isInitialized,
@@ -316,8 +404,8 @@ export const useAudioPlayer = (
     hasError: playerState.hasError,
     isLoading: playerState.isLoading,
     hasService: !!playerServiceRef.current,
-    duration: playerState.duration,
-    RACE_CONDITION_FIX: 'Removida dependência de duration > 0'
+    isValidatingUrl,
+    retryCount
   });
 
   return {
@@ -328,9 +416,13 @@ export const useAudioPlayer = (
     },
     repeatCount,
     pauseBetweenRepeats,
+    retryCount,
+    isValidatingUrl,
     togglePlay,
     reset,
     seek,
-    setMuted
+    setMuted,
+    validateAudioUrl,
+    retryInitialization
   };
 };

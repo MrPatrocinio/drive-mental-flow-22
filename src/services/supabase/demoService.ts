@@ -1,11 +1,14 @@
+
 /**
  * DemoService - Serviço para gerenciar configurações de demonstração
  * Responsabilidade: CRUD de configurações de áudio de demonstração
  * Princípio SRP: Apenas lógica de demonstração
  * Princípio SSOT: Única fonte de verdade para configurações de demo
+ * MELHORADO: Validação de áudio
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { AudioValidationService } from "@/services/audioValidationService";
 
 export interface DemoConfig {
   demo_audio_id: string | null;
@@ -68,6 +71,7 @@ export class DemoService {
 
   /**
    * Obter áudio de demonstração com detalhes
+   * MELHORADO: Validação de URL
    */
   static async getDemoAudio(): Promise<DemoAudio | null> {
     const config = await this.getDemoConfig();
@@ -93,13 +97,38 @@ export class DemoService {
       return null;
     }
 
-    return {
+    const demoAudio: DemoAudio = {
       id: data.id,
       title: data.title,
       url: data.url,
       duration: data.duration,
       field_title: (data.fields as any).title
     };
+
+    // Validar URL do áudio em segundo plano
+    this.validateDemoAudioUrl(demoAudio.url).catch(error => {
+      console.warn('DemoService: Aviso - URL do áudio demo pode estar com problemas:', error);
+    });
+
+    return demoAudio;
+  }
+
+  /**
+   * Valida URL do áudio de demonstração
+   */
+  private static async validateDemoAudioUrl(url: string): Promise<boolean> {
+    try {
+      const validation = await AudioValidationService.validateAudioUrl(url);
+      if (!validation.isValid) {
+        console.error('DemoService: URL do áudio demo inválida:', validation.error);
+        return false;
+      }
+      console.log('DemoService: URL do áudio demo validada com sucesso');
+      return true;
+    } catch (error) {
+      console.error('DemoService: Erro na validação do áudio demo:', error);
+      return false;
+    }
   }
 
   /**
@@ -133,13 +162,72 @@ export class DemoService {
 
   /**
    * Definir áudio como demonstração
+   * MELHORADO: Validação antes de definir
    */
   static async setDemoAudio(audioId: string | null): Promise<void> {
+    // Se audioId é null, apenas limpar a demo
+    if (!audioId) {
+      const currentConfig = await this.getDemoConfig();
+      await this.saveDemoConfig({
+        ...currentConfig,
+        demo_audio_id: null
+      });
+      return;
+    }
+
+    // Buscar dados do áudio para validação
+    const { data: audioData, error } = await supabase
+      .from('audios')
+      .select('url')
+      .eq('id', audioId)
+      .single();
+
+    if (error) {
+      console.error('DemoService: Erro ao buscar áudio para validação:', error);
+      throw new Error('Áudio não encontrado');
+    }
+
+    // Validar URL antes de definir como demo
+    console.log('DemoService: Validando áudio antes de definir como demo');
+    const validation = await AudioValidationService.validateAudioUrl(audioData.url);
+    
+    if (!validation.isValid) {
+      console.error('DemoService: Áudio inválido para demo:', validation.error);
+      throw new Error(`Áudio inválido: ${validation.error}`);
+    }
+
+    console.log('DemoService: Áudio validado, definindo como demo');
     const currentConfig = await this.getDemoConfig();
     
     await this.saveDemoConfig({
       ...currentConfig,
       demo_audio_id: audioId
     });
+  }
+
+  /**
+   * Verificar saúde do áudio de demonstração atual
+   */
+  static async checkDemoAudioHealth(): Promise<{ isHealthy: boolean; error?: string }> {
+    try {
+      const demoAudio = await this.getDemoAudio();
+      
+      if (!demoAudio) {
+        return { isHealthy: false, error: 'Nenhum áudio de demo configurado' };
+      }
+
+      const validation = await AudioValidationService.validateAudioUrl(demoAudio.url);
+      
+      return {
+        isHealthy: validation.isValid,
+        error: validation.error
+      };
+    } catch (error) {
+      console.error('DemoService: Erro no health check:', error);
+      return {
+        isHealthy: false,
+        error: 'Erro ao verificar saúde do áudio'
+      };
+    }
   }
 }

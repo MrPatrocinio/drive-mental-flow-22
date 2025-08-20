@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Music, Volume } from "lucide-react";
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Settings, Music, Volume, Wifi } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { AudioPreferencesPanel } from "@/components/AudioPreferencesPanel";
 import { AudioPreferences, audioPreferencesService } from "@/services/audioPreferencesService";
@@ -47,17 +47,27 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     playerState,
     repeatCount,
     pauseBetweenRepeats,
+    retryCount,
+    isValidatingUrl,
     togglePlay,
     reset,
     seek,
-    setMuted: setPlayerMuted
+    setMuted: setPlayerMuted,
+    validateAudioUrl,
+    retryInitialization
   } = useAudioPlayer(audioUrl, preferences, onRepeatComplete, handleError);
 
-  const handleRetry = () => {
+  const handleRetry = async () => {
     console.log('AudioPlayer: Tentativa de retry solicitada');
     if (audioRef.current) {
       audioRef.current.load();
     }
+    await retryInitialization();
+  };
+
+  const handleValidateUrl = async () => {
+    console.log('AudioPlayer: Validação de URL solicitada');
+    await validateAudioUrl();
   };
 
   const handlePreferencesChange = (newPreferences: AudioPreferences) => {
@@ -70,7 +80,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     setPlayerMuted(newMuted);
   };
 
-  // Função de formatação de tempo corrigida
+  // Função de formatação de tempo
   const formatTime = (time: number) => {
     if (!time || isNaN(time) || !isFinite(time) || time < 0) {
       return '0:00';
@@ -92,7 +102,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       hasError: playerState.hasError,
       isLoading: playerState.isLoading,
       isPlaying: playerState.isPlaying,
-      duration: playerState.duration
+      retryCount,
+      isValidatingUrl
     });
     
     if (!playerState.isReady) {
@@ -100,10 +111,12 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       let variant: "default" | "destructive" = "default";
       
       if (playerState.hasError) {
-        message = "Erro no áudio. Tente recarregar a página.";
+        message = retryCount < 3 
+          ? "Erro no áudio. Tentando reconectar automaticamente..." 
+          : "Erro persistente no áudio. Tente recarregar a página.";
         variant = "destructive";
-      } else if (playerState.isLoading) {
-        message = "Carregando áudio, aguarde...";
+      } else if (playerState.isLoading || isValidatingUrl) {
+        message = isValidatingUrl ? "Validando áudio..." : "Carregando áudio, aguarde...";
       }
         
       toast({
@@ -127,40 +140,47 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     }
   };
 
-  // CORREÇÃO: Melhor lógica de quando mostrar loading
-  const showLoadingState = playerState.isLoading && !playerState.canPlay && !playerState.hasError;
+  // Estado de loading melhorado
+  const showLoadingState = playerState.isLoading || isValidatingUrl;
 
   return (
     <div className="card-gradient rounded-xl p-6 space-y-6">
-      <audio ref={audioRef} src={audioUrl} preload="auto" />
+      <audio ref={audioRef} src={audioUrl} preload="auto" crossOrigin="anonymous" />
       
       <div className="text-center">
         <h3 className="text-xl font-semibold text-foreground mb-2">{title}</h3>
         <div className="text-sm text-muted-foreground">
           Repetições: <span className="text-primary font-semibold">{repeatCount}</span>
+          {retryCount > 0 && (
+            <span className="ml-2 text-orange-600">
+              (Tentativa {retryCount}/3)
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Loading State - CORRIGIDO */}
+      {/* Loading State */}
       {showLoadingState && (
         <div className="text-center py-4">
           <AudioLoadingIndicator />
           <div className="mt-2 text-sm text-muted-foreground">
-            Carregando áudio...
+            {isValidatingUrl ? 'Validando áudio...' : 'Carregando áudio...'}
           </div>
         </div>
       )}
 
-      {/* Error State */}
+      {/* Error State - MELHORADO */}
       {playerState.hasError && playerState.errorMessage && (
         <AudioErrorDisplay 
           error={playerState.errorMessage} 
           onRetry={handleRetry}
+          onValidateUrl={handleValidateUrl}
+          showValidateButton={retryCount >= 2}
         />
       )}
 
-      {/* Progress Bar - CORRIGIDO: mostra quando canPlay */}
-      {preferences.showProgress && playerState.canPlay && (
+      {/* Progress Bar */}
+      {preferences.showProgress && playerState.canPlay && !showLoadingState && (
         <div className="space-y-2">
           <Slider
             value={[playerState.currentTime]}
@@ -177,13 +197,13 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       )}
 
-      {/* Controls - CORRIGIDO: usa canPlay ao invés de isReady para liberar mais cedo */}
+      {/* Controls */}
       <div className="flex items-center justify-center gap-4">
         <Button
           variant="audio"
           size="audio"
           onClick={reset}
-          disabled={!playerState.canPlay}
+          disabled={!playerState.canPlay || showLoadingState}
         >
           <RotateCcw className="h-5 w-5" />
         </Button>
@@ -193,7 +213,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           size="audio"
           onClick={handlePlayClick}
           className="w-16 h-16"
-          disabled={!playerState.canPlay}
+          disabled={showLoadingState && !playerState.hasError}
         >
           {playerState.isPlaying ? (
             <Pause className="h-6 w-6" />
@@ -206,7 +226,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           variant="audio"
           size="audio"
           onClick={handleMuteToggle}
-          disabled={!playerState.canPlay}
+          disabled={!playerState.canPlay || showLoadingState}
         >
           {isMuted ? (
             <VolumeX className="h-5 w-5" />
@@ -226,18 +246,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         <BackgroundMusicToggle />
       </div>
 
-      {/* Status Indicator - SIMPLIFICADO */}
-      {showLoadingState && (
-        <div className="text-center text-sm text-muted-foreground">
-          <div className="flex items-center justify-center gap-2">
-            <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
-            <span>Carregando áudio...</span>
-          </div>
-        </div>
-      )}
-
-      {/* Volume Control - CORRIGIDO: mostra quando canPlay */}
-      {playerState.canPlay && (
+      {/* Volume Control */}
+      {playerState.canPlay && !showLoadingState && (
         <div className="flex items-center gap-3">
           <Volume2 className="h-4 w-4 text-muted-foreground" />
           <Slider
@@ -271,8 +281,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       )}
 
-      {/* Repeat Count Display - CORRIGIDO: mostra quando canPlay */}
-      {playerState.canPlay && (
+      {/* Repeat Count Display */}
+      {playerState.canPlay && !showLoadingState && (
         <div className="text-center text-sm text-muted-foreground">
           {preferences.repeatCount === 0 ? (
             <span>Repetição infinita ativada</span>
