@@ -161,8 +161,9 @@ export class AudioValidationService {
 
   /**
    * Encontra áudios inválidos (para AdminDiagnostics)
+   * Retorna objetos com id, url, error e title conforme esperado pelo tipo InvalidAudio
    */
-  static async findInvalidAudios(): Promise<{ id: string; url: string; error: string }[]> {
+  static async findInvalidAudios(): Promise<{ id: string; url: string; error: string; title: string }[]> {
     try {
       // Esta função seria implementada com acesso ao banco de dados
       // Por agora, retorna array vazio
