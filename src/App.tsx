@@ -7,8 +7,8 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { dataSyncService } from '@/services/dataSync';
-import { LandingPage } from '@/pages/LandingPage';
-import { DemoPage } from '@/pages/DemoPage';
+import LandingPage from '@/pages/LandingPage';
+import DemoPage from '@/pages/DemoPage';
 import { AdminSubscriptionPlansPage } from '@/pages/admin/AdminSubscriptionPlansPage';
 
 export default function App() {
