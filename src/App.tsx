@@ -1,141 +1,171 @@
+import React, { useEffect } from 'react';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useNavigate,
+} from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { AuthLayout } from '@/components/AuthLayout';
+import { SiteLayout } from '@/components/SiteLayout';
+import { HomePage } from '@/pages/HomePage';
+import { LoginPage } from '@/pages/LoginPage';
+import { RegisterPage } from '@/pages/RegisterPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
+import { ProfilePage } from '@/pages/ProfilePage';
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import { AdminHomePage } from '@/pages/admin/AdminHomePage';
+import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
+import { AdminFieldsPage } from '@/pages/admin/AdminFieldsPage';
+import { AdminAudiosPage } from '@/pages/admin/AdminAudiosPage';
+import { AdminLandingPage } from '@/pages/admin/AdminLandingPage';
+import { AdminPricingPage } from '@/pages/admin/AdminPricingPage';
+import { SubscriptionPage } from '@/pages/SubscriptionPage';
+import { TermsOfServicePage } from '@/pages/TermsOfServicePage';
+import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
+import { DataSyncService } from '@/services/dataSync';
+import { AdminSubscriptionPlansPage } from '@/pages/admin/AdminSubscriptionPlansPage';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AdminProvider } from "@/contexts/AdminContext";
-import { UserProvider } from "@/contexts/UserContext";
-import { SupabaseAuthProvider } from "@/contexts/SupabaseAuthContext";
-import { AudioPlaybackProvider } from "@/contexts/AudioPlaybackContext";
-import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
-import { UserProtectedRoute } from "@/components/UserProtectedRoute";
-import LandingPage from "./pages/LandingPage";
-import PaymentPage from "./pages/PaymentPage";
-import PaymentSuccessPage from "./pages/PaymentSuccessPage";
-import PaymentCancelPage from "./pages/PaymentCancelPage";
-import { SubscriptionPage } from "./pages/SubscriptionPage";
-import Dashboard from "./pages/Dashboard";
-import FieldPage from "./pages/FieldPage";
-import AudioPlayerPage from "./pages/AudioPlayerPage";
-import DemoPage from "./pages/DemoPage";
-import UserLoginPage from "./pages/UserLoginPage";
+export function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <Routes>
+          {/* Rotas Públicas */}
+          <Route path="/termos-de-servico" element={<TermsOfServicePage />} />
+          <Route path="/politica-de-privacidade" element={<PrivacyPolicyPage />} />
 
-import AdminLoginPage from "./pages/admin/AdminLoginPage";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminLandingPage from "./pages/admin/AdminLandingPage";
-import AdminAudiosPageNew from "./pages/admin/AdminAudiosPageNew";
-import AdminFieldsPageNew from "./pages/admin/AdminFieldsPageNew";
-import { AdminPricingPage } from "./pages/admin/AdminPricingPage";
-import { AdminStatsPage } from "./pages/admin/AdminStatsPage";
-import { AdminValidationPage } from "./pages/admin/AdminValidationPage";
-import { AdminAnalyticsPage } from "./pages/admin/AdminAnalyticsPage";
-import { AdminBackgroundMusicPage } from "./pages/admin/AdminBackgroundMusicPage";
-import NotFound from "./pages/NotFound";
+          {/* Rotas de Autenticação */}
+          <Route
+            path="/login"
+            element={
+              <AuthLayout>
+                <LoginPage />
+              </AuthLayout>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <AuthLayout>
+                <RegisterPage />
+              </AuthLayout>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <AuthLayout>
+                <ForgotPasswordPage />
+              </AuthLayout>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <AuthLayout>
+                <ResetPasswordPage />
+              </AuthLayout>
+            }
+          />
 
-const queryClient = new QueryClient();
+          {/* Rotas do Site (Protegidas) */}
+          <Route
+            path="/"
+            element={
+              <SiteLayout>
+                <HomePage />
+              </SiteLayout>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <SiteLayout>
+                <ProfilePage />
+              </SiteLayout>
+            }
+          />
+          <Route
+            path="/assinatura"
+            element={
+              <SiteLayout>
+                <SubscriptionPage />
+              </SiteLayout>
+            }
+          />
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <SupabaseAuthProvider>
-      <AdminProvider>
-        <UserProvider>
-          <AudioPlaybackProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/pagamento" element={<PaymentPage />} />
-                  <Route path="/pagamento/sucesso" element={<PaymentSuccessPage />} />
-                  <Route path="/pagamento/cancelado" element={<PaymentCancelPage />} />
-                  <Route path="/assinatura" element={<SubscriptionPage />} />
-                  <Route path="/demo" element={<DemoPage />} />
-                  
-                  {/* User Routes */}
-                  <Route path="/login" element={<UserLoginPage />} />
-                  
-                  <Route path="/dashboard" element={
-                    <UserProtectedRoute>
-                      <Dashboard />
-                    </UserProtectedRoute>
-                  } />
-                  {/* Corrigido: usando slug em vez de fieldId para consistência */}
-                  <Route path="/campo/:slug" element={
-                    <UserProtectedRoute>
-                      <FieldPage />
-                    </UserProtectedRoute>
-                  } />
-                  <Route path="/campo/:fieldId/audio/:audioId" element={
-                    <UserProtectedRoute>
-                      <AudioPlayerPage />
-                    </UserProtectedRoute>
-                  } />
-                  <Route path="/audio/:audioId" element={
-                    <UserProtectedRoute>
-                      <AudioPlayerPage />
-                    </UserProtectedRoute>
-                  } />
-                  
-                  {/* Admin Routes */}
-                  <Route path="/admin/login" element={<AdminLoginPage />} />
-                  <Route path="/admin" element={
-                    <AdminProtectedRoute>
-                      <AdminDashboard />
-                    </AdminProtectedRoute>
-                  } />
-                  <Route path="/admin/landing" element={
-                    <AdminProtectedRoute>
-                      <AdminLandingPage />
-                    </AdminProtectedRoute>
-                  } />
-                  <Route path="/admin/pricing" element={
-                    <AdminProtectedRoute>
-                      <AdminPricingPage />
-                    </AdminProtectedRoute>
-                  } />
-                  <Route path="/admin/audios" element={
-                    <AdminProtectedRoute>
-                      <AdminAudiosPageNew />
-                    </AdminProtectedRoute>
-                  } />
-                  <Route path="/admin/fields" element={
-                    <AdminProtectedRoute>
-                      <AdminFieldsPageNew />
-                    </AdminProtectedRoute>
-                  } />
-                  <Route path="/admin/stats" element={
-                    <AdminProtectedRoute>
-                      <AdminStatsPage />
-                    </AdminProtectedRoute>
-                  } />
-                  <Route path="/admin/validation" element={
-                    <AdminProtectedRoute>
-                      <AdminValidationPage />
-                    </AdminProtectedRoute>
-                  } />
-                  <Route path="/admin/analytics" element={
-                    <AdminProtectedRoute>
-                      <AdminAnalyticsPage />
-                    </AdminProtectedRoute>
-                  } />
-                  <Route path="/admin/background-music" element={
-                    <AdminProtectedRoute>
-                      <AdminBackgroundMusicPage />
-                    </AdminProtectedRoute>
-                  } />
-                  
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-            </TooltipProvider>
-          </AudioPlaybackProvider>
-        </UserProvider>
-      </AdminProvider>
-    </SupabaseAuthProvider>
-  </QueryClientProvider>
-);
+          {/* Rotas Administrativas (Protegidas) */}
+          <Route
+            path="/admin"
+            element={
+              <AdminLayout>
+                <AdminHomePage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminLayout>
+                <AdminUsersPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/fields"
+            element={
+              <AdminLayout>
+                <AdminFieldsPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/audios"
+            element={
+              <AdminLayout>
+                <AdminAudiosPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/landing-page"
+            element={
+              <AdminLayout>
+                <AdminLandingPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/pricing"
+            element={
+              <AdminLayout>
+                <AdminPricingPage />
+              </AdminLayout>
+            }
+          />
+          <Route path="/admin/subscription-plans" element={<AdminSubscriptionPlansPage />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
+  );
+}
 
-export default App;
+function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { session } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    DataSyncService.init();
+
+    if (!session && window.location.pathname !== '/login' && window.location.pathname !== '/register' && !window.location.pathname.startsWith('/reset-password') && !window.location.pathname.startsWith('/forgot-password')) {
+      navigate('/login');
+    }
+    if (session && (window.location.pathname === '/login' || window.location.pathname === '/register' || window.location.pathname.startsWith('/reset-password') || window.location.pathname.startsWith('/forgot-password'))) {
+      navigate('/');
+    }
+  }, [session, navigate]);
+
+  return <>{children}</>;
+}

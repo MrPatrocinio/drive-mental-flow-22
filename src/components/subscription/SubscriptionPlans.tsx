@@ -1,75 +1,44 @@
 
+import { useState, useEffect } from 'react';
 import { Check, Star, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/hooks/useSubscription';
-
-const plans = [
-  {
-    id: 'quarterly',
-    name: 'Trimestral',
-    price: 'R$ 89',
-    period: '90',
-    originalPrice: 'R$ 89,70',
-    savings: 'Economize R$ 0,80',
-    description: 'Renovação automática a cada 3 meses',
-    icon: Star,
-    features: [
-      'Acesso completo a todos os áudios',
-      'Playlists ilimitadas',
-      'Downloads offline',
-      'Suporte especializado',
-      'Atualizações constantes de conteúdo',
-      'Cancelamento a qualquer momento'
-    ],
-    popular: false,
-  },
-  {
-    id: 'semiannual',
-    name: 'Semestral',
-    price: 'R$ 159',
-    period: '90',
-    originalPrice: 'R$ 179,40',
-    savings: 'Economize R$ 20,40',
-    description: 'Renovação automática a cada 6 meses - Mais Popular',
-    icon: Crown,
-    features: [
-      'Acesso completo a todos os áudios',
-      'Playlists ilimitadas', 
-      'Downloads offline',
-      'Suporte prioritário',
-      'Atualizações constantes de conteúdo',
-      'Cancelamento a qualquer momento',
-      '11% de desconto vs trimestral'
-    ],
-    popular: true,
-  },
-  {
-    id: 'annual',
-    name: 'Anual',
-    price: 'R$ 299',
-    period: '90',
-    originalPrice: 'R$ 358,80',
-    savings: 'Economize R$ 59,80',
-    description: 'Renovação automática a cada 12 meses',
-    icon: Crown,
-    features: [
-      'Acesso completo a todos os áudios',
-      'Playlists ilimitadas',
-      'Downloads offline', 
-      'Suporte VIP prioritário',
-      'Atualizações constantes de conteúdo',
-      'Cancelamento a qualquer momento',
-      '17% de desconto vs trimestral',
-      'Melhor custo-benefício'
-    ],
-    popular: false,
-  }
-];
+import { SubscriptionPlansService, SubscriptionPlansData } from '@/services/supabase/subscriptionPlansService';
+import { PromotionService } from '@/services/promotionService';
+import { PromotionBadge } from '@/components/ui/promotion-badge';
+import { Countdown } from '@/components/ui/countdown';
+import { formatPrice } from '@/utils/pricingUtils';
+import { useDataSync } from '@/hooks/useDataSync';
 
 export const SubscriptionPlans = () => {
-  const { createSubscription, isLoading, subscription_tier, subscribed } = useSubscription();
+  const [plansData, setPlansData] = useState<SubscriptionPlansData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { createSubscription, isLoading: isCreatingSubscription, subscription_tier, subscribed } = useSubscription();
+
+  const loadPlansData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await SubscriptionPlansService.get();
+      setPlansData(data || SubscriptionPlansService.getDefaultPlansData());
+    } catch (error) {
+      console.error('Erro ao carregar dados dos planos:', error);
+      setPlansData(SubscriptionPlansService.getDefaultPlansData());
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPlansData();
+  }, []);
+
+  useDataSync({
+    onContentChange: () => {
+      loadPlansData();
+    }
+  });
 
   const handleSelectPlan = (planId: string) => {
     createSubscription(planId);
@@ -78,6 +47,26 @@ export const SubscriptionPlans = () => {
   const isCurrentPlan = (planId: string) => {
     return subscribed && subscription_tier === planId;
   };
+
+  if (isLoading || !plansData) {
+    return (
+      <div className="py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="h-8 bg-muted rounded mb-4 w-64 mx-auto animate-pulse"></div>
+            <div className="h-4 bg-muted rounded w-96 mx-auto animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-80 bg-muted rounded-lg"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-12 px-4">
@@ -93,9 +82,17 @@ export const SubscriptionPlans = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {plans.map((plan) => {
-            const Icon = plan.icon;
+          {plansData.plans.map((plan) => {
+            const Icon = plan.popular ? Crown : Star;
             const isCurrent = isCurrentPlan(plan.id);
+            const promotion = PromotionService.calculatePromotion({
+              has_promotion: plan.has_promotion,
+              discount_percentage: plan.discount_percentage,
+              original_price: plan.original_price,
+              promotion_end_date: plan.promotion_end_date,
+              promotion_label: plan.promotion_label,
+              price: plan.price
+            } as any);
             
             return (
               <Card 
@@ -133,20 +130,41 @@ export const SubscriptionPlans = () => {
                     {plan.description}
                   </CardDescription>
                   <div className="mt-4 space-y-2">
+                    {promotion.isValid && plan.promotion_label && (
+                      <PromotionBadge 
+                        label={plan.promotion_label}
+                        discount={plan.discount_percentage}
+                        className="w-fit mx-auto mb-2"
+                      />
+                    )}
+                    
                     <div className="flex items-center justify-center gap-2">
-                      <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+                      {promotion.isValid && (
+                        <div className="text-lg text-muted-foreground line-through">
+                          {formatPrice(promotion.originalPrice, plan.currency)}
+                        </div>
+                      )}
+                      <span className="text-4xl font-bold text-foreground">
+                        {formatPrice(promotion.discountedPrice, plan.currency)}
+                      </span>
                       <div className="text-left">
                         <div className="text-sm text-muted-foreground">por período</div>
                       </div>
                     </div>
                     <div className="text-sm text-green-600 font-medium">{plan.savings}</div>
-                    <div className="text-xs text-muted-foreground line-through">{plan.originalPrice}</div>
+                    
+                    {promotion.isValid && plan.promotion_end_date && (
+                      <Countdown 
+                        endDate={plan.promotion_end_date}
+                        className="justify-center mt-2"
+                      />
+                    )}
                   </div>
                 </CardHeader>
 
                 <CardContent className="pb-6">
                   <ul className="space-y-3">
-                    {plan.features.map((feature, index) => (
+                    {plansData.global_benefits.map((feature, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                         <span className="text-sm text-foreground">{feature}</span>
@@ -160,9 +178,9 @@ export const SubscriptionPlans = () => {
                     className="w-full"
                     variant={plan.popular ? 'default' : 'outline'}
                     onClick={() => handleSelectPlan(plan.id)}
-                    disabled={isLoading || isCurrent}
+                    disabled={isCreatingSubscription || isCurrent}
                   >
-                    {isCurrent ? 'Plano Atual' : `Assinar ${plan.name}`}
+                    {isCurrent ? 'Plano Atual' : plansData.button_text}
                   </Button>
                 </CardFooter>
               </Card>

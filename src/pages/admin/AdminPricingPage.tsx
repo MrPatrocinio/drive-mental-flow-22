@@ -1,159 +1,72 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { PricingForm } from '@/components/admin/pricing/PricingForm';
-import { PricingPreview } from '@/components/admin/pricing/PricingPreview';
-import { PricingService, PricingInfo, PricingInsert } from '@/services/supabase/pricingService';
-import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Settings } from 'lucide-react';
 
 export const AdminPricingPage: React.FC = () => {
-  const [pricing, setPricing] = useState<PricingInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
-  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const loadPricing = async () => {
-    try {
-      setIsLoading(true);
-      const data = await PricingService.get();
-      
-      if (data) {
-        setPricing(data);
-      } else {
-        // Se não existe, criar com dados padrão
-        const defaultData = PricingService.getDefaultPricing();
-        setPricing(defaultData);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar preços:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar informações de preços",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Redirecionar automaticamente para a nova página
   useEffect(() => {
-    loadPricing();
-  }, []);
+    const timer = setTimeout(() => {
+      navigate('/admin/subscription-plans');
+    }, 3000);
 
-  const handleSave = async (data: PricingInsert) => {
-    try {
-      setIsSaving(true);
-      setErrors([]);
-
-      // Validações
-      const validationErrors: string[] = [];
-      
-      if (!data.price || data.price <= 0) {
-        validationErrors.push('Preço deve ser maior que zero');
-      }
-      
-      if (!data.currency) {
-        validationErrors.push('Moeda é obrigatória');
-      }
-      
-      if (!data.payment_type) {
-        validationErrors.push('Tipo de pagamento é obrigatório');
-      }
-      
-      if (!data.access_type) {
-        validationErrors.push('Tipo de acesso é obrigatório');
-      }
-      
-      if (!data.button_text) {
-        validationErrors.push('Texto do botão é obrigatório');
-      }
-      
-      if (data.benefits.length === 0) {
-        validationErrors.push('Pelo menos um benefício é obrigatório');
-      }
-
-      if (validationErrors.length > 0) {
-        setErrors(validationErrors);
-        return;
-      }
-
-      const savedPricing = await PricingService.save(data);
-      setPricing(savedPricing);
-
-      toast({
-        title: "Sucesso",
-        description: "Informações de preços atualizadas com sucesso!",
-      });
-    } catch (error) {
-      console.error('Erro ao salvar preços:', error);
-      setErrors(['Erro ao salvar informações de preços']);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar informações de preços",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </AdminLayout>
-    );
-  }
+    return () => clearTimeout(timer);
+  }, [navigate]);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <Card>
+        <Card className="border-orange-200 bg-orange-50">
           <CardHeader>
-            <CardTitle>Gerenciar Preços e Condições</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Configure as informações de preços que aparecerão na página principal
-            </p>
+            <CardTitle className="flex items-center gap-2 text-orange-800">
+              <Settings className="h-5 w-5" />
+              Página Atualizada
+            </CardTitle>
           </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-orange-700">
+              O sistema de preços foi atualizado para suportar múltiplos planos de assinatura 
+              com sistema de promoções avançado.
+            </p>
+            
+            <div className="bg-white p-4 rounded-lg border border-orange-200">
+              <h4 className="font-semibold text-orange-800 mb-2">Novas Funcionalidades:</h4>
+              <ul className="list-disc pl-5 space-y-1 text-orange-700 text-sm">
+                <li>Gerenciamento de múltiplos planos (Trimestral, Semestral, Anual)</li>
+                <li>Sistema de promoções por plano individual</li>
+                <li>Configuração de benefícios globais</li>
+                <li>Preview em tempo real das alterações</li>
+                <li>Integração automática com o sistema de checkout</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => navigate('/admin/subscription-plans')}
+                className="flex items-center gap-2"
+              >
+                Ir para Nova Página
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/admin')}
+              >
+                Voltar ao Dashboard
+              </Button>
+            </div>
+            
+            <p className="text-xs text-orange-600">
+              Você será redirecionado automaticamente em alguns segundos...
+            </p>
+          </CardContent>
         </Card>
-
-        <Tabs defaultValue="edit" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="edit">Editar</TabsTrigger>
-            <TabsTrigger value="preview">Visualizar</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="edit" className="mt-6">
-            {pricing && (
-              <PricingForm
-                initialData={pricing}
-                onSubmit={handleSave}
-                isLoading={isSaving}
-                errors={errors}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="preview" className="mt-6">
-            {pricing && (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-center">Preview - Como aparecerá na página</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <PricingPreview pricing={pricing} />
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
       </div>
     </AdminLayout>
   );
