@@ -10,20 +10,23 @@ import { dataSyncService } from '@/services/dataSync';
 import LandingPage from '@/pages/LandingPage';
 import DemoPage from '@/pages/DemoPage';
 import { AdminSubscriptionPlansPage } from '@/pages/admin/AdminSubscriptionPlansPage';
+import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 
 export default function App() {
   return (
     <Router>
-      <AuthProvider>
-        <Routes>
-          {/* Rotas Públicas */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/demo" element={<DemoPage />} />
+      <SupabaseAuthProvider>
+        <AuthProvider>
+          <Routes>
+            {/* Rotas Públicas */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/demo" element={<DemoPage />} />
 
-          {/* Rotas Administrativas */}
-          <Route path="/admin/subscription-plans" element={<AdminSubscriptionPlansPage />} />
-        </Routes>
-      </AuthProvider>
+            {/* Rotas Administrativas */}
+            <Route path="/admin/subscription-plans" element={<AdminSubscriptionPlansPage />} />
+          </Routes>
+        </AuthProvider>
+      </SupabaseAuthProvider>
     </Router>
   );
 }
