@@ -17,39 +17,34 @@ interface PremiumContentGateProps {
 
 /**
  * Componente responsável por controlar acesso a conteúdo
- * Princípio SRP: Uma única responsabilidade - controle de acesso baseado em tipo de usuário
- * Modelo: 
- * - Usuários com assinatura: acesso total
- * - Usuários sem assinatura: apenas conteúdo não-premium
+ * ATUALIZADO: Agora todos os áudios são acessíveis - sem diferenciação premium
+ * Mantido para compatibilidade com o código existente
  */
 export const PremiumContentGate = ({ 
   children, 
   contentTitle = 'Este conteúdo',
   showPreview = false,
-  isPremium = true,
+  isPremium = false, // Não importa mais - todos os áudios são acessíveis
   isDemoAudio = false
 }: PremiumContentGateProps) => {
-  const { canAccessAudio, getAccessDeniedReason } = useContentAccess();
+  const { canAccessAudio } = useContentAccess();
   const { createSubscription } = useSubscription();
 
-  // Verificar se pode acessar este áudio específico
+  // TODOS os áudios são acessíveis agora - sempre retorna o conteúdo
+  // Mantém a estrutura para compatibilidade futura
   if (canAccessAudio(isPremium, isDemoAudio)) {
     return <>{children}</>;
   }
 
-  // Usuário sem acesso: mostrar gate apenas para conteúdo premium
-  const deniedReason = getAccessDeniedReason(isPremium);
-
+  // Este código nunca será executado na prática, mas mantido para compatibilidade
   return (
     <div className="relative">
-      {/* Preview limitado do conteúdo */}
       {showPreview && (
         <div className="opacity-30 pointer-events-none">
           {children}
         </div>
       )}
       
-      {/* Overlay de upgrade para conteúdo premium */}
       <Card className="absolute inset-0 bg-background/95 backdrop-blur-sm border-2 border-primary/20 flex items-center justify-center">
         <CardContent className="text-center space-y-6 p-8 max-w-md">
           <div className="flex justify-center">
@@ -61,30 +56,30 @@ export const PremiumContentGate = ({
           <div className="space-y-2">
             <Badge variant="secondary" className="bg-primary/10 text-primary">
               <Lock className="h-3 w-3 mr-1" />
-              Conteúdo Premium
+              Assinatura Necessária
             </Badge>
             
             <CardTitle className="text-xl">
-              {contentTitle} requer assinatura
+              Assine para ter acesso completo
             </CardTitle>
             
             <CardDescription className="text-sm">
-              {deniedReason}
+              Escolha um de nossos planos e tenha acesso a todos os áudios.
             </CardDescription>
           </div>
           
           <div className="space-y-3">
             <Button 
-              onClick={() => createSubscription('premium')}
+              onClick={() => createSubscription('semiannual')}
               className="w-full"
               size="lg"
             >
               <Crown className="h-4 w-4 mr-2" />
-              Assinar Agora
+              Ver Planos
             </Button>
             
             <p className="text-xs text-muted-foreground">
-              Acesse todo o conteúdo e transforme sua vida
+              Acesso completo a todos os áudios
             </p>
           </div>
         </CardContent>

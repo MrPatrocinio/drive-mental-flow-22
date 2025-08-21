@@ -4,11 +4,11 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { AudioDemoService } from '@/services/audioDemoService';
 
 /**
- * Hook para verificar acesso a áudios específicos
+ * Hook para verificar acesso a áudios
  * Princípio SRP: Responsabilidade única - verificar acesso a áudio
- * Princípio KISS: Implementação simples e direta
+ * Princípio KISS: Implementação simplificada - todos os áudios são acessíveis agora
  */
-export const useAudioAccess = (audioId: string, isPremium: boolean) => {
+export const useAudioAccess = (audioId: string, isPremium: boolean = false) => {
   const [isDemoAudio, setIsDemoAudio] = useState(false);
   const [isCheckingDemo, setIsCheckingDemo] = useState(true);
   const { subscribed, subscription_tier } = useSubscription();
@@ -32,24 +32,16 @@ export const useAudioAccess = (audioId: string, isPremium: boolean) => {
     }
   }, [audioId]);
 
-  // Lógica de acesso simples:
-  // 1. Se tem assinatura ativa: acesso total
-  // 2. Se não tem assinatura: apenas áudios não-premium ou demo
+  // Lógica simplificada: todos os áudios são acessíveis agora
+  // Mantém a verificação de assinatura para futuras funcionalidades
   const hasAccess = () => {
-    // Usuário com assinatura ativa
-    if (subscribed && subscription_tier) {
-      return true;
-    }
-
-    // Usuário sem assinatura: apenas não-premium ou demo
-    return !isPremium || isDemoAudio;
+    // TODOS os áudios são acessíveis agora - não há mais diferenciação premium
+    return true;
   };
 
   const getAccessDeniedReason = () => {
-    if (!subscribed && isPremium && !isDemoAudio) {
-      return 'Este conteúdo é exclusivo para assinantes. Faça login e assine para ter acesso completo.';
-    }
-    return 'Erro na verificação da assinatura.';
+    // Como todos têm acesso, esta função é mantida para compatibilidade
+    return 'Todos os áudios estão disponíveis.';
   };
 
   return {

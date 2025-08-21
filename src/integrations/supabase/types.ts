@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -376,6 +376,33 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriber_access_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          success: boolean
+          target_subscriber_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          success: boolean
+          target_subscriber_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          success?: boolean
+          target_subscriber_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           created_at: string
@@ -420,6 +447,10 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      validate_subscriber_access: {
+        Args: { target_email: string; target_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

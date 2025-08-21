@@ -3,10 +3,8 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 /**
  * Serviço responsável por verificar acesso baseado em assinatura
- * Princípio SRP: Uma única responsabilidade - verificar acesso baseado em tipo de usuário
- * Modelo: 
- * - Usuários com assinatura ativa = acesso total
- * - Usuários não-assinantes = acesso apenas a áudios não-premium e demo
+ * Princípio SRP: Uma única responsabilidade - verificar acesso
+ * ATUALIZADO: Agora todos os áudios são acessíveis, sem diferenciação premium
  */
 export class SubscriptionAccessService {
   /**
@@ -18,34 +16,24 @@ export class SubscriptionAccessService {
 
   /**
    * Verifica se o usuário pode acessar um áudio específico
-   * Lógica: 
-   * - Se tem assinatura ativa: acesso a todos os áudios
-   * - Se não tem assinatura: apenas áudios não-premium
+   * NOVA LÓGICA: Todos os áudios são acessíveis - sem diferenciação premium
    */
   static canAccessAudio(
     subscribed: boolean, 
     subscriptionTier: string | null, 
-    isPremium: boolean,
+    isPremium: boolean = false,
     isDemoAudio: boolean = false
   ): boolean {
-    // Usuário com assinatura ativa: acesso total
-    if (this.hasFullAccess(subscribed, subscriptionTier)) {
-      return true;
-    }
-
-    // Usuário sem assinatura: apenas áudios não-premium ou demo
-    return !isPremium || isDemoAudio;
+    // TODOS os áudios são acessíveis agora
+    return true;
   }
 
   /**
    * Retorna o motivo pelo qual o acesso foi negado
+   * Mantido para compatibilidade, mas todos têm acesso agora
    */
   static getAccessDeniedReason(subscribed: boolean, isPremium: boolean): string {
-    if (!subscribed && isPremium) {
-      return 'Este conteúdo é exclusivo para assinantes. Faça login e assine para ter acesso completo.';
-    }
-    
-    return 'Erro na verificação da assinatura.';
+    return 'Todos os áudios estão disponíveis.';
   }
 }
 
@@ -60,11 +48,11 @@ export const useContentAccess = () => {
     return SubscriptionAccessService.hasFullAccess(subscribed, subscription_tier);
   };
 
-  const canAccessAudio = (isPremium: boolean, isDemoAudio: boolean = false) => {
+  const canAccessAudio = (isPremium: boolean = false, isDemoAudio: boolean = false) => {
     return SubscriptionAccessService.canAccessAudio(subscribed, subscription_tier, isPremium, isDemoAudio);
   };
 
-  const getAccessDeniedReason = (isPremium: boolean) => {
+  const getAccessDeniedReason = (isPremium: boolean = false) => {
     return SubscriptionAccessService.getAccessDeniedReason(subscribed, isPremium);
   };
 

@@ -1,3 +1,4 @@
+
 import { Check, Star, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,53 +7,62 @@ import { useSubscription } from '@/hooks/useSubscription';
 
 const plans = [
   {
-    id: 'basic',
-    name: 'Básico',
-    price: 'R$ 29',
-    period: '/mês',
-    description: 'Perfeito para começar sua jornada',
+    id: 'quarterly',
+    name: 'Trimestral',
+    price: 'R$ 89',
+    period: '90',
+    originalPrice: 'R$ 89,70',
+    savings: 'Economize R$ 0,80',
+    description: 'Renovação automática a cada 3 meses',
     icon: Star,
     features: [
-      'Acesso a 50+ áudios de programação mental',
-      'Playlists personalizadas',
-      'Suporte por email',
-      'Atualizações mensais de conteúdo'
+      'Acesso completo a todos os áudios',
+      'Playlists ilimitadas',
+      'Downloads offline',
+      'Suporte especializado',
+      'Atualizações constantes de conteúdo',
+      'Cancelamento a qualquer momento'
     ],
     popular: false,
   },
   {
-    id: 'premium',
-    name: 'Premium',
-    price: 'R$ 97',
-    period: '/mês',
-    description: 'A escolha mais popular para resultados completos',
+    id: 'semiannual',
+    name: 'Semestral',
+    price: 'R$ 159',
+    period: '90',
+    originalPrice: 'R$ 179,40',
+    savings: 'Economize R$ 20,40',
+    description: 'Renovação automática a cada 6 meses - Mais Popular',
     icon: Crown,
     features: [
       'Acesso completo a todos os áudios',
-      'Playlists ilimitadas',
-      'Novos áudios semanais',
+      'Playlists ilimitadas', 
+      'Downloads offline',
       'Suporte prioritário',
-      'Sessões de coaching mensais',
-      'Acesso a comunidade VIP',
-      'Downloads offline'
+      'Atualizações constantes de conteúdo',
+      'Cancelamento a qualquer momento',
+      '11% de desconto vs trimestral'
     ],
     popular: true,
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 'R$ 197',
-    period: '/mês',
-    description: 'Para organizações e profissionais',
+    id: 'annual',
+    name: 'Anual',
+    price: 'R$ 299',
+    period: '90',
+    originalPrice: 'R$ 358,80',
+    savings: 'Economize R$ 59,80',
+    description: 'Renovação automática a cada 12 meses',
     icon: Crown,
     features: [
-      'Tudo do Premium',
-      'Licenças para equipe (até 10 usuários)',
-      'Conteúdo personalizado',
-      'Relatórios de progresso',
-      'Suporte 24/7',
-      'Consultoria especializada',
-      'API para integração'
+      'Acesso completo a todos os áudios',
+      'Playlists ilimitadas',
+      'Downloads offline', 
+      'Suporte VIP prioritário',
+      'Atualizações constantes de conteúdo',
+      'Cancelamento a qualquer momento',
+      '17% de desconto vs trimestral',
+      'Melhor custo-benefício'
     ],
     popular: false,
   }
@@ -74,11 +84,11 @@ export const SubscriptionPlans = () => {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-foreground mb-4">
-            Escolha o Plano Ideal para Você
+            Escolha Seu Plano de Assinatura
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Transforme sua mente com nossa biblioteca completa de áudios de programação mental. 
-            Escolha o plano que melhor se adapta às suas necessidades.
+            Acesso completo a todos os áudios de programação mental. 
+            Quanto mais tempo você escolher, maior a economia!
           </p>
         </div>
 
@@ -122,9 +132,15 @@ export const SubscriptionPlans = () => {
                   <CardDescription className="text-sm text-muted-foreground">
                     {plan.description}
                   </CardDescription>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold text-foreground">{plan.price}</span>
-                    <span className="text-muted-foreground">{plan.period}</span>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+                      <div className="text-left">
+                        <div className="text-sm text-muted-foreground">por período</div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-green-600 font-medium">{plan.savings}</div>
+                    <div className="text-xs text-muted-foreground line-through">{plan.originalPrice}</div>
                   </div>
                 </CardHeader>
 
@@ -154,9 +170,17 @@ export const SubscriptionPlans = () => {
           })}
         </div>
 
-        <div className="text-center mt-12">
+        <div className="text-center mt-12 space-y-4">
+          <div className="bg-muted/50 rounded-lg p-6 max-w-2xl mx-auto">
+            <h3 className="font-semibold text-lg mb-2">✅ Agora Todos os Áudios São Inclusos!</h3>
+            <p className="text-sm text-muted-foreground">
+              Sem mais diferenciação entre áudios básicos ou premium. 
+              Qualquer plano que você escolher dá acesso completo a toda nossa biblioteca.
+            </p>
+          </div>
+          
           <p className="text-sm text-muted-foreground">
-            Todos os planos incluem 7 dias de garantia. Cancele a qualquer momento.
+            Todos os planos incluem 7 dias de garantia. Cancele a qualquer momento através do portal do cliente.
           </p>
         </div>
       </div>

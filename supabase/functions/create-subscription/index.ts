@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -44,8 +45,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("Usuário não autenticado ou email indisponível");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { tier = "premium" } = await req.json();
-    logStep("Subscription tier requested", { tier });
+    const { plan = "quarterly" } = await req.json();
+    logStep("Subscription plan requested", { plan });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
@@ -59,15 +60,33 @@ serve(async (req) => {
       logStep("No existing customer found, will create one during checkout");
     }
 
-    // Define pricing based on tier
+    // Define pricing based on plan (valores em centavos)
     const pricingMap = {
-      basic: { amount: 2900, name: "Drive Mental - Básico" }, // R$ 29,00
-      premium: { amount: 9700, name: "Drive Mental - Premium" }, // R$ 97,00
-      enterprise: { amount: 19700, name: "Drive Mental - Enterprise" } // R$ 197,00
+      quarterly: { 
+        amount: 8990, // R$ 89,90
+        interval: "month",
+        interval_count: 3,
+        name: "Drive Mental - Trimestral",
+        description: "Assinatura trimestral (renovação a cada 3 meses)"
+      },
+      semiannual: { 
+        amount: 15990, // R$ 159,90
+        interval: "month", 
+        interval_count: 6,
+        name: "Drive Mental - Semestral",
+        description: "Assinatura semestral (renovação a cada 6 meses)"
+      },
+      annual: { 
+        amount: 29990, // R$ 299,90
+        interval: "year",
+        interval_count: 1,
+        name: "Drive Mental - Anual",
+        description: "Assinatura anual (renovação a cada 12 meses)"
+      }
     };
 
-    const pricing = pricingMap[tier as keyof typeof pricingMap] || pricingMap.premium;
-    logStep("Pricing determined", { tier, pricing });
+    const pricing = pricingMap[plan as keyof typeof pricingMap] || pricingMap.quarterly;
+    logStep("Pricing determined", { plan, pricing });
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -79,10 +98,13 @@ serve(async (req) => {
             currency: "brl",
             product_data: { 
               name: pricing.name,
-              description: `Assinatura mensal do ${pricing.name}`
+              description: pricing.description
             },
             unit_amount: pricing.amount,
-            recurring: { interval: "month" },
+            recurring: { 
+              interval: pricing.interval as 'month' | 'year',
+              interval_count: pricing.interval_count
+            },
           },
           quantity: 1,
         },
@@ -93,7 +115,7 @@ serve(async (req) => {
       metadata: {
         user_id: user.id,
         user_email: user.email,
-        subscription_tier: tier,
+        subscription_plan: plan,
       },
     });
 
