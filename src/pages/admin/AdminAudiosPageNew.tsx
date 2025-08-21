@@ -1,9 +1,25 @@
 
 import React from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { AudioListNew } from '@/components/admin/AudioListNew';
+import { AudioList } from '@/components/admin/AudioListNew';
+import { useAdmin } from '@/contexts/AdminContext';
 
 export const AdminAudiosPageNew: React.FC = () => {
+  const { audios, fields, updateAudio, deleteAudio } = useAdmin();
+
+  const handleEdit = (audio: any) => {
+    // TODO: Implementar modal de edição
+    console.log('Edit audio:', audio);
+  };
+
+  const handleDelete = async (audioId: string) => {
+    try {
+      await deleteAudio(audioId);
+    } catch (error) {
+      console.error('Erro ao deletar áudio:', error);
+    }
+  };
+
   return (
     <AdminLayout title="Gerenciar Áudios">
       <div className="space-y-6">
@@ -14,7 +30,12 @@ export const AdminAudiosPageNew: React.FC = () => {
           </p>
         </div>
         
-        <AudioListNew />
+        <AudioList 
+          audios={audios}
+          fields={fields}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </div>
     </AdminLayout>
   );
