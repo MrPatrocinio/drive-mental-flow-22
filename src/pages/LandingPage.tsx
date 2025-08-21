@@ -221,7 +221,7 @@ export default function LandingPage() {
               <Button 
                 variant="premium" 
                 size="lg" 
-                onClick={() => navigate('/pagamento')}
+                onClick={() => navigate('/assinatura')}
                 className="group"
               >
                 {content.hero.ctaText}
@@ -309,7 +309,7 @@ export default function LandingPage() {
             <Button 
               variant="premium" 
               size="lg"
-              onClick={() => navigate('/pagamento')}
+              onClick={() => navigate('/assinatura')}
               className="animate-pulse-glow"
             >
               {content.hero.ctaText}
@@ -332,7 +332,7 @@ export default function LandingPage() {
             <Button 
               variant="premium" 
               size="lg"
-              onClick={() => navigate('/pagamento')}
+              onClick={() => navigate('/assinatura')}
               className="animate-pulse-glow"
             >
               {content.hero.ctaText}

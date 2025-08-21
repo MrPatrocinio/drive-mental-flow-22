@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface PricingInfo {
@@ -130,18 +131,22 @@ export class PricingService {
 
   static getDefaultPricing(): PricingInsert {
     return {
-      price: 97,
+      price: 63.50,
       currency: 'R$',
-      payment_type: 'Pagamento único',
-      access_type: 'Acesso vitalício',
+      payment_type: 'Assinatura mensal',
+      access_type: 'Acesso completo',
       benefits: [
-        'Acesso completo aos áudios especializados',
-        'Suporte especializado 24/7',
-        'Atualizações constantes de conteúdo'
+        'Acesso completo a todos os áudios especializados',
+        'Atualizações constantes de conteúdo',
+        'Garantia de Resultados em menos de 30 Dias',
+        'Analytics Avançados e Relatórios Personalizados',
+        'Instale novos padrões mentais em apenas 21 dias de escuta',
+        'Áudios com frequências cientificamente comprovadas',
+        'De mindset limitante para mentalidade abundante'
       ],
       button_text: 'Começar Agora',
       has_promotion: false,
-      original_price: 97,
+      original_price: 63.50,
       discount_percentage: 0,
       promotion_end_date: '',
       promotion_label: ''

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
@@ -97,7 +98,7 @@ export const PricingDisplay = () => {
             </div>
           )}
           <p className="text-sm md:text-base text-muted-foreground">
-            {pricingData.payment_type} • {pricingData.access_type}
+            Assinatura mensal • Acesso completo
           </p>
         </div>
 
