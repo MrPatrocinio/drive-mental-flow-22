@@ -201,11 +201,14 @@ export const useAudioPlayer = (
     const handleEnded = () => {
       console.log('useAudioPlayer: Áudio terminou');
       
+      // Usamos um valor padrão de 0 para pauseBetweenRepeats se não existir nas preferências
+      const pauseTime = (preferences as any).pauseBetweenRepeats || 0;
+      
       if (preferences.repeatCount === 0 || repeatCount < preferences.repeatCount) {
         setRepeatCount(prev => prev + 1);
-        setPauseBetweenRepeats(preferences.pauseBetweenRepeats);
+        setPauseBetweenRepeats(pauseTime);
         
-        if (preferences.pauseBetweenRepeats > 0) {
+        if (pauseTime > 0) {
           updateState({ 
             isTransitioning: true,
             isInternalPause: true,
@@ -221,7 +224,7 @@ export const useAudioPlayer = (
                 isInternalPause: false 
               });
             }
-          }, preferences.pauseBetweenRepeats * 1000);
+          }, pauseTime * 1000);
         } else {
           // Loop imediato
           audio.currentTime = 0;
@@ -234,7 +237,7 @@ export const useAudioPlayer = (
       }
     };
 
-    const handleError = (e: Event) => {
+    const handleAudioError = (e: Event) => {
       console.error('useAudioPlayer: Erro no áudio:', e);
       
       if (retryCount < maxRetries) {
@@ -252,7 +255,7 @@ export const useAudioPlayer = (
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
+    audio.addEventListener('error', handleAudioError);
 
     // Apply preferences
     audio.volume = preferences.volume / 100;
@@ -271,7 +274,7 @@ export const useAudioPlayer = (
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('error', handleAudioError);
     };
   }, [audioUrl, preferences, repeatCount, retryCount, playerState.isTransitioning, playerState.isInternalPause, updateState, onRepeatComplete, retryInitialization]);
 
