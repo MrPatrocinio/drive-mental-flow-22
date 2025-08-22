@@ -32,7 +32,7 @@ interface AdminContextType {
   refreshData: () => Promise<void>;
 }
 
-const AdminContext = createContext<AdminContextType | undefined>(undefined);
+export const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 interface AdminProviderProps {
   children: ReactNode;

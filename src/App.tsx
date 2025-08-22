@@ -54,8 +54,8 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SupabaseAuthProvider>
-        <UserProvider>
-          <AdminProvider>
+        <AdminProvider>
+          <UserProvider>
             <Router>
               <AuthProvider>
                 <Routes>
@@ -139,8 +139,8 @@ export default function App() {
                 </Routes>
               </AuthProvider>
             </Router>
-          </AdminProvider>
-        </UserProvider>
+          </UserProvider>
+        </AdminProvider>
       </SupabaseAuthProvider>
     </QueryClientProvider>
   );
