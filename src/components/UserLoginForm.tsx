@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,20 +15,20 @@ import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useUserAuthentication } from "@/hooks/useUserAuthentication";
 import type { LoginCredentials } from "@/services/supabase/authService";
 
-interface UserLoginFormProps {
-  onSuccess: () => void;
-}
-
 /**
  * Componente focado apenas na UI do formulário
  * Princípio KISS: Interface simples e intuitiva
  */
-export const UserLoginForm: React.FC<UserLoginFormProps> = ({ onSuccess }) => {
+export const UserLoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   
+  const navigate = useNavigate();
+  const location = useLocation();
   const { isLoading, error, login, clearError } = useUserAuthentication();
+
+  const from = location.state?.from?.pathname || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +38,7 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ onSuccess }) => {
     const { success } = await login(credentials);
     
     if (success) {
-      onSuccess();
+      navigate(from, { replace: true });
     }
   };
 

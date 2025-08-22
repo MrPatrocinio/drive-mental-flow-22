@@ -3,7 +3,6 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User } from "lucide-react";
 import { UserLoginForm } from "@/components/UserLoginForm";
-import { useNavigate, useLocation } from "react-router-dom";
 
 /**
  * UserLoginPage - Página de login para usuários regulares
@@ -11,15 +10,6 @@ import { useNavigate, useLocation } from "react-router-dom";
  * Princípio KISS: Interface limpa e focada no essencial
  */
 export default function UserLoginPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const from = location.state?.from?.pathname || "/dashboard";
-
-  const handleLoginSuccess = () => {
-    navigate(from, { replace: true });
-  };
-
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border-border/50">
@@ -36,7 +26,7 @@ export default function UserLoginPage() {
         </CardHeader>
 
         <CardContent>
-          <UserLoginForm onSuccess={handleLoginSuccess} />
+          <UserLoginForm />
         </CardContent>
       </Card>
     </div>
