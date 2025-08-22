@@ -160,23 +160,27 @@ export class AudioService {
    */
   static async getDemoAudio(): Promise<Audio | null> {
     console.log('AudioService: Buscando áudio de demonstração');
-    const { data, error } = await supabase
+    
+    const query = supabase
       .from('audios')
       .select('*')
       .eq('is_demo', true)
-      .maybeSingle();
+      .limit(1);
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('AudioService: Erro ao buscar áudio demo:', error);
       throw error;
     }
 
-    if (!data) {
+    if (!data || data.length === 0) {
       console.log('AudioService: Nenhum áudio demo encontrado');
       return null;
     }
 
-    console.log('AudioService: Áudio demo encontrado:', data.title);
-    return data;
+    const demoAudio = data[0] as Audio;
+    console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
+    return demoAudio;
   }
 }
