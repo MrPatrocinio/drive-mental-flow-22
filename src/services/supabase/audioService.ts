@@ -156,8 +156,8 @@ export class AudioService {
   }
 
   /**
-   * Busca o primeiro áudio disponível como demonstração
-   * Como não temos coluna is_demo, retorna o primeiro áudio não premium
+   * Busca o áudio atual de demonstração
+   * Agora usando a coluna is_demo corretamente
    */
   static async getDemoAudio(): Promise<Audio | null> {
     console.log('AudioService: Buscando áudio de demonstração');
@@ -165,8 +165,8 @@ export class AudioService {
     try {
       const { data, error } = await supabase
         .from('audios')
-        .select('id, title, url, duration, field_id, tags, is_premium, created_at, updated_at')
-        .eq('is_premium', false)
+        .select('*')
+        .eq('is_demo', true)
         .limit(1);
       
       if (error) {
@@ -179,11 +179,7 @@ export class AudioService {
         return null;
       }
       
-      const demoAudio: Audio = {
-        ...data[0],
-        is_demo: true
-      };
-      
+      const demoAudio = data[0];
       console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
       return demoAudio;
     } catch (error) {

@@ -4,6 +4,7 @@
  * Responsabilidade: Apenas UI do botão de toggle de demo
  * Princípio SRP: Apenas renderização e eventos do botão
  * Princípio DRY: Componente reutilizável
+ * ATUALIZADO: Estrela vermelha para áudios demo
  */
 
 import { Button } from '@/components/ui/button';
@@ -38,8 +39,8 @@ export const DemoToggleButton = ({
   if (isDemo) {
     return (
       <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
-          <Star className="w-3 h-3 mr-1 fill-current" />
+        <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-200">
+          <Star className="w-3 h-3 mr-1 fill-red-600 text-red-600" />
           Áudio Demo
         </Badge>
         <Button

@@ -80,6 +80,7 @@ export type Database = {
           duration: string
           field_id: string
           id: string
+          is_demo: boolean
           is_premium: boolean
           tags: string[] | null
           title: string
@@ -91,6 +92,7 @@ export type Database = {
           duration: string
           field_id: string
           id?: string
+          is_demo?: boolean
           is_premium?: boolean
           tags?: string[] | null
           title: string
@@ -102,6 +104,7 @@ export type Database = {
           duration?: string
           field_id?: string
           id?: string
+          is_demo?: boolean
           is_premium?: boolean
           tags?: string[] | null
           title?: string
