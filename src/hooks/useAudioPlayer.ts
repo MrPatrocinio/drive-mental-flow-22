@@ -14,6 +14,7 @@ export interface AudioPlayerState {
   isReady: boolean;
   isTransitioning: boolean;
   isInternalPause: boolean;
+  autoplayBlocked?: boolean;
 }
 
 export const useAudioPlayer = (
@@ -39,7 +40,8 @@ export const useAudioPlayer = (
     canPlay: false,
     isReady: false,
     isTransitioning: false,
-    isInternalPause: false
+    isInternalPause: false,
+    autoplayBlocked: false
   });
 
   const updateState = useCallback((updates: Partial<AudioPlayerState>) => {
@@ -60,7 +62,7 @@ export const useAudioPlayer = (
 
   const retryInitialization = useCallback(async () => {
     if (retryCount >= maxRetries) {
-      handleError('Máximo de tentativas excedido. Verifique sua conexão.');
+      handleError('Máximo de tentativas excedido. Use o diagnóstico para mais detalhes.');
       return;
     }
 
@@ -70,7 +72,8 @@ export const useAudioPlayer = (
     updateState({
       isLoading: true,
       hasError: false,
-      errorMessage: undefined
+      errorMessage: undefined,
+      autoplayBlocked: false
     });
 
     // Delay exponencial: 1s, 2s, 4s
@@ -112,19 +115,60 @@ export const useAudioPlayer = (
   }, [audioUrl, handleError]);
 
   const togglePlay = useCallback(async () => {
-    if (!audioRef.current || !playerState.canPlay) return;
+    if (!audioRef.current || !playerState.canPlay) {
+      console.warn('useAudioPlayer: togglePlay bloqueado - elemento ou canPlay inválido');
+      return;
+    }
 
     try {
+      console.log('useAudioPlayer: Executando togglePlay', {
+        isPlaying: playerState.isPlaying,
+        paused: audioRef.current.paused,
+        readyState: audioRef.current.readyState
+      });
+
       if (playerState.isPlaying) {
+        console.log('useAudioPlayer: Pausando áudio');
         audioRef.current.pause();
       } else {
+        console.log('useAudioPlayer: Iniciando reprodução');
+        
+        // Reset autoplay blocked flag
+        updateState({ autoplayBlocked: false });
+        
         await audioRef.current.play();
+        console.log('useAudioPlayer: Play bem-sucedido');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao reproduzir';
-      handleError(errorMessage);
+      console.error('useAudioPlayer: Erro no togglePlay:', error);
+      
+      // Tratamento específico para diferentes tipos de erro
+      if (error instanceof DOMException) {
+        switch (error.name) {
+          case 'NotAllowedError':
+            console.warn('useAudioPlayer: Autoplay bloqueado pelo navegador');
+            updateState({ 
+              autoplayBlocked: true,
+              hasError: true,
+              errorMessage: 'Clique no botão play para iniciar (política do navegador)'
+            });
+            break;
+          case 'AbortError':
+            console.warn('useAudioPlayer: Reprodução abortada (pode ser normal)');
+            // Não trata como erro fatal
+            break;
+          case 'NotSupportedError':
+            handleError('Formato de áudio não suportado pelo navegador');
+            break;
+          default:
+            handleError(`Erro de reprodução: ${error.message}`);
+        }
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao reproduzir';
+        handleError(errorMessage);
+      }
     }
-  }, [playerState.canPlay, playerState.isPlaying, handleError]);
+  }, [playerState.canPlay, playerState.isPlaying, handleError, updateState]);
 
   const reset = useCallback(() => {
     if (!audioRef.current) return;
@@ -135,7 +179,8 @@ export const useAudioPlayer = (
     updateState({ 
       currentTime: 0, 
       isTransitioning: false,
-      isInternalPause: false
+      isInternalPause: false,
+      autoplayBlocked: false
     });
   }, [updateState]);
 
@@ -158,11 +203,14 @@ export const useAudioPlayer = (
 
     const handleLoadStart = () => {
       console.log('useAudioPlayer: Iniciando carregamento');
-      updateState({ isLoading: true, hasError: false });
+      updateState({ isLoading: true, hasError: false, autoplayBlocked: false });
     };
 
     const handleLoadedMetadata = () => {
-      console.log('useAudioPlayer: Metadata carregada');
+      console.log('useAudioPlayer: Metadata carregada', {
+        duration: audio.duration,
+        readyState: audio.readyState
+      });
       updateState({ 
         duration: audio.duration,
         isLoading: false,
@@ -183,16 +231,20 @@ export const useAudioPlayer = (
     };
 
     const handlePlay = () => {
-      console.log('useAudioPlayer: Reprodução iniciada');
+      console.log('useAudioPlayer: Evento play disparado');
       updateState({ 
         isPlaying: true, 
         isTransitioning: false, 
-        isInternalPause: false 
+        isInternalPause: false,
+        autoplayBlocked: false
       });
     };
 
     const handlePause = () => {
-      console.log('useAudioPlayer: Reprodução pausada');
+      console.log('useAudioPlayer: Evento pause disparado', {
+        isInternalPause: playerState.isInternalPause,
+        isTransitioning: playerState.isTransitioning
+      });
       if (!playerState.isInternalPause && !playerState.isTransitioning) {
         updateState({ isPlaying: false });
       }
@@ -218,7 +270,12 @@ export const useAudioPlayer = (
           setTimeout(() => {
             if (audio) {
               audio.currentTime = 0;
-              audio.play().catch(console.error);
+              audio.play().catch(error => {
+                console.error('useAudioPlayer: Erro no loop após pausa:', error);
+                if (error instanceof DOMException && error.name === 'NotAllowedError') {
+                  updateState({ autoplayBlocked: true });
+                }
+              });
               updateState({ 
                 isTransitioning: false,
                 isInternalPause: false 
@@ -228,7 +285,12 @@ export const useAudioPlayer = (
         } else {
           // Loop imediato
           audio.currentTime = 0;
-          audio.play().catch(console.error);
+          audio.play().catch(error => {
+            console.error('useAudioPlayer: Erro no loop imediato:', error);
+            if (error instanceof DOMException && error.name === 'NotAllowedError') {
+              updateState({ autoplayBlocked: true });
+            }
+          });
         }
         
         onRepeatComplete?.();
@@ -238,12 +300,13 @@ export const useAudioPlayer = (
     };
 
     const handleAudioError = (e: Event) => {
-      console.error('useAudioPlayer: Erro no áudio:', e);
+      console.error('useAudioPlayer: Erro no elemento áudio:', e);
       
       if (retryCount < maxRetries) {
+        console.log('useAudioPlayer: Tentando retry automático');
         retryInitialization();
       } else {
-        handleError('Não foi possível carregar o áudio após várias tentativas');
+        handleError('Não foi possível carregar o áudio. Use o diagnóstico para mais detalhes.');
       }
     };
 
@@ -260,7 +323,9 @@ export const useAudioPlayer = (
     // Apply preferences
     audio.volume = preferences.volume / 100;
     audio.preload = 'auto';
-    audio.crossOrigin = 'anonymous';
+    
+    // Remover crossOrigin se estiver causando problemas CORS
+    // audio.crossOrigin = 'anonymous';
 
     // Load audio
     audio.src = audioUrl;
