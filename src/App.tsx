@@ -1,5 +1,4 @@
 
-
 import React, { useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -29,12 +28,23 @@ import { UserProvider } from '@/contexts/UserContext';
 import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { UserProtectedRoute } from '@/components/UserProtectedRoute';
 
+function AuthProvider({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Inicializar o serviço de sincronização
+    dataSyncService.initialize();
+  }, []);
+
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
-    <Router>
-      <SupabaseAuthProvider>
-        <UserProvider>
-          <AdminProvider>
+    <SupabaseAuthProvider>
+      <UserProvider>
+        <AdminProvider>
+          <Router>
             <AuthProvider>
               <Routes>
                 {/* Rotas Públicas */}
@@ -116,21 +126,9 @@ export default function App() {
                 } />
               </Routes>
             </AuthProvider>
-          </AdminProvider>
-        </UserProvider>
-      </SupabaseAuthProvider>
-    </Router>
+          </Router>
+        </AdminProvider>
+      </UserProvider>
+    </SupabaseAuthProvider>
   );
 }
-
-function AuthProvider({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Inicializar o serviço de sincronização
-    dataSyncService.initialize();
-  }, []);
-
-  return <>{children}</>;
-}
-
