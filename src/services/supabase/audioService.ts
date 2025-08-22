@@ -1,5 +1,4 @@
 
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Audio {
@@ -157,44 +156,34 @@ export class AudioService {
   }
 
   /**
-   * Busca o áudio atual de demonstração
+   * Busca o primeiro áudio disponível como demonstração
+   * Como não temos coluna is_demo, retorna o primeiro áudio não premium
    */
   static async getDemoAudio(): Promise<Audio | null> {
     console.log('AudioService: Buscando áudio de demonstração');
     
     try {
-      // Usar uma abordagem mais simples para evitar problemas de type inference
-      const result = await supabase.rpc('get_demo_audio');
+      const { data, error } = await supabase
+        .from('audios')
+        .select('id, title, url, duration, field_id, tags, is_premium, created_at, updated_at')
+        .eq('is_premium', false)
+        .limit(1);
       
-      if (result.error) {
-        console.error('AudioService: Erro ao buscar áudio demo:', result.error);
-        // Fallback para query manual se a função não existir
-        const fallbackResult = await supabase
-          .from('audios')
-          .select('id, title, url, duration, field_id, tags, is_premium, is_demo, created_at, updated_at')
-          .eq('is_demo', true)
-          .limit(1);
-        
-        if (fallbackResult.error) {
-          throw fallbackResult.error;
-        }
-        
-        if (!fallbackResult.data || fallbackResult.data.length === 0) {
-          console.log('AudioService: Nenhum áudio demo encontrado');
-          return null;
-        }
-        
-        const demoAudio = fallbackResult.data[0] as Audio;
-        console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
-        return demoAudio;
+      if (error) {
+        console.error('AudioService: Erro ao buscar áudio demo:', error);
+        throw error;
       }
       
-      if (!result.data || result.data.length === 0) {
+      if (!data || data.length === 0) {
         console.log('AudioService: Nenhum áudio demo encontrado');
         return null;
       }
       
-      const demoAudio = result.data[0] as Audio;
+      const demoAudio: Audio = {
+        ...data[0],
+        is_demo: true
+      };
+      
       console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
       return demoAudio;
     } catch (error) {
