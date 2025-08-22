@@ -1,3 +1,4 @@
+
 import { PricingInfo } from "./supabase/pricingService";
 
 export interface LandingPageContent {
@@ -21,10 +22,9 @@ export interface LandingPageContent {
     privacyPolicyLink: string;
     termsOfServiceLink: string;
   };
-  pricing?: PricingInfo; // Optional property
 }
 
-class ContentService {
+class ContentServiceClass {
   private landingPageContent: LandingPageContent;
 
   constructor() {
@@ -81,19 +81,9 @@ class ContentService {
         lgpdLink: "/lgpd",
         privacyPolicyLink: "/privacy",
         termsOfServiceLink: "/terms"
-      },
-      pricing: {
-        currency: 'R$',
-        price: 63.50,
-        benefits: [
-          'Acesso completo a todos os áudios',
-          'Novos conteúdos mensais',
-          'Suporte prioritário',
-          'Sem compromisso, cancele quando quiser'
-        ]
       }
     };
   }
 }
 
-export const ContentService = new ContentService();
+export const ContentService = new ContentServiceClass();

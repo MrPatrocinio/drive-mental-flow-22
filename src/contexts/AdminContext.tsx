@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { ContentService } from '@/services/contentService';
@@ -103,21 +104,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     console.log('AdminContext: Salvando landing content', content);
     try {
       await SupabaseContentService.saveLandingPageContent(content);
-      // Update local ContentService cache with the compatible format
-      const compatibleContent = {
-        ...content,
-        pricing: {
-          currency: 'R$',
-          price: 63.50,
-          benefits: [
-            'Acesso completo a todos os áudios',
-            'Novos conteúdos mensais',
-            'Suporte prioritário',
-            'Sem compromisso, cancele quando quiser'
-          ]
-        }
-      };
-      ContentService.saveLandingPageContent(compatibleContent);
+      // Update local ContentService cache
+      ContentService.saveLandingPageContent(content);
       setLandingContent(content);
       // Force refresh for other components
       import('@/services/dataSync').then(({ DataSyncService }) => {
@@ -228,21 +216,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         PricingService.get()
       ]);
 
-      // Update local ContentService cache with compatible format
-      const compatibleContent = {
-        ...landingContentData,
-        pricing: {
-          currency: 'R$',
-          price: 63.50,
-          benefits: [
-            'Acesso completo a todos os áudios',
-            'Novos conteúdos mensais',
-            'Suporte prioritário',
-            'Sem compromisso, cancele quando quiser'
-          ]
-        }
-      };
-      ContentService.saveLandingPageContent(compatibleContent);
+      // Update local ContentService cache
+      ContentService.saveLandingPageContent(landingContentData);
       
       setLandingContent(landingContentData);
       setFields(fieldsData);
@@ -277,76 +252,10 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     
     // Actions
     updateLandingContent,
-    updateField: async (field: EditableField) => {
-      console.log('AdminContext: Salvando field', field);
-      try {
-        if (field.id) {
-          await FieldService.update(field.id, {
-            title: field.title,
-            icon_name: field.icon_name,
-            description: field.description || ''
-          });
-        }
-        await refreshData();
-        // Force refresh for other components
-        import('@/services/dataSync').then(({ DataSyncService }) => {
-          DataSyncService.forceNotification('fields_changed');
-        });
-      } catch (error) {
-        console.error('AdminContext: Erro ao salvar field:', error);
-        throw error;
-      }
-    },
-    deleteField: async (fieldId: string) => {
-      console.log('AdminContext: Deletando field', fieldId);
-      try {
-        await FieldService.delete(fieldId);
-        await refreshData();
-        // Force refresh for other components
-        import('@/services/dataSync').then(({ DataSyncService }) => {
-          DataSyncService.forceNotification('fields_changed');
-        });
-      } catch (error) {
-        console.error('AdminContext: Erro ao deletar field:', error);
-        throw error;
-      }
-    },
-    updateAudio: async (audio: EditableAudio) => {
-      console.log('AdminContext: Salvando audio', audio);
-      try {
-        if (audio.id) {
-          await AudioService.update(audio.id, {
-            title: audio.title,
-            field_id: audio.field_id,
-            duration: audio.duration,
-            tags: audio.tags || [],
-            url: audio.url
-          });
-        }
-        await refreshData();
-        // Force refresh for other components
-        import('@/services/dataSync').then(({ DataSyncService }) => {
-          DataSyncService.forceNotification('audios_changed');
-        });
-      } catch (error) {
-        console.error('AdminContext: Erro ao salvar audio:', error);
-        throw error;
-      }
-    },
-    deleteAudio: async (audioId: string) => {
-      console.log('AdminContext: Deletando audio', audioId);
-      try {
-        await AudioService.delete(audioId);
-        await refreshData();
-        // Force refresh for other components
-        import('@/services/dataSync').then(({ DataSyncService }) => {
-          DataSyncService.forceNotification('audios_changed');
-        });
-      } catch (error) {
-        console.error('AdminContext: Erro ao deletar audio:', error);
-        throw error;
-      }
-    },
+    updateField,
+    deleteField,
+    updateAudio,
+    deleteAudio,
     updatePricing,
     refreshData,
   };

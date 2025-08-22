@@ -24,7 +24,7 @@ export interface LandingPageContent {
   };
 }
 
-class SupabaseContentService {
+class SupabaseContentServiceClass {
   async getLandingPageContent(): Promise<LandingPageContent> {
     try {
       const { data, error } = await supabase
@@ -40,7 +40,7 @@ class SupabaseContentService {
 
       if (data?.content) {
         // Validate that the content has the expected structure
-        const content = data.content as LandingPageContent;
+        const content = data.content as unknown as LandingPageContent;
         if (content.hero && content.features && content.footer) {
           return content;
         }
@@ -59,7 +59,8 @@ class SupabaseContentService {
         .from('landing_content')
         .upsert({
           id: 'landing_page',
-          content: content,
+          section: 'landing_page',
+          content: content as any,
           updated_at: new Date().toISOString()
         });
 
@@ -116,4 +117,4 @@ class SupabaseContentService {
   }
 }
 
-export const SupabaseContentService = new SupabaseContentService();
+export const SupabaseContentService = new SupabaseContentServiceClass();

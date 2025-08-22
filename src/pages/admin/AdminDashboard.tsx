@@ -1,3 +1,4 @@
+
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 export default function AdminDashboard() {
-  const { fields, audios, landingContent } = useAdmin();
+  const { fields, audios, landingContent, pricing } = useAdmin();
   const navigate = useNavigate();
 
   const stats = [
@@ -35,7 +36,7 @@ export default function AdminDashboard() {
     },
     {
       title: "Preço Atual",
-      value: `${landingContent.pricing.currency} ${landingContent.pricing.price}`,
+      value: pricing ? `${pricing.currency} ${pricing.price}` : "Não configurado",
       icon: DollarSign,
       color: "text-yellow-500",
       change: "Sem alterações"
