@@ -9,6 +9,7 @@ export interface Audio {
   field_id: string;
   tags: string[];
   is_premium: boolean;
+  is_demo?: boolean; // ADICIONADO: suporte ao campo is_demo
   created_at: string;
   updated_at: string;
 }
@@ -20,6 +21,7 @@ export interface AudioInsert {
   field_id: string;
   tags?: string[];
   is_premium?: boolean;
+  is_demo?: boolean; // ADICIONADO: suporte ao campo is_demo
 }
 
 export interface AudioUpdate {
@@ -29,6 +31,7 @@ export interface AudioUpdate {
   field_id?: string;
   tags?: string[];
   is_premium?: boolean;
+  is_demo?: boolean; // ADICIONADO: suporte ao campo is_demo
 }
 
 export interface AudioWithFile {
@@ -40,6 +43,7 @@ export interface AudioWithFile {
   url?: string;
   file?: File;
   is_premium?: boolean;
+  is_demo?: boolean; // ADICIONADO: suporte ao campo is_demo
 }
 
 /**
@@ -101,6 +105,7 @@ export class AudioService {
     return data;
   }
 
+  // MELHORADO: Suporte ao campo is_demo
   static async create(audio: AudioInsert): Promise<Audio> {
     console.log('AudioService: Criando áudio:', audio);
     const { data, error } = await supabase
@@ -124,6 +129,7 @@ export class AudioService {
     return data;
   }
 
+  // MELHORADO: Suporte ao campo is_demo
   static async update(id: string, audio: AudioUpdate): Promise<Audio> {
     console.log('AudioService: Atualizando áudio:', id, audio);
     const { data, error } = await supabase
@@ -166,5 +172,29 @@ export class AudioService {
     import('@/services/dataSync').then(({ DataSyncService }) => {
       DataSyncService.forceNotification('audios_changed', { event: 'DELETE', old: { id } });
     });
+  }
+
+  /**
+   * ADICIONADO: Busca o áudio atual de demonstração
+   */
+  static async getDemoAudio(): Promise<Audio | null> {
+    console.log('AudioService: Buscando áudio de demonstração');
+    const { data, error } = await supabase
+      .from('audios')
+      .select('*')
+      .eq('is_demo', true)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log('AudioService: Nenhum áudio demo encontrado');
+        return null;
+      }
+      console.error('AudioService: Erro ao buscar áudio demo:', error);
+      throw error;
+    }
+
+    console.log('AudioService: Áudio demo encontrado:', data.title);
+    return data;
   }
 }

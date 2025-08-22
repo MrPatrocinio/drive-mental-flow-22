@@ -4,26 +4,27 @@
  * Responsabilidade: Exibir áudio de demonstração para visitantes
  * Princípio SRP: Apenas lógica de demonstração
  * Princípio KISS: Interface simples e direta
+ * MELHORADO: Usa o novo sistema de áudio demo baseado em is_demo
  */
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Pause, Volume2, RefreshCw } from 'lucide-react';
-import { DemoService, DemoAudio } from '@/services/supabase/demoService';
+import { ArrowLeft, Play, Volume2, RefreshCw } from 'lucide-react';
+import { AudioDemoManagementService } from '@/services/audioDemoManagementService';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
+import { Audio } from '@/services/supabase/audioService';
+import { FieldService } from '@/services/supabase/fieldService';
 
 // Hook seguro para navegação que funciona dentro e fora do contexto do Router
 const useSafeNavigate = () => {
   try {
-    // Importa dinamicamente o useNavigate apenas quando necessário
     const { useNavigate } = require('react-router-dom');
     return useNavigate();
   } catch (error) {
-    // Se não estiver no contexto do Router, usa window.location
     return (path: string) => {
       window.location.href = path;
     };
@@ -32,7 +33,8 @@ const useSafeNavigate = () => {
 
 export default function DemoPage() {
   const navigate = useSafeNavigate();
-  const [demoAudio, setDemoAudio] = useState<DemoAudio | null>(null);
+  const [demoAudio, setDemoAudio] = useState<Audio | null>(null);
+  const [fieldTitle, setFieldTitle] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [playCount, setPlayCount] = useState(0);
 
@@ -43,10 +45,22 @@ export default function DemoPage() {
   const loadDemoAudio = async () => {
     try {
       setLoading(true);
-      const audio = await DemoService.getDemoAudio();
-      setDemoAudio(audio);
+      const audio = await AudioDemoManagementService.getCurrentDemoAudio();
       
-      if (!audio) {
+      if (audio) {
+        setDemoAudio(audio);
+        
+        // Buscar título do campo
+        try {
+          const fields = await FieldService.getAll();
+          const field = fields.find(f => f.id === audio.field_id);
+          setFieldTitle(field?.title || 'Campo não encontrado');
+        } catch (error) {
+          console.error('Erro ao buscar campo:', error);
+          setFieldTitle('Campo não encontrado');
+        }
+      } else {
+        setDemoAudio(null);
         toast.error('Nenhuma demonstração disponível no momento');
       }
     } catch (error) {
@@ -167,7 +181,7 @@ export default function DemoPage() {
                     {demoAudio.title}
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">{demoAudio.field_title}</Badge>
+                    <Badge variant="outline">{fieldTitle}</Badge>
                     <span className="text-sm text-muted-foreground">•</span>
                     <span className="text-sm text-muted-foreground">{demoAudio.duration}</span>
                   </div>
