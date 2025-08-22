@@ -4,6 +4,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { SubscriptionPlansForm } from '@/components/admin/pricing/SubscriptionPlansForm';
 import { SubscriptionPlansPreview } from '@/components/admin/pricing/SubscriptionPlansPreview';
 import { SubscriptionPlansService, SubscriptionPlansData, SubscriptionPlansInsert } from '@/services/supabase/subscriptionPlansService';
+import { SubscriptionValidationService } from '@/services/subscriptionValidationService';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -49,49 +50,28 @@ export const AdminSubscriptionPlansPage: React.FC = () => {
       setIsSaving(true);
       setErrors([]);
 
-      // Validações
-      const validationErrors: string[] = [];
+      // Validar dados usando o serviço de validação
+      const validation = SubscriptionValidationService.validatePlansData(data);
       
-      data.plans.forEach((plan, index) => {
-        if (!plan.name) {
-          validationErrors.push(`Nome do plano ${index + 1} é obrigatório`);
-        }
-        
-        if (!plan.price || plan.price <= 0) {
-          validationErrors.push(`Preço do plano ${plan.name} deve ser maior que zero`);
-        }
-        
-        if (!plan.currency) {
-          validationErrors.push(`Moeda do plano ${plan.name} é obrigatória`);
-        }
-        
-        if (plan.has_promotion) {
-          if (!plan.discount_percentage || plan.discount_percentage <= 0 || plan.discount_percentage > 100) {
-            validationErrors.push(`Desconto do plano ${plan.name} deve ser entre 1% e 100%`);
-          }
-          
-          if (!plan.promotion_end_date) {
-            validationErrors.push(`Data de fim da promoção do plano ${plan.name} é obrigatória`);
-          } else if (new Date(plan.promotion_end_date) <= new Date()) {
-            validationErrors.push(`Data de fim da promoção do plano ${plan.name} deve ser no futuro`);
-          }
-          
-          if (!plan.original_price || plan.original_price <= 0) {
-            validationErrors.push(`Preço original do plano ${plan.name} deve ser maior que zero`);
-          }
-        }
-      });
-      
-      if (!data.button_text) {
-        validationErrors.push('Texto do botão é obrigatório');
-      }
-      
-      if (data.global_benefits.length === 0) {
-        validationErrors.push('Pelo menos um benefício é obrigatório');
+      if (!validation.isValid) {
+        setErrors(validation.errors);
+        toast({
+          title: "Erro de Validação",
+          description: "Corrija os erros encontrados antes de continuar",
+          variant: "destructive",
+        });
+        return;
       }
 
-      if (validationErrors.length > 0) {
-        setErrors(validationErrors);
+      // Validar consistência entre planos
+      const consistencyErrors = SubscriptionValidationService.validatePlansConsistency(data.plans);
+      if (consistencyErrors.length > 0) {
+        setErrors(consistencyErrors);
+        toast({
+          title: "Erro de Consistência",
+          description: "Problemas de consistência encontrados nos planos",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -104,10 +84,22 @@ export const AdminSubscriptionPlansPage: React.FC = () => {
       });
     } catch (error) {
       console.error('Erro ao salvar planos:', error);
-      setErrors(['Erro ao salvar informações dos planos']);
+      
+      let errorMessage = 'Erro ao salvar informações dos planos';
+      
+      // Tratar erros específicos
+      if (error instanceof Error) {
+        if (error.message.includes('23505')) {
+          errorMessage = 'Erro de duplicação de dados. Tente novamente.';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        }
+      }
+      
+      setErrors([errorMessage]);
       toast({
         title: "Erro",  
-        description: "Erro ao salvar informações dos planos",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

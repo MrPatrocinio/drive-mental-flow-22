@@ -37,15 +37,16 @@ export class SubscriptionPlansService {
       .from('landing_content')
       .select('*')
       .eq('section', 'subscription_plans')
-      .single();
+      .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        console.log('SubscriptionPlansService: Nenhum plano encontrado');
-        return null;
-      }
       console.error('SubscriptionPlansService: Erro ao buscar planos:', error);
       throw error;
+    }
+
+    if (!data) {
+      console.log('SubscriptionPlansService: Nenhum plano encontrado');
+      return null;
     }
 
     console.log('SubscriptionPlansService: Planos encontrados');
@@ -55,29 +56,79 @@ export class SubscriptionPlansService {
   static async save(plansData: SubscriptionPlansInsert): Promise<SubscriptionPlansData> {
     console.log('SubscriptionPlansService: Salvando planos de assinatura:', plansData);
     
+    try {
+      // Primeiro, tenta fazer upsert com onConflict especificado
+      const { data, error } = await supabase
+        .from('landing_content')
+        .upsert({
+          section: 'subscription_plans',
+          content: plansData as any,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'section'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('SubscriptionPlansService: Erro no upsert:', error);
+        
+        // Se falhou por constraint única, tenta estratégia alternativa
+        if (error.code === '23505') {
+          console.log('SubscriptionPlansService: Tentando update direto devido a constraint única');
+          return await this.updateExistingRecord(plansData);
+        }
+        
+        throw error;
+      }
+
+      console.log('SubscriptionPlansService: Planos salvos com sucesso via upsert');
+      
+      // Notificar mudança via DataSync
+      this.notifyDataChange(plansData);
+
+      return data.content as unknown as SubscriptionPlansData;
+    } catch (error) {
+      console.error('SubscriptionPlansService: Erro geral ao salvar:', error);
+      throw error;
+    }
+  }
+
+  private static async updateExistingRecord(plansData: SubscriptionPlansInsert): Promise<SubscriptionPlansData> {
+    console.log('SubscriptionPlansService: Executando update direto');
+    
     const { data, error } = await supabase
       .from('landing_content')
-      .upsert({
-        section: 'subscription_plans',
+      .update({
         content: plansData as any,
         updated_at: new Date().toISOString()
       })
+      .eq('section', 'subscription_plans')
       .select()
       .single();
 
     if (error) {
-      console.error('SubscriptionPlansService: Erro ao salvar planos:', error);
+      console.error('SubscriptionPlansService: Erro no update direto:', error);
       throw error;
     }
 
-    console.log('SubscriptionPlansService: Planos salvos com sucesso');
+    console.log('SubscriptionPlansService: Update direto executado com sucesso');
     
     // Notificar mudança via DataSync
-    import('@/services/dataSync').then(({ DataSyncService }) => {
-      DataSyncService.forceNotification('content_changed', { event: 'UPDATE', new: { subscription_plans: plansData } });
-    });
+    this.notifyDataChange(plansData);
 
     return data.content as unknown as SubscriptionPlansData;
+  }
+
+  private static notifyDataChange(plansData: SubscriptionPlansInsert): void {
+    import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('content_changed', { 
+        event: 'UPDATE', 
+        new: { subscription_plans: plansData } 
+      });
+    }).catch(error => {
+      console.warn('SubscriptionPlansService: Erro ao notificar mudança:', error);
+    });
   }
 
   static getDefaultPlansData(): SubscriptionPlansInsert {
