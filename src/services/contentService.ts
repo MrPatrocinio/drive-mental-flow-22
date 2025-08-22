@@ -1,3 +1,5 @@
+import { PricingInfo } from "./supabase/pricingService";
+
 export interface LandingPageContent {
   hero: {
     title: string;
@@ -5,7 +7,6 @@ export interface LandingPageContent {
     subtitle: string;
     ctaText: string;
     demoText: string;
-    videoUrl?: string;
   };
   features: Array<{
     id: string;
@@ -13,14 +14,6 @@ export interface LandingPageContent {
     title: string;
     description: string;
   }>;
-  pricing: {
-    price: number;
-    currency: string;
-    payment_type: string;
-    access_type: string;
-    benefits: string[];
-    button_text: string;
-  };
   footer: {
     copyright: string;
     lgpdText: string;
@@ -28,74 +21,79 @@ export interface LandingPageContent {
     privacyPolicyLink: string;
     termsOfServiceLink: string;
   };
+  pricing?: PricingInfo; // Optional property
 }
 
-export class ContentService {
-  private static readonly CONTENT_KEY = "drive_mental_content";
+class ContentService {
+  private landingPageContent: LandingPageContent;
 
-  // Landing Page Content Management
-  static getLandingPageContent(): LandingPageContent {
-    const stored = localStorage.getItem(this.CONTENT_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
+  constructor() {
+    // Initialize with default content
+    this.landingPageContent = this.getDefaultLandingPageContent();
+  }
 
-    // Default content
-    const defaultContent: LandingPageContent = {
+  getLandingPageContent(): LandingPageContent {
+    return this.landingPageContent;
+  }
+
+  saveLandingPageContent(content: LandingPageContent): void {
+    this.landingPageContent = content;
+  }
+
+  private getDefaultLandingPageContent(): LandingPageContent {
+    return {
       hero: {
-        title: "Transforme Sua Mente",
-        titleHighlight: "Instale Drives Mentais Poderosos",
-        subtitle: "Desenvolva todo seu potencial com áudios especializados em desenvolvimento pessoal. Reprogramação mental através de técnicas comprovadas.",
+        title: "Transforme sua mente e conquiste",
+        titleHighlight: "seus objetivos mais ambiciosos",
+        subtitle: "Desbloqueie todo o seu potencial com áudios de programação mental cientificamente desenvolvidos. Alcance o sucesso, a abundância e a realização pessoal que você sempre desejou.",
         ctaText: "Começar Agora",
-        demoText: "Ver Demo",
-        videoUrl: ""
+        demoText: "Ver Demo"
       },
       features: [
         {
-          id: "f1",
+          id: "feature-1",
           icon: "Brain",
-          title: "Desenvolvimento Mental",
-          description: "Técnicas avançadas de programação mental através de repetição auditiva"
+          title: "Programação Mental Avançada",
+          description: "Áudios desenvolvidos com técnicas neurocientíficas para reprogramar padrões mentais limitantes"
         },
         {
-          id: "f2",
-          icon: "Users",
-          title: "Comunidade Exclusiva",
-          description: "Acesso a uma comunidade de pessoas focadas em crescimento pessoal"
-        },
-        {
-          id: "f3",
-          icon: "Award",
+          id: "feature-2",
+          icon: "Target",
           title: "Resultados Comprovados",
-          description: "Metodologia testada e aprovada por milhares de usuários"
+          description: "Método testado e aprovado por milhares de pessoas que transformaram suas vidas"
+        },
+        {
+          id: "feature-3",
+          icon: "Clock",
+          title: "Apenas 20 Minutos por Dia",
+          description: "Transformação real com apenas alguns minutos de dedicação diária"
+        },
+        {
+          id: "feature-4",
+          icon: "Shield",
+          title: "100% Seguro e Natural",
+          description: "Técnicas naturais sem efeitos colaterais, baseadas em neurociência"
         }
       ],
-      pricing: {
-        price: 97,
-        currency: "R$",
-        payment_type: "Pagamento único",
-        access_type: "Acesso vitalício",
-        benefits: [
-          "Acesso completo aos áudios especializados",
-          "Suporte especializado 24/7",
-          "Atualizações constantes de conteúdo"
-        ],
-        button_text: "Começar Agora"
-      },
       footer: {
-        copyright: "© 2025 Drive Mental. Todos os direitos reservados.",
-        lgpdText: "Seus dados estão protegidos conforme a LGPD",
+        copyright: "© 2024 Drive Mental. Todos os direitos reservados.",
+        lgpdText: "Este site está em conformidade com a LGPD",
         lgpdLink: "/lgpd",
-        privacyPolicyLink: "/politica-privacidade",
-        termsOfServiceLink: "/termos-uso"
+        privacyPolicyLink: "/privacy",
+        termsOfServiceLink: "/terms"
+      },
+      pricing: {
+        currency: 'R$',
+        price: 63.50,
+        benefits: [
+          'Acesso completo a todos os áudios',
+          'Novos conteúdos mensais',
+          'Suporte prioritário',
+          'Sem compromisso, cancele quando quiser'
+        ]
       }
     };
-
-    this.saveLandingPageContent(defaultContent);
-    return defaultContent;
-  }
-
-  static saveLandingPageContent(content: LandingPageContent): void {
-    localStorage.setItem(this.CONTENT_KEY, JSON.stringify(content));
   }
 }
+
+export const ContentService = new ContentService();

@@ -24,104 +24,85 @@ export interface LandingPageContent {
   };
 }
 
-export class SupabaseContentService {
-  private static readonly LANDING_PAGE_SECTION = 'landing_page';
-
-  static async getLandingPageContent(): Promise<LandingPageContent> {
-    console.log('SupabaseContentService: Buscando conteúdo da landing page');
-    
+class SupabaseContentService {
+  async getLandingPageContent(): Promise<LandingPageContent> {
     try {
       const { data, error } = await supabase
         .from('landing_content')
         .select('content')
-        .eq('section', this.LANDING_PAGE_SECTION)
-        .maybeSingle();
+        .eq('id', 'landing_page')
+        .single();
 
       if (error) {
-        console.error('SupabaseContentService: Erro ao buscar conteúdo:', error);
-        throw error;
+        console.warn('Erro ao buscar conteúdo da landing page:', error);
+        return this.getDefaultContent();
       }
 
-      if (!data) {
-        console.log('SupabaseContentService: Nenhum conteúdo encontrado, retornando dados padrão');
-        return this.getDefaultLandingContent();
+      if (data?.content) {
+        // Validate that the content has the expected structure
+        const content = data.content as LandingPageContent;
+        if (content.hero && content.features && content.footer) {
+          return content;
+        }
       }
 
-      console.log('SupabaseContentService: Conteúdo encontrado');
-      return data.content as LandingPageContent;
+      return this.getDefaultContent();
     } catch (error) {
-      console.error('SupabaseContentService: Erro geral:', error);
-      return this.getDefaultLandingContent();
+      console.error('Erro ao carregar conteúdo da landing page:', error);
+      return this.getDefaultContent();
     }
   }
 
-  static async saveLandingPageContent(content: LandingPageContent): Promise<void> {
-    console.log('SupabaseContentService: Salvando conteúdo da landing page');
-    
+  async saveLandingPageContent(content: LandingPageContent): Promise<void> {
     try {
       const { error } = await supabase
         .from('landing_content')
         .upsert({
-          section: this.LANDING_PAGE_SECTION,
-          content: content as any,
+          id: 'landing_page',
+          content: content,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'section'
         });
 
-      if (error) {
-        console.error('SupabaseContentService: Erro ao salvar conteúdo:', error);
-        throw error;
-      }
-
-      console.log('SupabaseContentService: Conteúdo salvo com sucesso');
-      
-      // Notificar mudança via DataSync
-      this.notifyContentChange(content);
+      if (error) throw error;
     } catch (error) {
-      console.error('SupabaseContentService: Erro geral ao salvar:', error);
+      console.error('Erro ao salvar conteúdo da landing page:', error);
       throw error;
     }
   }
 
-  private static notifyContentChange(content: LandingPageContent): void {
-    import('@/services/dataSync').then(({ DataSyncService }) => {
-      DataSyncService.forceNotification('content_changed', { 
-        event: 'UPDATE', 
-        new: { landing_page: content } 
-      });
-    }).catch(error => {
-      console.warn('SupabaseContentService: Erro ao notificar mudança:', error);
-    });
-  }
-
-  private static getDefaultLandingContent(): LandingPageContent {
+  private getDefaultContent(): LandingPageContent {
     return {
       hero: {
         title: "Transforme sua mente e conquiste",
         titleHighlight: "seus objetivos mais ambiciosos",
-        subtitle: "Com áudios de programação mental baseados em neurociência, você desenvolve novos padrões mentais em apenas 21 dias. Reprograme sua mente para o sucesso, abundância e realização pessoal.",
-        ctaText: "Começar Transformação",
-        demoText: "Ver Demonstração"
+        subtitle: "Desbloqueie todo o seu potencial com áudios de programação mental cientificamente desenvolvidos. Alcance o sucesso, a abundância e a realização pessoal que você sempre desejou.",
+        ctaText: "Começar Agora",
+        demoText: "Ver Demo"
       },
       features: [
         {
-          id: "1",
+          id: "feature-1",
           icon: "Brain",
-          title: "Programação Mental Científica",
-          description: "Áudios desenvolvidos com base em neurociência para reprogramar padrões mentais limitantes"
+          title: "Programação Mental Avançada",
+          description: "Áudios desenvolvidos com técnicas neurocientíficas para reprogramar padrões mentais limitantes"
         },
         {
-          id: "2", 
+          id: "feature-2",
           icon: "Target",
-          title: "Resultados em 21 Dias",
-          description: "Metodologia comprovada que gera mudanças reais em apenas 3 semanas de prática consistente"
+          title: "Resultados Comprovados",
+          description: "Método testado e aprovado por milhares de pessoas que transformaram suas vidas"
         },
         {
-          id: "3",
-          icon: "Heart",
-          title: "Transformação Completa",
-          description: "Desenvolva mindset de abundância, autoconfiança e foco para alcançar seus objetivos"
+          id: "feature-3",
+          icon: "Clock",
+          title: "Apenas 20 Minutos por Dia",
+          description: "Transformação real com apenas alguns minutos de dedicação diária"
+        },
+        {
+          id: "feature-4",
+          icon: "Shield",
+          title: "100% Seguro e Natural",
+          description: "Técnicas naturais sem efeitos colaterais, baseadas em neurociência"
         }
       ],
       footer: {
@@ -134,3 +115,5 @@ export class SupabaseContentService {
     };
   }
 }
+
+export const SupabaseContentService = new SupabaseContentService();

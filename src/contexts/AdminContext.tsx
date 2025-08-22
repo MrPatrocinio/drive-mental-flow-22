@@ -1,10 +1,9 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { ContentService, LandingPageContent } from '@/services/contentService';
+import { ContentService } from '@/services/contentService';
 import { Field as EditableField, FieldService } from '@/services/supabase/fieldService';
 import { Audio as EditableAudio, AudioService } from '@/services/supabase/audioService';
-import { SupabaseContentService } from '@/services/supabase/contentService';
+import { SupabaseContentService, LandingPageContent } from '@/services/supabase/contentService';
 import { PricingService, PricingInfo, PricingInsert } from '@/services/supabase/pricingService';
 import { useDataSync } from '@/hooks/useDataSync';
 import type { AuthUser } from '@/services/supabase/authService';
@@ -42,10 +41,34 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   // Use Supabase Auth for authentication
   const { user, isAuthenticated, isLoading, signOut } = useSupabaseAuth();
   
-  // Content state
-  const [landingContent, setLandingContent] = useState<LandingPageContent>(() => 
-    ContentService.getLandingPageContent()
-  );
+  // Content state - Initialize with default content from Supabase service
+  const [landingContent, setLandingContent] = useState<LandingPageContent>(() => {
+    // Use a default structure that matches our Supabase type
+    return {
+      hero: {
+        title: "Transforme sua mente e conquiste",
+        titleHighlight: "seus objetivos mais ambiciosos",
+        subtitle: "Desbloqueie todo o seu potencial com áudios de programação mental cientificamente desenvolvidos.",
+        ctaText: "Começar Agora",
+        demoText: "Ver Demo"
+      },
+      features: [
+        {
+          id: "feature-1",
+          icon: "Brain",
+          title: "Programação Mental Avançada",
+          description: "Áudios desenvolvidos com técnicas neurocientíficas"
+        }
+      ],
+      footer: {
+        copyright: "© 2024 Drive Mental. Todos os direitos reservados.",
+        lgpdText: "Este site está em conformidade com a LGPD",
+        lgpdLink: "/lgpd",
+        privacyPolicyLink: "/privacy",
+        termsOfServiceLink: "/terms"
+      }
+    };
+  });
   const [fields, setFields] = useState<EditableField[]>([]);
   const [audios, setAudios] = useState<EditableAudio[]>([]);
   const [pricing, setPricing] = useState<PricingInfo | null>(null);
@@ -80,7 +103,21 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     console.log('AdminContext: Salvando landing content', content);
     try {
       await SupabaseContentService.saveLandingPageContent(content);
-      ContentService.saveLandingPageContent(content);
+      // Update local ContentService cache with the compatible format
+      const compatibleContent = {
+        ...content,
+        pricing: {
+          currency: 'R$',
+          price: 63.50,
+          benefits: [
+            'Acesso completo a todos os áudios',
+            'Novos conteúdos mensais',
+            'Suporte prioritário',
+            'Sem compromisso, cancele quando quiser'
+          ]
+        }
+      };
+      ContentService.saveLandingPageContent(compatibleContent);
       setLandingContent(content);
       // Force refresh for other components
       import('@/services/dataSync').then(({ DataSyncService }) => {
@@ -191,8 +228,21 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         PricingService.get()
       ]);
 
-      // Update ContentService cache
-      ContentService.saveLandingPageContent(landingContentData);
+      // Update local ContentService cache with compatible format
+      const compatibleContent = {
+        ...landingContentData,
+        pricing: {
+          currency: 'R$',
+          price: 63.50,
+          benefits: [
+            'Acesso completo a todos os áudios',
+            'Novos conteúdos mensais',
+            'Suporte prioritário',
+            'Sem compromisso, cancele quando quiser'
+          ]
+        }
+      };
+      ContentService.saveLandingPageContent(compatibleContent);
       
       setLandingContent(landingContentData);
       setFields(fieldsData);
@@ -227,10 +277,76 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     
     // Actions
     updateLandingContent,
-    updateField,
-    deleteField,
-    updateAudio,
-    deleteAudio,
+    updateField: async (field: EditableField) => {
+      console.log('AdminContext: Salvando field', field);
+      try {
+        if (field.id) {
+          await FieldService.update(field.id, {
+            title: field.title,
+            icon_name: field.icon_name,
+            description: field.description || ''
+          });
+        }
+        await refreshData();
+        // Force refresh for other components
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('fields_changed');
+        });
+      } catch (error) {
+        console.error('AdminContext: Erro ao salvar field:', error);
+        throw error;
+      }
+    },
+    deleteField: async (fieldId: string) => {
+      console.log('AdminContext: Deletando field', fieldId);
+      try {
+        await FieldService.delete(fieldId);
+        await refreshData();
+        // Force refresh for other components
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('fields_changed');
+        });
+      } catch (error) {
+        console.error('AdminContext: Erro ao deletar field:', error);
+        throw error;
+      }
+    },
+    updateAudio: async (audio: EditableAudio) => {
+      console.log('AdminContext: Salvando audio', audio);
+      try {
+        if (audio.id) {
+          await AudioService.update(audio.id, {
+            title: audio.title,
+            field_id: audio.field_id,
+            duration: audio.duration,
+            tags: audio.tags || [],
+            url: audio.url
+          });
+        }
+        await refreshData();
+        // Force refresh for other components
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('audios_changed');
+        });
+      } catch (error) {
+        console.error('AdminContext: Erro ao salvar audio:', error);
+        throw error;
+      }
+    },
+    deleteAudio: async (audioId: string) => {
+      console.log('AdminContext: Deletando audio', audioId);
+      try {
+        await AudioService.delete(audioId);
+        await refreshData();
+        // Force refresh for other components
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('audios_changed');
+        });
+      } catch (error) {
+        console.error('AdminContext: Erro ao deletar audio:', error);
+        throw error;
+      }
+    },
     updatePricing,
     refreshData,
   };
