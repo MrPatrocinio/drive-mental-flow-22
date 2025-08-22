@@ -4,7 +4,7 @@
  * Responsabilidade: Exibir áudio de demonstração para visitantes
  * Princípio SRP: Apenas lógica de demonstração
  * Princípio KISS: Interface simples e direta
- * MELHORADO: Usa o novo sistema de áudio demo baseado em is_demo
+ * CORRIGIDO: Usa o novo sistema de áudio demo baseado em is_demo
  */
 
 import React, { useState, useEffect } from 'react';
@@ -12,12 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Play, Volume2, RefreshCw } from 'lucide-react';
-import { AudioDemoManagementService } from '@/services/audioDemoManagementService';
+import { AudioService } from '@/services/supabase/audioService';
+import { FieldService } from '@/services/supabase/fieldService';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
 import { Audio } from '@/services/supabase/audioService';
-import { FieldService } from '@/services/supabase/fieldService';
 
 // Hook seguro para navegação que funciona dentro e fora do contexto do Router
 const useSafeNavigate = () => {
@@ -45,26 +45,30 @@ export default function DemoPage() {
   const loadDemoAudio = async () => {
     try {
       setLoading(true);
-      const audio = await AudioDemoManagementService.getCurrentDemoAudio();
+      console.log('DemoPage: Carregando áudio de demonstração');
+      
+      // Usar o método correto que busca pela coluna is_demo
+      const audio = await AudioService.getDemoAudio();
       
       if (audio) {
+        console.log('DemoPage: Áudio demo encontrado:', audio.title);
         setDemoAudio(audio);
         
         // Buscar título do campo
         try {
-          const fields = await FieldService.getAll();
-          const field = fields.find(f => f.id === audio.field_id);
+          const field = await FieldService.getById(audio.field_id);
           setFieldTitle(field?.title || 'Campo não encontrado');
         } catch (error) {
-          console.error('Erro ao buscar campo:', error);
+          console.error('DemoPage: Erro ao buscar campo:', error);
           setFieldTitle('Campo não encontrado');
         }
       } else {
+        console.log('DemoPage: Nenhum áudio demo encontrado');
         setDemoAudio(null);
         toast.error('Nenhuma demonstração disponível no momento');
       }
     } catch (error) {
-      console.error('Error loading demo audio:', error);
+      console.error('DemoPage: Erro ao carregar áudio demo:', error);
       toast.error('Erro ao carregar demonstração');
     } finally {
       setLoading(false);

@@ -4,6 +4,7 @@
  * Responsabilidade: Gerenciar lógica de negócio para áudios de demonstração
  * Princípio SRP: Apenas operações relacionadas a demo de áudios
  * Princípio SSOT: Fonte única de verdade para operações de demo
+ * CORRIGIDO: Usa diretamente a coluna is_demo da tabela audios
  */
 
 import { AudioService, Audio } from './supabase/audioService';
@@ -46,11 +47,11 @@ export class AudioDemoManagementService {
   static async getCurrentDemoAudio(): Promise<Audio | null> {
     console.log('AudioDemoManagementService: Buscando áudio demo atual');
     
-    const allAudios = await AudioService.getAll();
-    const demoAudio = allAudios.find(audio => audio.is_demo);
+    // Usar o método getDemoAudio do AudioService que já implementa a busca por is_demo
+    const demoAudio = await AudioService.getDemoAudio();
     
     console.log('AudioDemoManagementService: Áudio demo encontrado:', demoAudio?.title || 'Nenhum');
-    return demoAudio || null;
+    return demoAudio;
   }
 
   /**
