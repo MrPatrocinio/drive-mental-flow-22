@@ -119,10 +119,6 @@ export class AudioService {
     }
 
     console.log('AudioService: Áudio criado com sucesso:', data.title);
-    
-    // Notificar mudança sem importação circular
-    this.notifyDataChange('INSERT', data);
-
     return data;
   }
 
@@ -141,10 +137,6 @@ export class AudioService {
     }
 
     console.log('AudioService: Áudio atualizado com sucesso:', data.title);
-    
-    // Notificar mudança sem importação circular
-    this.notifyDataChange('UPDATE', data);
-
     return data;
   }
 
@@ -161,9 +153,6 @@ export class AudioService {
     }
 
     console.log('AudioService: Áudio deletado com sucesso');
-    
-    // Notificar mudança sem importação circular
-    this.notifyDataChange('DELETE', { id });
   }
 
   /**
@@ -189,23 +178,5 @@ export class AudioService {
 
     console.log('AudioService: Áudio demo encontrado:', data.title);
     return data;
-  }
-
-  /**
-   * Método privado para notificar mudanças sem importação circular
-   */
-  private static notifyDataChange(event: 'INSERT' | 'UPDATE' | 'DELETE', data: any) {
-    // Usar setTimeout para evitar problemas de importação circular
-    setTimeout(async () => {
-      try {
-        const { DataSyncService } = await import('@/services/dataSync');
-        DataSyncService.forceNotification('audios_changed', { 
-          event, 
-          [event === 'DELETE' ? 'old' : 'new']: data 
-        });
-      } catch (error) {
-        console.warn('AudioService: Erro ao notificar mudança:', error);
-      }
-    }, 0);
   }
 }
