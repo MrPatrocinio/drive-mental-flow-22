@@ -9,7 +9,7 @@ export interface Audio {
   field_id: string;
   tags: string[];
   is_premium: boolean;
-  is_demo?: boolean; // ADICIONADO: suporte ao campo is_demo
+  is_demo?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -21,7 +21,7 @@ export interface AudioInsert {
   field_id: string;
   tags?: string[];
   is_premium?: boolean;
-  is_demo?: boolean; // ADICIONADO: suporte ao campo is_demo
+  is_demo?: boolean;
 }
 
 export interface AudioUpdate {
@@ -31,7 +31,7 @@ export interface AudioUpdate {
   field_id?: string;
   tags?: string[];
   is_premium?: boolean;
-  is_demo?: boolean; // ADICIONADO: suporte ao campo is_demo
+  is_demo?: boolean;
 }
 
 export interface AudioWithFile {
@@ -43,7 +43,7 @@ export interface AudioWithFile {
   url?: string;
   file?: File;
   is_premium?: boolean;
-  is_demo?: boolean; // ADICIONADO: suporte ao campo is_demo
+  is_demo?: boolean;
 }
 
 /**
@@ -105,7 +105,6 @@ export class AudioService {
     return data;
   }
 
-  // MELHORADO: Suporte ao campo is_demo
   static async create(audio: AudioInsert): Promise<Audio> {
     console.log('AudioService: Criando áudio:', audio);
     const { data, error } = await supabase
@@ -121,15 +120,12 @@ export class AudioService {
 
     console.log('AudioService: Áudio criado com sucesso:', data.title);
     
-    // Notificar mudança via DataSync
-    import('@/services/dataSync').then(({ DataSyncService }) => {
-      DataSyncService.forceNotification('audios_changed', { event: 'INSERT', new: data });
-    });
+    // Notificar mudança sem importação circular
+    this.notifyDataChange('INSERT', data);
 
     return data;
   }
 
-  // MELHORADO: Suporte ao campo is_demo
   static async update(id: string, audio: AudioUpdate): Promise<Audio> {
     console.log('AudioService: Atualizando áudio:', id, audio);
     const { data, error } = await supabase
@@ -146,10 +142,8 @@ export class AudioService {
 
     console.log('AudioService: Áudio atualizado com sucesso:', data.title);
     
-    // Notificar mudança via DataSync
-    import('@/services/dataSync').then(({ DataSyncService }) => {
-      DataSyncService.forceNotification('audios_changed', { event: 'UPDATE', new: data });
-    });
+    // Notificar mudança sem importação circular
+    this.notifyDataChange('UPDATE', data);
 
     return data;
   }
@@ -168,14 +162,12 @@ export class AudioService {
 
     console.log('AudioService: Áudio deletado com sucesso');
     
-    // Notificar mudança via DataSync
-    import('@/services/dataSync').then(({ DataSyncService }) => {
-      DataSyncService.forceNotification('audios_changed', { event: 'DELETE', old: { id } });
-    });
+    // Notificar mudança sem importação circular
+    this.notifyDataChange('DELETE', { id });
   }
 
   /**
-   * ADICIONADO: Busca o áudio atual de demonstração
+   * Busca o áudio atual de demonstração
    */
   static async getDemoAudio(): Promise<Audio | null> {
     console.log('AudioService: Buscando áudio de demonstração');
@@ -183,18 +175,37 @@ export class AudioService {
       .from('audios')
       .select('*')
       .eq('is_demo', true)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        console.log('AudioService: Nenhum áudio demo encontrado');
-        return null;
-      }
       console.error('AudioService: Erro ao buscar áudio demo:', error);
       throw error;
     }
 
+    if (!data) {
+      console.log('AudioService: Nenhum áudio demo encontrado');
+      return null;
+    }
+
     console.log('AudioService: Áudio demo encontrado:', data.title);
     return data;
+  }
+
+  /**
+   * Método privado para notificar mudanças sem importação circular
+   */
+  private static notifyDataChange(event: 'INSERT' | 'UPDATE' | 'DELETE', data: any) {
+    // Usar setTimeout para evitar problemas de importação circular
+    setTimeout(async () => {
+      try {
+        const { DataSyncService } = await import('@/services/dataSync');
+        DataSyncService.forceNotification('audios_changed', { 
+          event, 
+          [event === 'DELETE' ? 'old' : 'new']: data 
+        });
+      } catch (error) {
+        console.warn('AudioService: Erro ao notificar mudança:', error);
+      }
+    }, 0);
   }
 }
