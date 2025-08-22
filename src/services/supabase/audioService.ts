@@ -163,24 +163,38 @@ export class AudioService {
     console.log('AudioService: Buscando áudio de demonstração');
     
     try {
-      const response = await supabase
-        .from('audios')
-        .select('*')
-        .eq('is_demo', true);
-
-      if (response.error) {
-        console.error('AudioService: Erro ao buscar áudio demo:', response.error);
-        throw response.error;
-      }
-
-      const audios = response.data;
+      // Usar uma abordagem mais simples para evitar problemas de type inference
+      const result = await supabase.rpc('get_demo_audio');
       
-      if (!audios || audios.length === 0) {
+      if (result.error) {
+        console.error('AudioService: Erro ao buscar áudio demo:', result.error);
+        // Fallback para query manual se a função não existir
+        const fallbackResult = await supabase
+          .from('audios')
+          .select('id, title, url, duration, field_id, tags, is_premium, is_demo, created_at, updated_at')
+          .eq('is_demo', true)
+          .limit(1);
+        
+        if (fallbackResult.error) {
+          throw fallbackResult.error;
+        }
+        
+        if (!fallbackResult.data || fallbackResult.data.length === 0) {
+          console.log('AudioService: Nenhum áudio demo encontrado');
+          return null;
+        }
+        
+        const demoAudio = fallbackResult.data[0] as Audio;
+        console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
+        return demoAudio;
+      }
+      
+      if (!result.data || result.data.length === 0) {
         console.log('AudioService: Nenhum áudio demo encontrado');
         return null;
       }
-
-      const demoAudio: Audio = audios[0];
+      
+      const demoAudio = result.data[0] as Audio;
       console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
       return demoAudio;
     } catch (error) {
@@ -189,4 +203,3 @@ export class AudioService {
     }
   }
 }
-
