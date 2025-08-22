@@ -183,7 +183,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
 
   return (
     <div className="card-gradient rounded-xl p-6 space-y-6">
-      <audio ref={audioRef} src={audioUrl} preload="auto" crossOrigin="anonymous" />
+      {/* Remover crossOrigin para evitar problemas CORS desnecessários */}
+      <audio ref={audioRef} src={audioUrl} preload="metadata" />
       
       <div className="text-center">
         <h3 className="text-xl font-semibold text-foreground mb-2">{title}</h3>
@@ -207,7 +208,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       )}
 
-      {/* Error State - MELHORADO */}
+      {/* Error State */}
       {playerState.hasError && playerState.errorMessage && (
         <AudioErrorDisplay 
           error={playerState.errorMessage} 
