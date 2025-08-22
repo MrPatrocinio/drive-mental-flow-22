@@ -1,363 +1,304 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { X, Plus } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
-import { LandingPageContent } from '@/services/contentService';
-import { Plus, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import type { LandingPageContent } from '@/services/supabase/contentService';
 
-export const LandingContentForm: React.FC = () => {
+export const LandingContentForm = () => {
   const { landingContent, updateLandingContent } = useAdmin();
-  const [content, setContent] = useState<LandingPageContent>(landingContent);
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const [formData, setFormData] = useState<LandingPageContent>(landingContent);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    setFormData(landingContent);
+  }, [landingContent]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateLandingContent(content);
+    setIsLoading(true);
+
+    try {
+      await updateLandingContent(formData);
+      toast({
+        title: "Sucesso",
+        description: "Conteúdo da landing page atualizado com sucesso!",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar conteúdo:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar o conteúdo da landing page",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateHero = (field: keyof typeof content.hero, value: string) => {
-    setContent(prev => ({
-      ...prev,
-      hero: {
-        ...prev.hero,
-        [field]: value
-      }
-    }));
-  };
-
-  const updateFeature = (index: number, field: keyof typeof content.features[0], value: string) => {
-    setContent(prev => ({
-      ...prev,
-      features: prev.features.map((feature, i) => 
-        i === index ? { ...feature, [field]: value } : feature
-      )
-    }));
+  const updateFeature = (index: number, field: keyof typeof formData.features[0], value: string) => {
+    const newFeatures = [...formData.features];
+    newFeatures[index] = { ...newFeatures[index], [field]: value };
+    setFormData({ ...formData, features: newFeatures });
   };
 
   const addFeature = () => {
-    setContent(prev => ({
-      ...prev,
-      features: [
-        ...prev.features,
-        {
-          id: `f${Date.now()}`,
-          icon: 'Star',
-          title: 'Nova Funcionalidade',
-          description: 'Descrição da nova funcionalidade'
-        }
-      ]
-    }));
+    const newFeature = {
+      id: `feature-${Date.now()}`,
+      icon: 'Brain',
+      title: '',
+      description: ''
+    };
+    setFormData({
+      ...formData,
+      features: [...formData.features, newFeature]
+    });
   };
 
   const removeFeature = (index: number) => {
-    setContent(prev => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updatePricingBenefit = (index: number, value: string) => {
-    setContent(prev => ({
-      ...prev,
-      pricing: {
-        ...prev.pricing,
-        benefits: prev.pricing.benefits.map((benefit, i) => 
-          i === index ? value : benefit
-        )
-      }
-    }));
-  };
-
-  const addPricingBenefit = () => {
-    setContent(prev => ({
-      ...prev,
-      pricing: {
-        ...prev.pricing,
-        benefits: [...prev.pricing.benefits, 'Novo benefício']
-      }
-    }));
-  };
-
-  const removePricingBenefit = (index: number) => {
-    setContent(prev => ({
-      ...prev,
-      pricing: {
-        ...prev.pricing,
-        benefits: prev.pricing.benefits.filter((_, i) => i !== index)
-      }
-    }));
+    const newFeatures = formData.features.filter((_, i) => i !== index);
+    setFormData({ ...formData, features: newFeatures });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Hero Section */}
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Seção Hero</CardTitle>
+          <CardTitle>Editar Conteúdo da Landing Page</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="hero-title">Título Principal (em branco)</Label>
-            <Input
-              id="hero-title"
-              value={content.hero.title}
-              onChange={(e) => updateHero('title', e.target.value)}
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="hero-title-highlight">Destaque do Título (em amarelo)</Label>
-            <Input
-              id="hero-title-highlight"
-              value={content.hero.titleHighlight}
-              onChange={(e) => updateHero('titleHighlight', e.target.value)}
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="hero-video">URL do Vídeo do YouTube (embed)</Label>
-            <Input
-              id="hero-video"
-              value={content.hero.videoUrl || ''}
-              onChange={(e) => updateHero('videoUrl', e.target.value)}
-              placeholder="https://www.youtube.com/embed/VIDEO_ID"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="hero-subtitle">Subtítulo</Label>
-            <Textarea
-              id="hero-subtitle"
-              value={content.hero.subtitle}
-              onChange={(e) => updateHero('subtitle', e.target.value)}
-              rows={3}
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="hero-cta">Texto do Botão Principal</Label>
-              <Input
-                id="hero-cta"
-                value={content.hero.ctaText}
-                onChange={(e) => updateHero('ctaText', e.target.value)}
-              />
-            </div>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
             
-            <div>
-              <Label htmlFor="hero-demo">Texto do Botão Demo</Label>
-              <Input
-                id="hero-demo"
-                value={content.hero.demoText}
-                onChange={(e) => updateHero('demoText', e.target.value)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            {/* Seção Hero */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Seção Principal (Hero)</h3>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hero-title">Título Principal</Label>
+                  <Input
+                    id="hero-title"
+                    value={formData.hero.title}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      hero: { ...formData.hero, title: e.target.value }
+                    })}
+                    placeholder="Ex: Transforme sua mente e conquiste"
+                  />
+                </div>
 
-      {/* Features Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Funcionalidades</CardTitle>
-            <Button type="button" onClick={addFeature} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {content.features.map((feature, index) => (
-            <div key={feature.id} className="border rounded-lg p-4 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hero-title-highlight">Título Destacado</Label>
+                  <Input
+                    id="hero-title-highlight"
+                    value={formData.hero.titleHighlight}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      hero: { ...formData.hero, titleHighlight: e.target.value }
+                    })}
+                    placeholder="Ex: seus objetivos mais ambiciosos"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hero-subtitle">Subtítulo</Label>
+                  <Textarea
+                    id="hero-subtitle"
+                    value={formData.hero.subtitle}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      hero: { ...formData.hero, subtitle: e.target.value }
+                    })}
+                    placeholder="Descrição que explica o valor da plataforma"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hero-cta">Texto do Botão Principal</Label>
+                    <Input
+                      id="hero-cta"
+                      value={formData.hero.ctaText}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        hero: { ...formData.hero, ctaText: e.target.value }
+                      })}
+                      placeholder="Ex: Começar Agora"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="hero-demo">Texto do Botão Demo</Label>
+                    <Input
+                      id="hero-demo"
+                      value={formData.hero.demoText}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        hero: { ...formData.hero, demoText: e.target.value }
+                      })}
+                      placeholder="Ex: Ver Demo"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Features */}
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="font-medium">Funcionalidade {index + 1}</h4>
+                <h3 className="text-lg font-semibold">Funcionalidades/Benefícios</h3>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  onClick={() => removeFeature(index)}
-                  className="text-destructive hover:text-destructive"
+                  onClick={addFeature}
+                  className="flex items-center gap-2"
                 >
-                  <X className="h-4 w-4" />
+                  <Plus className="h-4 w-4" />
+                  Adicionar Funcionalidade
                 </Button>
               </div>
+
+              <div className="space-y-4">
+                {formData.features.map((feature, index) => (
+                  <Card key={feature.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Funcionalidade {index + 1}</Label>
+                        {formData.features.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeFeature(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <Input
+                          value={feature.icon}
+                          onChange={(e) => updateFeature(index, 'icon', e.target.value)}
+                          placeholder="Nome do ícone (ex: Brain)"
+                        />
+                        <Input
+                          value={feature.title}
+                          onChange={(e) => updateFeature(index, 'title', e.target.value)}
+                          placeholder="Título da funcionalidade"
+                        />
+                        <Input
+                          value={feature.description}
+                          onChange={(e) => updateFeature(index, 'description', e.target.value)}
+                          placeholder="Descrição da funcionalidade"
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Footer */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Rodapé</h3>
               
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Ícone</Label>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="footer-copyright">Copyright</Label>
                   <Input
-                    value={feature.icon}
-                    onChange={(e) => updateFeature(index, 'icon', e.target.value)}
-                    placeholder="Nome do ícone Lucide"
+                    id="footer-copyright"
+                    value={formData.footer.copyright}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      footer: { ...formData.footer, copyright: e.target.value }
+                    })}
+                    placeholder="© 2024 Drive Mental. Todos os direitos reservados."
                   />
                 </div>
-                
-                <div>
-                  <Label>Título</Label>
+
+                <div className="space-y-2">
+                  <Label htmlFor="footer-lgpd-text">Texto LGPD</Label>
                   <Input
-                    value={feature.title}
-                    onChange={(e) => updateFeature(index, 'title', e.target.value)}
+                    id="footer-lgpd-text"
+                    value={formData.footer.lgpdText}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      footer: { ...formData.footer, lgpdText: e.target.value }
+                    })}
+                    placeholder="Este site está em conformidade com a LGPD"
                   />
                 </div>
-                
-                <div>
-                  <Label>Descrição</Label>
-                  <Textarea
-                    value={feature.description}
-                    onChange={(e) => updateFeature(index, 'description', e.target.value)}
-                    rows={2}
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="footer-lgpd-link">Link LGPD</Label>
+                    <Input
+                      id="footer-lgpd-link"
+                      value={formData.footer.lgpdLink}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        footer: { ...formData.footer, lgpdLink: e.target.value }
+                      })}
+                      placeholder="/lgpd"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="footer-privacy-link">Link Política de Privacidade</Label>
+                    <Input
+                      id="footer-privacy-link"
+                      value={formData.footer.privacyPolicyLink}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        footer: { ...formData.footer, privacyPolicyLink: e.target.value }
+                      })}
+                      placeholder="/privacy"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="footer-terms-link">Link Termos de Uso</Label>
+                    <Input
+                      id="footer-terms-link"
+                      value={formData.footer.termsOfServiceLink}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        footer: { ...formData.footer, termsOfServiceLink: e.target.value }
+                      })}
+                      placeholder="/terms"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
 
-      {/* Pricing Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Preços e Benefícios</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="price">Preço</Label>
-              <Input
-                id="price"
-                type="number"
-                value={content.pricing.price}
-                onChange={(e) => setContent(prev => ({
-                  ...prev,
-                  pricing: { ...prev.pricing, price: Number(e.target.value) }
-                }))}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="currency">Moeda</Label>
-              <Input
-                id="currency"
-                value={content.pricing.currency}
-                onChange={(e) => setContent(prev => ({
-                  ...prev,
-                  pricing: { ...prev.pricing, currency: e.target.value }
-                }))}
-              />
-            </div>
-          </div>
-          
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <Label>Benefícios</Label>
-              <Button type="button" onClick={addPricingBenefit} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar
+            <div className="flex gap-2 pt-4">
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1"
+              >
+                {isLoading ? 'Salvando...' : 'Salvar Alterações'}
               </Button>
             </div>
-            
-            <div className="space-y-2">
-              {content.pricing.benefits.map((benefit, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    value={benefit}
-                    onChange={(e) => updatePricingBenefit(index, e.target.value)}
-                    placeholder="Benefício"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removePricingBenefit(index)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
+          </form>
         </CardContent>
       </Card>
-
-      {/* Footer Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Rodapé</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="footer-copyright">Copyright</Label>
-            <Input
-              id="footer-copyright"
-              value={content.footer.copyright}
-              onChange={(e) => setContent(prev => ({
-                ...prev,
-                footer: { ...prev.footer, copyright: e.target.value }
-              }))}
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="footer-lgpd-text">Texto sobre LGPD</Label>
-            <Input
-              id="footer-lgpd-text"
-              value={content.footer.lgpdText}
-              onChange={(e) => setContent(prev => ({
-                ...prev,
-                footer: { ...prev.footer, lgpdText: e.target.value }
-              }))}
-            />
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="footer-lgpd-link">Link LGPD</Label>
-              <Input
-                id="footer-lgpd-link"
-                value={content.footer.lgpdLink}
-                onChange={(e) => setContent(prev => ({
-                  ...prev,
-                  footer: { ...prev.footer, lgpdLink: e.target.value }
-                }))}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="footer-privacy-link">Link Política de Privacidade</Label>
-              <Input
-                id="footer-privacy-link"
-                value={content.footer.privacyPolicyLink}
-                onChange={(e) => setContent(prev => ({
-                  ...prev,
-                  footer: { ...prev.footer, privacyPolicyLink: e.target.value }
-                }))}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="footer-terms-link">Link Termos de Uso</Label>
-              <Input
-                id="footer-terms-link"
-                value={content.footer.termsOfServiceLink}
-                onChange={(e) => setContent(prev => ({
-                  ...prev,
-                  footer: { ...prev.footer, termsOfServiceLink: e.target.value }
-                }))}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end">
-        <Button type="submit" variant="premium" size="lg">
-          Salvar Alterações
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 };

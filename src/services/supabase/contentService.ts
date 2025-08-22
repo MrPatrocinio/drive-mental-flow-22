@@ -8,7 +8,6 @@ export interface LandingPageContent {
     subtitle: string;
     ctaText: string;
     demoText: string;
-    videoUrl?: string;
   };
   features: Array<{
     id: string;
@@ -16,14 +15,6 @@ export interface LandingPageContent {
     title: string;
     description: string;
   }>;
-  pricing: {
-    price: number;
-    currency: string;
-    payment_type: string;
-    access_type: string;
-    benefits: string[];
-    button_text: string;
-  };
   footer: {
     copyright: string;
     lgpdText: string;
@@ -34,128 +25,111 @@ export interface LandingPageContent {
 }
 
 export class SupabaseContentService {
+  private static readonly LANDING_PAGE_SECTION = 'landing_page';
+
   static async getLandingPageContent(): Promise<LandingPageContent> {
+    console.log('SupabaseContentService: Buscando conteúdo da landing page');
+    
     try {
-      console.log('SupabaseContentService: Buscando conteúdo da landing page');
       const { data, error } = await supabase
         .from('landing_content')
-        .select('*');
+        .select('content')
+        .eq('section', this.LANDING_PAGE_SECTION)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('SupabaseContentService: Erro ao buscar conteúdo:', error);
+        throw error;
+      }
 
-      // Convert array of sections to content object
-      const content: Partial<LandingPageContent> = {};
-      
-      data.forEach(item => {
-        if (item.section === 'hero') {
-          content.hero = item.content as LandingPageContent['hero'];
-        } else if (item.section === 'features') {
-          content.features = item.content as LandingPageContent['features'];
-        } else if (item.section === 'pricing') {
-          content.pricing = item.content as LandingPageContent['pricing'];
-        } else if (item.section === 'footer') {
-          content.footer = item.content as LandingPageContent['footer'];
-        }
-      });
+      if (!data) {
+        console.log('SupabaseContentService: Nenhum conteúdo encontrado, retornando dados padrão');
+        return this.getDefaultLandingContent();
+      }
 
-      const finalContent = {
-        hero: content.hero || this.getDefaultContent().hero,
-        features: content.features || this.getDefaultContent().features,
-        pricing: content.pricing || this.getDefaultContent().pricing,
-        footer: content.footer || this.getDefaultContent().footer
-      };
-
-      console.log('SupabaseContentService: Conteúdo carregado com sucesso');
-      return finalContent;
+      console.log('SupabaseContentService: Conteúdo encontrado');
+      return data.content as LandingPageContent;
     } catch (error) {
-      console.error('SupabaseContentService: Erro ao buscar conteúdo:', error);
-      return this.getDefaultContent();
+      console.error('SupabaseContentService: Erro geral:', error);
+      return this.getDefaultLandingContent();
     }
   }
 
   static async saveLandingPageContent(content: LandingPageContent): Promise<void> {
+    console.log('SupabaseContentService: Salvando conteúdo da landing page');
+    
     try {
-      console.log('SupabaseContentService: Salvando conteúdo da landing page');
-      
-      // Upsert each section separately
-      const sections = [
-        { section: 'hero', content: content.hero },
-        { section: 'features', content: content.features },
-        { section: 'pricing', content: content.pricing },
-        { section: 'footer', content: content.footer }
-      ];
+      const { error } = await supabase
+        .from('landing_content')
+        .upsert({
+          section: this.LANDING_PAGE_SECTION,
+          content: content as any,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'section'
+        });
 
-      for (const section of sections) {
-        const { error } = await supabase
-          .from('landing_content')
-          .upsert(section, { 
-            onConflict: 'section',
-            ignoreDuplicates: false 
-          });
-
-        if (error) throw error;
+      if (error) {
+        console.error('SupabaseContentService: Erro ao salvar conteúdo:', error);
+        throw error;
       }
 
       console.log('SupabaseContentService: Conteúdo salvo com sucesso');
       
       // Notificar mudança via DataSync
-      import('@/services/dataSync').then(({ DataSyncService }) => {
-        DataSyncService.forceNotification('content_changed', { event: 'UPDATE', new: content });
-      });
+      this.notifyContentChange(content);
     } catch (error) {
-      console.error('SupabaseContentService: Erro ao salvar conteúdo:', error);
+      console.error('SupabaseContentService: Erro geral ao salvar:', error);
       throw error;
     }
   }
 
-  private static getDefaultContent(): LandingPageContent {
+  private static notifyContentChange(content: LandingPageContent): void {
+    import('@/services/dataSync').then(({ DataSyncService }) => {
+      DataSyncService.forceNotification('content_changed', { 
+        event: 'UPDATE', 
+        new: { landing_page: content } 
+      });
+    }).catch(error => {
+      console.warn('SupabaseContentService: Erro ao notificar mudança:', error);
+    });
+  }
+
+  private static getDefaultLandingContent(): LandingPageContent {
     return {
       hero: {
-        title: "Transforme Sua Mente",
-        titleHighlight: "Instale Drives Mentais Poderosos",
-        subtitle: "Desenvolva todo seu potencial com áudios especializados em desenvolvimento pessoal. Reprogramação mental através de técnicas comprovadas.",
-        ctaText: "Começar Agora",
-        demoText: "Ver Demo",
-        videoUrl: ""
+        title: "Transforme sua mente e conquiste",
+        titleHighlight: "seus objetivos mais ambiciosos",
+        subtitle: "Com áudios de programação mental baseados em neurociência, você desenvolve novos padrões mentais em apenas 21 dias. Reprograme sua mente para o sucesso, abundância e realização pessoal.",
+        ctaText: "Começar Transformação",
+        demoText: "Ver Demonstração"
       },
       features: [
         {
-          id: "f1",
+          id: "1",
           icon: "Brain",
-          title: "Desenvolvimento Mental",
-          description: "Técnicas avançadas de programação mental através de repetição auditiva"
+          title: "Programação Mental Científica",
+          description: "Áudios desenvolvidos com base em neurociência para reprogramar padrões mentais limitantes"
         },
         {
-          id: "f2",
-          icon: "Users",
-          title: "Comunidade Exclusiva",
-          description: "Acesso a uma comunidade de pessoas focadas em crescimento pessoal"
+          id: "2", 
+          icon: "Target",
+          title: "Resultados em 21 Dias",
+          description: "Metodologia comprovada que gera mudanças reais em apenas 3 semanas de prática consistente"
         },
         {
-          id: "f3",
-          icon: "Award",
-          title: "Resultados Comprovados",
-          description: "Metodologia testada e aprovada por milhares de usuários"
+          id: "3",
+          icon: "Heart",
+          title: "Transformação Completa",
+          description: "Desenvolva mindset de abundância, autoconfiança e foco para alcançar seus objetivos"
         }
       ],
-      pricing: {
-        price: 97,
-        currency: "R$",
-        payment_type: "Pagamento único",
-        access_type: "Acesso vitalício",
-        benefits: [
-          "Acesso completo aos áudios especializados",
-          "Suporte especializado 24/7",
-          "Atualizações constantes de conteúdo"
-        ],
-        button_text: "Começar Agora"
-      },
       footer: {
-        copyright: "© 2025 Drive Mental. Todos os direitos reservados.",
-        lgpdText: "Seus dados estão protegidos conforme a LGPD",
+        copyright: "© 2024 Drive Mental. Todos os direitos reservados.",
+        lgpdText: "Este site está em conformidade com a LGPD",
         lgpdLink: "/lgpd",
-        privacyPolicyLink: "/politica-privacidade", 
-        termsOfServiceLink: "/termos-uso"
+        privacyPolicyLink: "/privacy",
+        termsOfServiceLink: "/terms"
       }
     };
   }

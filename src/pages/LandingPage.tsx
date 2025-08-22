@@ -9,7 +9,7 @@ import { FieldService } from "@/services/supabase/fieldService";
 import { useDataSync } from "@/hooks/useDataSync";
 import { useVideoControls } from "@/hooks/useVideoControls";
 import { useVideoLifecycle } from "@/hooks/useVideoLifecycle";
-import { PricingDisplay } from "@/components/PricingDisplay";
+import { SubscriptionPlans } from "@/components/subscription/SubscriptionPlans";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
 import * as Icons from "lucide-react";
@@ -295,27 +295,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Subscription Plans Section - NOVO SISTEMA */}
       <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 px-2">
             Invista em seu <span className="text-premium">Desenvolvimento</span>
           </h2>
           <p className="text-center text-muted-foreground mb-8 md:mb-12 text-base md:text-lg px-2 max-w-2xl mx-auto">
-            Comece sua transformação hoje mesmo
+            Escolha o plano ideal para sua transformação
           </p>
-          <PricingDisplay />
-          <div className="text-center mt-8">
-            <Button 
-              variant="premium" 
-              size="lg"
-              onClick={() => navigate('/assinatura')}
-              className="animate-pulse-glow"
-            >
-              {content.hero.ctaText}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </div>
+          <SubscriptionPlans />
         </div>
       </section>
 
