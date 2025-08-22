@@ -1,4 +1,5 @@
 
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Audio {
@@ -161,26 +162,31 @@ export class AudioService {
   static async getDemoAudio(): Promise<Audio | null> {
     console.log('AudioService: Buscando áudio de demonstração');
     
-    const query = supabase
-      .from('audios')
-      .select('*')
-      .eq('is_demo', true)
-      .limit(1);
+    try {
+      const response = await supabase
+        .from('audios')
+        .select('*')
+        .eq('is_demo', true);
 
-    const { data, error } = await query;
+      if (response.error) {
+        console.error('AudioService: Erro ao buscar áudio demo:', response.error);
+        throw response.error;
+      }
 
-    if (error) {
-      console.error('AudioService: Erro ao buscar áudio demo:', error);
+      const audios = response.data;
+      
+      if (!audios || audios.length === 0) {
+        console.log('AudioService: Nenhum áudio demo encontrado');
+        return null;
+      }
+
+      const demoAudio: Audio = audios[0];
+      console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
+      return demoAudio;
+    } catch (error) {
+      console.error('AudioService: Erro inesperado ao buscar áudio demo:', error);
       throw error;
     }
-
-    if (!data || data.length === 0) {
-      console.log('AudioService: Nenhum áudio demo encontrado');
-      return null;
-    }
-
-    const demoAudio = data[0] as Audio;
-    console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
-    return demoAudio;
   }
 }
+
