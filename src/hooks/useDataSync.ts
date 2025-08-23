@@ -6,7 +6,7 @@
  * Princípio DRY: Hook reutilizável para qualquer componente
  */
 
-import { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { dataSyncService, DataChangeEvent } from '@/services/dataSync';
 
 interface DataSyncCallbacks {
@@ -17,7 +17,7 @@ interface DataSyncCallbacks {
 }
 
 export const useDataSync = (callbacks?: DataSyncCallbacks) => {
-  const [syncTrigger, setSyncTrigger] = useState(0);
+  const [syncTrigger, setSyncTrigger] = React.useState(0);
 
   const handleDataChange = useCallback((event: DataChangeEvent, payload?: any) => {
     console.log('Data sync event received:', event, payload);
@@ -44,7 +44,7 @@ export const useDataSync = (callbacks?: DataSyncCallbacks) => {
     }
   }, [callbacks]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const unsubscribe = dataSyncService.subscribe(handleDataChange);
     
     return () => {
