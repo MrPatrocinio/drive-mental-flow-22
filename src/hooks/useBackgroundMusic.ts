@@ -5,28 +5,28 @@
  * Princípio SRP: Apenas lógica de hook para background music
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { backgroundMusicPlayer, BackgroundMusicState } from '@/services/backgroundMusicPlayerService';
 import { audioPreferencesService } from '@/services/audioPreferencesService';
 import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
 export const useBackgroundMusic = () => {
-  const [state, setState] = useState<BackgroundMusicState>(backgroundMusicPlayer.getState());
-  const [isEnabled, setIsEnabled] = useState(false);
+  const [state, setState] = React.useState<BackgroundMusicState>(backgroundMusicPlayer.getState());
+  const [isEnabled, setIsEnabled] = React.useState(false);
   
   // Obtém contexto com fallback seguro
   const audioPlaybackContext = useAudioPlaybackSafe();
   const shouldPlayBackgroundMusic = audioPlaybackContext?.shouldPlayBackgroundMusic || false;
 
   // Carrega preferências do usuário
-  useEffect(() => {
+  React.useEffect(() => {
     const preferences = audioPreferencesService.getPreferences();
     console.log('useBackgroundMusic: Preferências carregadas:', preferences);
     setIsEnabled(preferences.backgroundMusicEnabled);
   }, []);
 
   // Monitora mudanças no estado do player
-  useEffect(() => {
+  React.useEffect(() => {
     console.log('useBackgroundMusic: Configurando listener de estado');
     const unsubscribe = backgroundMusicPlayer.onStateChange(setState);
     
@@ -41,7 +41,7 @@ export const useBackgroundMusic = () => {
   }, []);
 
   // Controla reprodução baseado no contexto de áudio principal (com lógica otimizada)
-  useEffect(() => {
+  React.useEffect(() => {
     console.log('useBackgroundMusic: Verificando estado para reprodução', {
       isEnabled,
       shouldPlayBackgroundMusic,
@@ -68,7 +68,7 @@ export const useBackgroundMusic = () => {
     }
   }, [isEnabled, shouldPlayBackgroundMusic, state.isPlaying, state.isLoading, state.hasError]);
 
-  const toggleEnabled = useCallback((enabled: boolean) => {
+  const toggleEnabled = React.useCallback((enabled: boolean) => {
     console.log('useBackgroundMusic: Toggle ativado:', enabled);
     setIsEnabled(enabled);
     
@@ -86,17 +86,17 @@ export const useBackgroundMusic = () => {
     }
   }, [state.isPlaying]);
 
-  const setVolume = useCallback((volume: number) => {
+  const setVolume = React.useCallback((volume: number) => {
     console.log('useBackgroundMusic: Definindo volume:', volume);
     backgroundMusicPlayer.setVolume(volume / 100);
   }, []);
 
-  const setMuted = useCallback((muted: boolean) => {
+  const setMuted = React.useCallback((muted: boolean) => {
     console.log('useBackgroundMusic: Definindo mute:', muted);
     backgroundMusicPlayer.setMuted(muted);
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = React.useCallback(async () => {
     console.log('useBackgroundMusic: Refreshing player');
     await backgroundMusicPlayer.refresh();
   }, []);

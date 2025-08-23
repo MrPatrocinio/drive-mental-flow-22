@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+
+import React from 'react';
 import { AudioValidationService } from '@/services/audioValidationService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
 import { AudioLoadingTimeoutService } from '@/services/audioLoadingTimeoutService';
 import { AudioLoadingStateService, AudioLoadingState } from '@/services/audioLoadingStateService';
 import { AudioEventManagerService } from '@/services/audioEventManagerService';
+import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
 export interface AudioPlayerState {
   isPlaying: boolean;
@@ -25,23 +27,27 @@ export const useAudioPlayer = (
   onRepeatComplete?: () => void,
   onError?: (error: string) => void
 ) => {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const [repeatCount, setRepeatCount] = useState(0);
-  const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(0);
-  const [isValidatingUrl, setIsValidatingUrl] = useState(false);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const stableAudioUrlRef = useRef<string>('');
-  const isInitializedRef = useRef<boolean>(false);
+  const audioRef = React.useRef<HTMLAudioElement>(null);
+  const [retryCount, setRetryCount] = React.useState(0);
+  const [repeatCount, setRepeatCount] = React.useState(0);
+  const [pauseBetweenRepeats, setPauseBetweenRepeats] = React.useState(0);
+  const [isValidatingUrl, setIsValidatingUrl] = React.useState(false);
+  const retryTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const stableAudioUrlRef = React.useRef<string>('');
+  const isInitializedRef = React.useRef<boolean>(false);
   const maxRetries = 3;
 
+  // Integração com contexto de música de fundo
+  const audioPlaybackContext = useAudioPlaybackSafe();
+  const setMainAudioPlaying = audioPlaybackContext?.setMainAudioPlaying;
+
   // Estado interno usando o serviço
-  const [loadingState, setLoadingState] = useState<AudioLoadingState>(
+  const [loadingState, setLoadingState] = React.useState<AudioLoadingState>(
     AudioLoadingStateService.createInitialState()
   );
 
   // Estado público do player
-  const [playerState, setPlayerState] = useState<AudioPlayerState>({
+  const [playerState, setPlayerState] = React.useState<AudioPlayerState>({
     isPlaying: false,
     isLoading: false,
     currentTime: 0,
@@ -55,7 +61,7 @@ export const useAudioPlayer = (
   });
 
   // Sincronizar estado interno com estado público
-  useEffect(() => {
+  React.useEffect(() => {
     setPlayerState(prev => ({
       ...prev,
       isLoading: loadingState.isLoading,
@@ -66,18 +72,18 @@ export const useAudioPlayer = (
     }));
   }, [loadingState]);
 
-  const updateLoadingState = useCallback((updates: Partial<AudioLoadingState>) => {
+  const updateLoadingState = React.useCallback((updates: Partial<AudioLoadingState>) => {
     setLoadingState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  const handleError = useCallback((error: string) => {
+  const handleError = React.useCallback((error: string) => {
     console.error('useAudioPlayer: Erro:', error);
     AudioLoadingTimeoutService.clearTimeout(audioUrl);
     updateLoadingState(AudioLoadingStateService.markLoadingError(error));
     onError?.(error);
   }, [updateLoadingState, onError, audioUrl]);
 
-  const handleLoadingTimeout = useCallback(() => {
+  const handleLoadingTimeout = React.useCallback(() => {
     console.warn('useAudioPlayer: Timeout de carregamento atingido');
     const audio = audioRef.current;
     
@@ -91,7 +97,7 @@ export const useAudioPlayer = (
     handleError('Timeout: O áudio demorou muito para carregar. Verifique sua conexão.');
   }, [handleError, updateLoadingState]);
 
-  const retryInitialization = useCallback(async () => {
+  const retryInitialization = React.useCallback(async () => {
     if (retryCount >= maxRetries) {
       handleError('Máximo de tentativas excedido. Use o diagnóstico para mais detalhes.');
       return;
@@ -120,7 +126,7 @@ export const useAudioPlayer = (
     }, delay);
   }, [retryCount, maxRetries, handleError, updateLoadingState, audioUrl, handleLoadingTimeout]);
 
-  const validateAudioUrl = useCallback(async () => {
+  const validateAudioUrl = React.useCallback(async () => {
     setIsValidatingUrl(true);
     try {
       const validation = await AudioValidationService.validateAudioUrl(audioUrl);
@@ -138,7 +144,7 @@ export const useAudioPlayer = (
     }
   }, [audioUrl, handleError]);
 
-  const togglePlay = useCallback(async () => {
+  const togglePlay = React.useCallback(async () => {
     if (!audioRef.current || !loadingState.canPlay) {
       console.warn('useAudioPlayer: togglePlay bloqueado - elemento ou canPlay inválido');
       return;
@@ -173,7 +179,7 @@ export const useAudioPlayer = (
     }
   }, [loadingState.canPlay, playerState.isPlaying, handleError]);
 
-  const reset = useCallback(() => {
+  const reset = React.useCallback(() => {
     if (!audioRef.current) return;
     
     console.log('useAudioPlayer: Resetando áudio');
@@ -188,20 +194,20 @@ export const useAudioPlayer = (
     }));
   }, []);
 
-  const seek = useCallback((time: number) => {
+  const seek = React.useCallback((time: number) => {
     if (!audioRef.current || !loadingState.canPlay) return;
     
     audioRef.current.currentTime = time;
     setPlayerState(prev => ({ ...prev, currentTime: time }));
   }, [loadingState.canPlay]);
 
-  const setMuted = useCallback((muted: boolean) => {
+  const setMuted = React.useCallback((muted: boolean) => {
     if (!audioRef.current) return;
     audioRef.current.muted = muted;
   }, []);
 
   // Configurar áudio e event listeners - ESTABILIZADO
-  useEffect(() => {
+  React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio || stableAudioUrlRef.current === audioUrl) return;
 
@@ -256,6 +262,7 @@ export const useAudioPlayer = (
       },
       
       onPlay: () => {
+        console.log('useAudioPlayer: Audio iniciou - notificando contexto de música de fundo');
         setPlayerState(prev => ({ 
           ...prev,
           isPlaying: true, 
@@ -263,16 +270,21 @@ export const useAudioPlayer = (
           isInternalPause: false,
           autoplayBlocked: false
         }));
+        // Notificar contexto que áudio principal está tocando
+        setMainAudioPlaying?.(true);
       },
       
       onPause: () => {
         if (!playerState.isInternalPause && !playerState.isTransitioning) {
+          console.log('useAudioPlayer: Audio pausou - notificando contexto de música de fundo');
           setPlayerState(prev => ({ ...prev, isPlaying: false }));
+          // Notificar contexto que áudio principal pausou
+          setMainAudioPlaying?.(false);
         }
       },
       
       onEnded: () => {
-        // ... keep existing code (loop logic)
+        console.log('useAudioPlayer: Audio terminou - notificando contexto de música de fundo');
         const pauseTime = (preferences as any).pauseBetweenRepeats || 0;
         
         if (preferences.repeatCount === 0 || repeatCount < preferences.repeatCount) {
@@ -316,6 +328,8 @@ export const useAudioPlayer = (
           onRepeatComplete?.();
         } else {
           setPlayerState(prev => ({ ...prev, isPlaying: false, currentTime: 0 }));
+          // Notificar contexto que áudio principal terminou completamente
+          setMainAudioPlaying?.(false);
         }
       }
     };
@@ -334,10 +348,10 @@ export const useAudioPlayer = (
       AudioLoadingTimeoutService.clearTimeout(audioUrl);
       AudioEventManagerService.removeEventListeners(audioUrl);
     };
-  }, [audioUrl]); // DEPENDÊNCIA ÚNICA E ESTÁVEL
+  }, [audioUrl, setMainAudioPlaying]); // Adicionado setMainAudioPlaying às dependências
 
   // Verificação de timeout periódica
-  useEffect(() => {
+  React.useEffect(() => {
     if (!loadingState.isLoading) return;
 
     const timeoutCheck = setInterval(() => {
@@ -356,7 +370,7 @@ export const useAudioPlayer = (
   }, [loadingState.isLoading, loadingState.loadingStartTime, updateLoadingState, handleError]);
 
   // Cleanup geral
-  useEffect(() => {
+  React.useEffect(() => {
     return () => {
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
