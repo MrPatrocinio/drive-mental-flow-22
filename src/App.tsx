@@ -29,7 +29,7 @@ import { UserProvider } from '@/contexts/UserContext';
 import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { UserProtectedRoute } from '@/components/UserProtectedRoute';
 
-// Create a client
+// Create a client with explicit React context
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -50,7 +50,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function App() {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SupabaseAuthProvider>
@@ -145,3 +145,5 @@ export default function App() {
     </QueryClientProvider>
   );
 }
+
+export default App;
