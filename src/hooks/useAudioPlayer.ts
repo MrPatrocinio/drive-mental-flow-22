@@ -1,8 +1,9 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AudioValidationService } from '@/services/audioValidationService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
 import { AudioLoadingTimeoutService } from '@/services/audioLoadingTimeoutService';
+import { AudioLoadingStateService, AudioLoadingState } from '@/services/audioLoadingStateService';
+import { AudioEventManagerService } from '@/services/audioEventManagerService';
 
 export interface AudioPlayerState {
   isPlaying: boolean;
@@ -30,9 +31,16 @@ export const useAudioPlayer = (
   const [pauseBetweenRepeats, setPauseBetweenRepeats] = useState(0);
   const [isValidatingUrl, setIsValidatingUrl] = useState(false);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const loadingEventsRef = useRef<Set<string>>(new Set());
+  const stableAudioUrlRef = useRef<string>('');
+  const isInitializedRef = useRef<boolean>(false);
   const maxRetries = 3;
 
+  // Estado interno usando o serviço
+  const [loadingState, setLoadingState] = useState<AudioLoadingState>(
+    AudioLoadingStateService.createInitialState()
+  );
+
+  // Estado público do player
   const [playerState, setPlayerState] = useState<AudioPlayerState>({
     isPlaying: false,
     isLoading: false,
@@ -46,60 +54,42 @@ export const useAudioPlayer = (
     autoplayBlocked: false
   });
 
-  const updateState = useCallback((updates: Partial<AudioPlayerState>) => {
-    setPlayerState(prev => ({ ...prev, ...updates }));
+  // Sincronizar estado interno com estado público
+  useEffect(() => {
+    setPlayerState(prev => ({
+      ...prev,
+      isLoading: loadingState.isLoading,
+      canPlay: loadingState.canPlay,
+      isReady: loadingState.isReady,
+      hasError: loadingState.hasError,
+      errorMessage: loadingState.errorMessage
+    }));
+  }, [loadingState]);
+
+  const updateLoadingState = useCallback((updates: Partial<AudioLoadingState>) => {
+    setLoadingState(prev => ({ ...prev, ...updates }));
   }, []);
 
   const handleError = useCallback((error: string) => {
     console.error('useAudioPlayer: Erro:', error);
     AudioLoadingTimeoutService.clearTimeout(audioUrl);
-    updateState({
-      hasError: true,
-      errorMessage: error,
-      isLoading: false,
-      isReady: false,
-      canPlay: false
-    });
+    updateLoadingState(AudioLoadingStateService.markLoadingError(error));
     onError?.(error);
-  }, [updateState, onError, audioUrl]);
+  }, [updateLoadingState, onError, audioUrl]);
 
   const handleLoadingTimeout = useCallback(() => {
     console.warn('useAudioPlayer: Timeout de carregamento atingido');
     const audio = audioRef.current;
     
-    if (audio) {
-      console.log('useAudioPlayer: Estado no timeout:', {
-        readyState: audio.readyState,
-        networkState: audio.networkState,
-        currentSrc: audio.currentSrc,
-        error: audio.error
-      });
-      
-      // Verificar se já temos dados suficientes mesmo sem os eventos
-      if (audio.readyState >= 2) { // HAVE_CURRENT_DATA
-        console.log('useAudioPlayer: Forçando saída do loading baseado em readyState');
-        updateState({
-          isLoading: false,
-          canPlay: true,
-          isReady: true,
-          duration: audio.duration || 0
-        });
-        return;
-      }
+    if (audio && audio.readyState >= 1) { // HAVE_METADATA
+      console.log('useAudioPlayer: Forçando saída do loading baseado em readyState:', audio.readyState);
+      updateLoadingState(AudioLoadingStateService.markLoadingComplete(audio.duration));
+      setPlayerState(prev => ({ ...prev, duration: audio.duration }));
+      return;
     }
     
     handleError('Timeout: O áudio demorou muito para carregar. Verifique sua conexão.');
-  }, [handleError, updateState]);
-
-  const startLoadingTimeout = useCallback(() => {
-    AudioLoadingTimeoutService.startTimeout(audioUrl, {
-      timeoutMs: 15000,
-      onTimeout: handleLoadingTimeout,
-      onSuccess: () => {
-        console.log('useAudioPlayer: Carregamento bem-sucedido dentro do timeout');
-      }
-    });
-  }, [audioUrl, handleLoadingTimeout]);
+  }, [handleError, updateLoadingState]);
 
   const retryInitialization = useCallback(async () => {
     if (retryCount >= maxRetries) {
@@ -110,30 +100,25 @@ export const useAudioPlayer = (
     console.log(`useAudioPlayer: Tentativa ${retryCount + 1}/${maxRetries}`);
     setRetryCount(prev => prev + 1);
     
-    updateState({
-      isLoading: true,
-      hasError: false,
-      errorMessage: undefined,
-      autoplayBlocked: false
-    });
+    updateLoadingState(AudioLoadingStateService.markLoadingStart(audioUrl));
 
-    // Limpar eventos registrados
-    loadingEventsRef.current.clear();
-
-    // Delay exponencial: 1s, 2s, 4s
     const delay = Math.pow(2, retryCount) * 1000;
     
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current);
     }
 
-    retryTimeoutRef.current = setTimeout(async () => {
+    retryTimeoutRef.current = setTimeout(() => {
       if (audioRef.current) {
         audioRef.current.load();
-        startLoadingTimeout();
+        AudioLoadingTimeoutService.startTimeout(audioUrl, {
+          timeoutMs: 5000, // Timeout mais agressivo
+          onTimeout: handleLoadingTimeout,
+          onSuccess: () => console.log('Carregamento bem-sucedido')
+        });
       }
     }, delay);
-  }, [retryCount, maxRetries, handleError, updateState, startLoadingTimeout]);
+  }, [retryCount, maxRetries, handleError, updateLoadingState, audioUrl, handleLoadingTimeout]);
 
   const validateAudioUrl = useCallback(async () => {
     setIsValidatingUrl(true);
@@ -143,12 +128,6 @@ export const useAudioPlayer = (
         handleError(`URL inválida: ${validation.error}`);
         return false;
       }
-
-      const connectivity = await AudioValidationService.testSupabaseConnectivity();
-      if (!connectivity.isValid) {
-        console.warn('useAudioPlayer: Problemas de conectividade:', connectivity.error);
-      }
-
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro na validação';
@@ -160,7 +139,7 @@ export const useAudioPlayer = (
   }, [audioUrl, handleError]);
 
   const togglePlay = useCallback(async () => {
-    if (!audioRef.current || !playerState.canPlay) {
+    if (!audioRef.current || !loadingState.canPlay) {
       console.warn('useAudioPlayer: togglePlay bloqueado - elemento ou canPlay inválido');
       return;
     }
@@ -168,52 +147,31 @@ export const useAudioPlayer = (
     try {
       console.log('useAudioPlayer: Executando togglePlay', {
         isPlaying: playerState.isPlaying,
-        paused: audioRef.current.paused,
-        readyState: audioRef.current.readyState
+        paused: audioRef.current.paused
       });
 
       if (playerState.isPlaying) {
-        console.log('useAudioPlayer: Pausando áudio');
         audioRef.current.pause();
       } else {
-        console.log('useAudioPlayer: Iniciando reprodução');
-        
-        // Reset autoplay blocked flag
-        updateState({ autoplayBlocked: false });
-        
+        setPlayerState(prev => ({ ...prev, autoplayBlocked: false }));
         await audioRef.current.play();
-        console.log('useAudioPlayer: Play bem-sucedido');
       }
     } catch (error) {
       console.error('useAudioPlayer: Erro no togglePlay:', error);
       
-      // Tratamento específico para diferentes tipos de erro
-      if (error instanceof DOMException) {
-        switch (error.name) {
-          case 'NotAllowedError':
-            console.warn('useAudioPlayer: Autoplay bloqueado pelo navegador');
-            updateState({ 
-              autoplayBlocked: true,
-              hasError: true,
-              errorMessage: 'Clique no botão play para iniciar (política do navegador)'
-            });
-            break;
-          case 'AbortError':
-            console.warn('useAudioPlayer: Reprodução abortada (pode ser normal)');
-            // Não trata como erro fatal
-            break;
-          case 'NotSupportedError':
-            handleError('Formato de áudio não suportado pelo navegador');
-            break;
-          default:
-            handleError(`Erro de reprodução: ${error.message}`);
-        }
+      if (error instanceof DOMException && error.name === 'NotAllowedError') {
+        setPlayerState(prev => ({ 
+          ...prev,
+          autoplayBlocked: true,
+          hasError: true,
+          errorMessage: 'Clique no botão play para iniciar (política do navegador)'
+        }));
       } else {
         const errorMessage = error instanceof Error ? error.message : 'Erro ao reproduzir';
         handleError(errorMessage);
       }
     }
-  }, [playerState.canPlay, playerState.isPlaying, handleError, updateState]);
+  }, [loadingState.canPlay, playerState.isPlaying, handleError]);
 
   const reset = useCallback(() => {
     if (!audioRef.current) return;
@@ -221,217 +179,191 @@ export const useAudioPlayer = (
     console.log('useAudioPlayer: Resetando áudio');
     audioRef.current.currentTime = 0;
     setRepeatCount(0);
-    updateState({ 
+    setPlayerState(prev => ({ 
+      ...prev, 
       currentTime: 0, 
       isTransitioning: false,
       isInternalPause: false,
       autoplayBlocked: false
-    });
-  }, [updateState]);
+    }));
+  }, []);
 
   const seek = useCallback((time: number) => {
-    if (!audioRef.current || !playerState.canPlay) return;
+    if (!audioRef.current || !loadingState.canPlay) return;
     
     audioRef.current.currentTime = time;
-    updateState({ currentTime: time });
-  }, [playerState.canPlay, updateState]);
+    setPlayerState(prev => ({ ...prev, currentTime: time }));
+  }, [loadingState.canPlay]);
 
   const setMuted = useCallback((muted: boolean) => {
     if (!audioRef.current) return;
     audioRef.current.muted = muted;
   }, []);
 
-  // Setup event listeners
+  // Configurar áudio e event listeners - ESTABILIZADO
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || stableAudioUrlRef.current === audioUrl) return;
 
-    const handleLoadStart = () => {
-      console.log('useAudioPlayer: 📥 loadstart - Iniciando carregamento');
-      loadingEventsRef.current.add('loadstart');
-      updateState({ isLoading: true, hasError: false, autoplayBlocked: false });
-      startLoadingTimeout();
-    };
+    console.log('useAudioPlayer: Configurando áudio para nova URL:', audioUrl.substring(0, 50) + '...');
+    
+    // Marcar URL como estável para evitar re-renders
+    stableAudioUrlRef.current = audioUrl;
+    isInitializedRef.current = true;
 
-    const handleLoadedMetadata = () => {
-      console.log('useAudioPlayer: 📊 loadedmetadata - Metadata carregada', {
-        duration: audio.duration,
-        readyState: audio.readyState
-      });
-      loadingEventsRef.current.add('loadedmetadata');
-      
-      AudioLoadingTimeoutService.markSuccess(audioUrl);
-      updateState({ 
-        duration: audio.duration,
-        isLoading: false,
-        canPlay: true,
-        isReady: true
-      });
-    };
+    // Reset estados
+    setRetryCount(0);
+    setRepeatCount(0);
+    AudioLoadingStateService.resetRenderCount(audioUrl);
+    updateLoadingState(AudioLoadingStateService.createInitialState());
 
-    const handleLoadedData = () => {
-      console.log('useAudioPlayer: 📦 loadeddata - Dados carregados (fallback)');
-      loadingEventsRef.current.add('loadeddata');
-      
-      // Fallback se loadedmetadata não disparou
-      if (!loadingEventsRef.current.has('loadedmetadata')) {
-        console.log('useAudioPlayer: Usando loadeddata como fallback');
-        AudioLoadingTimeoutService.markSuccess(audioUrl);
-        updateState({ 
-          duration: audio.duration,
-          isLoading: false,
-          canPlay: true,
-          isReady: true
+    // Configurar handlers de eventos
+    const eventHandlers = {
+      onLoadStart: () => {
+        updateLoadingState(AudioLoadingStateService.markLoadingStart(audioUrl));
+        AudioLoadingTimeoutService.startTimeout(audioUrl, {
+          timeoutMs: 5000,
+          onTimeout: handleLoadingTimeout,
+          onSuccess: () => console.log('Carregamento bem-sucedido')
         });
-      }
-    };
-
-    const handleCanPlay = () => {
-      console.log('useAudioPlayer: ✅ canplay - Áudio pronto para reprodução');
-      loadingEventsRef.current.add('canplay');
+      },
       
-      // Garantir que saímos do loading se ainda não saímos
-      AudioLoadingTimeoutService.markSuccess(audioUrl);
-      updateState({ canPlay: true, isLoading: false, isReady: true });
-    };
-
-    const handleTimeUpdate = () => {
-      if (!playerState.isTransitioning && !playerState.isInternalPause) {
-        updateState({ currentTime: audio.currentTime });
-      }
-    };
-
-    const handlePlay = () => {
-      console.log('useAudioPlayer: ▶️ play - Evento play disparado');
-      updateState({ 
-        isPlaying: true, 
-        isTransitioning: false, 
-        isInternalPause: false,
-        autoplayBlocked: false
-      });
-    };
-
-    const handlePause = () => {
-      console.log('useAudioPlayer: ⏸️ pause - Evento pause disparado', {
-        isInternalPause: playerState.isInternalPause,
-        isTransitioning: playerState.isTransitioning
-      });
-      if (!playerState.isInternalPause && !playerState.isTransitioning) {
-        updateState({ isPlaying: false });
-      }
-    };
-
-    const handleEnded = () => {
-      console.log('useAudioPlayer: 🏁 ended - Áudio terminou');
+      onLoadedMetadata: (duration: number) => {
+        AudioLoadingTimeoutService.markSuccess(audioUrl);
+        updateLoadingState(AudioLoadingStateService.markLoadingComplete(duration));
+        setPlayerState(prev => ({ ...prev, duration }));
+      },
       
-      // Usamos um valor padrão de 0 para pauseBetweenRepeats se não existir nas preferências
-      const pauseTime = (preferences as any).pauseBetweenRepeats || 0;
+      onCanPlay: () => {
+        AudioLoadingTimeoutService.markSuccess(audioUrl);
+        updateLoadingState(AudioLoadingStateService.markLoadingComplete(audio.duration));
+        setPlayerState(prev => ({ ...prev, duration: audio.duration }));
+      },
       
-      if (preferences.repeatCount === 0 || repeatCount < preferences.repeatCount) {
-        setRepeatCount(prev => prev + 1);
-        setPauseBetweenRepeats(pauseTime);
-        
-        if (pauseTime > 0) {
-          updateState({ 
-            isTransitioning: true,
-            isInternalPause: true,
-            isPlaying: true // Mantém isPlaying durante pausa interna
-          });
-          
-          setTimeout(() => {
-            if (audio) {
-              audio.currentTime = 0;
-              audio.play().catch(error => {
-                console.error('useAudioPlayer: Erro no loop após pausa:', error);
-                if (error instanceof DOMException && error.name === 'NotAllowedError') {
-                  updateState({ autoplayBlocked: true });
-                }
-              });
-              updateState({ 
-                isTransitioning: false,
-                isInternalPause: false 
-              });
-            }
-          }, pauseTime * 1000);
+      onError: (error: string) => {
+        if (retryCount < maxRetries) {
+          console.log('useAudioPlayer: Tentando retry automático');
+          retryInitialization();
         } else {
-          // Loop imediato
-          audio.currentTime = 0;
-          audio.play().catch(error => {
-            console.error('useAudioPlayer: Erro no loop imediato:', error);
-            if (error instanceof DOMException && error.name === 'NotAllowedError') {
-              updateState({ autoplayBlocked: true });
-            }
-          });
+          handleError(error);
         }
+      },
+      
+      onTimeUpdate: (currentTime: number) => {
+        if (!playerState.isTransitioning && !playerState.isInternalPause) {
+          setPlayerState(prev => ({ ...prev, currentTime }));
+        }
+      },
+      
+      onPlay: () => {
+        setPlayerState(prev => ({ 
+          ...prev,
+          isPlaying: true, 
+          isTransitioning: false, 
+          isInternalPause: false,
+          autoplayBlocked: false
+        }));
+      },
+      
+      onPause: () => {
+        if (!playerState.isInternalPause && !playerState.isTransitioning) {
+          setPlayerState(prev => ({ ...prev, isPlaying: false }));
+        }
+      },
+      
+      onEnded: () => {
+        // ... keep existing code (loop logic)
+        const pauseTime = (preferences as any).pauseBetweenRepeats || 0;
         
-        onRepeatComplete?.();
-      } else {
-        updateState({ isPlaying: false, currentTime: 0 });
+        if (preferences.repeatCount === 0 || repeatCount < preferences.repeatCount) {
+          setRepeatCount(prev => prev + 1);
+          setPauseBetweenRepeats(pauseTime);
+          
+          if (pauseTime > 0) {
+            setPlayerState(prev => ({ 
+              ...prev,
+              isTransitioning: true,
+              isInternalPause: true,
+              isPlaying: true
+            }));
+            
+            setTimeout(() => {
+              if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(error => {
+                  console.error('useAudioPlayer: Erro no loop após pausa:', error);
+                  if (error instanceof DOMException && error.name === 'NotAllowedError') {
+                    setPlayerState(prev => ({ ...prev, autoplayBlocked: true }));
+                  }
+                });
+                setPlayerState(prev => ({ 
+                  ...prev,
+                  isTransitioning: false,
+                  isInternalPause: false 
+                }));
+              }
+            }, pauseTime * 1000);
+          } else {
+            audio.currentTime = 0;
+            audio.play().catch(error => {
+              console.error('useAudioPlayer: Erro no loop imediato:', error);
+              if (error instanceof DOMException && error.name === 'NotAllowedError') {
+                setPlayerState(prev => ({ ...prev, autoplayBlocked: true }));
+              }
+            });
+          }
+          
+          onRepeatComplete?.();
+        } else {
+          setPlayerState(prev => ({ ...prev, isPlaying: false, currentTime: 0 }));
+        }
       }
     };
 
-    const handleAudioError = (e: Event) => {
-      console.error('useAudioPlayer: 🚨 error - Erro no elemento áudio:', e);
-      console.log('useAudioPlayer: Eventos registrados até o erro:', Array.from(loadingEventsRef.current));
-      
-      AudioLoadingTimeoutService.clearTimeout(audioUrl);
-      
-      if (retryCount < maxRetries) {
-        console.log('useAudioPlayer: Tentando retry automático');
-        retryInitialization();
-      } else {
-        handleError('Não foi possível carregar o áudio. Use o diagnóstico para mais detalhes.');
-      }
-    };
+    // Adicionar event listeners usando o serviço
+    AudioEventManagerService.addEventListeners(audio, audioUrl, eventHandlers);
 
-    // Add event listeners
-    audio.addEventListener('loadstart', handleLoadStart);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('loadeddata', handleLoadedData);
-    audio.addEventListener('canplay', handleCanPlay);
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('play', handlePlay);
-    audio.addEventListener('pause', handlePause);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleAudioError);
-
-    // Apply preferences
+    // Configurar áudio
     audio.volume = preferences.volume / 100;
     audio.preload = 'metadata';
-
-    // Load audio
     audio.src = audioUrl;
     audio.load();
 
+    // Cleanup
     return () => {
       AudioLoadingTimeoutService.clearTimeout(audioUrl);
-      audio.removeEventListener('loadstart', handleLoadStart);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('loadeddata', handleLoadedData);
-      audio.removeEventListener('canplay', handleCanPlay);
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('play', handlePlay);
-      audio.removeEventListener('pause', handlePause);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleAudioError);
+      AudioEventManagerService.removeEventListeners(audioUrl);
     };
-  }, [audioUrl, preferences, repeatCount, retryCount, playerState.isTransitioning, playerState.isInternalPause, updateState, onRepeatComplete, retryInitialization, startLoadingTimeout]);
+  }, [audioUrl]); // DEPENDÊNCIA ÚNICA E ESTÁVEL
 
-  // Reset retry count when URL changes
+  // Verificação de timeout periódica
   useEffect(() => {
-    setRetryCount(0);
-    setRepeatCount(0);
-    loadingEventsRef.current.clear();
-    AudioLoadingTimeoutService.clearTimeout(audioUrl);
-  }, [audioUrl]);
+    if (!loadingState.isLoading) return;
 
-  // Cleanup timeout on unmount
+    const timeoutCheck = setInterval(() => {
+      if (AudioLoadingStateService.shouldForceLoadingComplete(loadingState)) {
+        const audio = audioRef.current;
+        if (audio && audio.readyState >= 1) {
+          updateLoadingState(AudioLoadingStateService.markLoadingComplete(audio.duration));
+          setPlayerState(prev => ({ ...prev, duration: audio.duration }));
+        } else {
+          handleError('Timeout: Áudio não carregou após 5 segundos');
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(timeoutCheck);
+  }, [loadingState.isLoading, loadingState.loadingStartTime, updateLoadingState, handleError]);
+
+  // Cleanup geral
   useEffect(() => {
     return () => {
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
       }
       AudioLoadingTimeoutService.clearAllTimeouts();
+      AudioLoadingStateService.clearAllCounters();
+      AudioEventManagerService.clearAllElements();
     };
   }, []);
 
