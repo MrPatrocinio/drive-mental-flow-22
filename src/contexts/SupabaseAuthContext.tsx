@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { SupabaseAuthService, type AuthUser, type LoginCredentials, type SignUpCredentials } from "@/services/supabase/authService";
 import type { Session } from "@supabase/supabase-js";
 
@@ -34,7 +35,7 @@ interface SupabaseAuthProviderProps {
  * Responsabilidade: Gerenciar estado global de autenticação
  * Princípios: SSOT para estado de auth, SRP para contexto
  */
-export const SupabaseAuthProvider = ({ children }: SupabaseAuthProviderProps) => {
+export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
