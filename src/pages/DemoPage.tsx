@@ -1,4 +1,3 @@
-
 /**
  * DemoPage - Página de demonstração gratuita
  * Responsabilidade: Exibir áudio de demonstração para visitantes
@@ -16,7 +15,6 @@ import { AudioService } from '@/services/supabase/audioService';
 import { FieldService } from '@/services/supabase/fieldService';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { Header } from '@/components/Header';
-import { BackgroundMusicDebug } from '@/components/BackgroundMusicDebug';
 import { toast } from 'sonner';
 import { Audio } from '@/services/supabase/audioService';
 
@@ -107,7 +105,6 @@ export default function DemoPage() {
             </div>
           </div>
         </div>
-        <BackgroundMusicDebug />
       </div>
     );
   }
@@ -145,7 +142,6 @@ export default function DemoPage() {
             </Card>
           </div>
         </div>
-        <BackgroundMusicDebug />
       </div>
     );
   }
@@ -265,9 +261,6 @@ export default function DemoPage() {
           </Card>
         </div>
       </div>
-      
-      {/* Componente de Debug Temporário */}
-      <BackgroundMusicDebug />
     </div>
   );
 }
