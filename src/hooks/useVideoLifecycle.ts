@@ -1,4 +1,3 @@
-
 /**
  * useVideoLifecycle Hook
  * Responsabilidade: Gerenciar ciclo de vida dos vídeos na landing page
@@ -6,7 +5,7 @@
  * Princípio DRY: Hook reutilizável para controle de vídeos
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React from 'react';
 import { Video, VideoService } from '@/services/supabase/videoService';
 
 interface VideoLifecycleResult {
@@ -16,13 +15,13 @@ interface VideoLifecycleResult {
 }
 
 export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResult => {
-  const [isVideoReady, setIsVideoReady] = useState(false);
-  const [videoKey, setVideoKey] = useState('');
-  const currentVideoRef = useRef<string | null>(null);
-  const cleanupTimeoutRef = useRef<NodeJS.Timeout>();
-  const isCleaningRef = useRef(false);
+  const [isVideoReady, setIsVideoReady] = React.useState(false);
+  const [videoKey, setVideoKey] = React.useState('');
+  const currentVideoRef = React.useRef<string | null>(null);
+  const cleanupTimeoutRef = React.useRef<NodeJS.Timeout>();
+  const isCleaningRef = React.useRef(false);
 
-  const cleanupPreviousVideo = useCallback(() => {
+  const cleanupPreviousVideo = React.useCallback(() => {
     // Evitar execuções múltiplas simultâneas
     if (isCleaningRef.current) {
       return;
@@ -82,7 +81,7 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
     }, 100);
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!activeVideo) {
       setIsVideoReady(false);
       setVideoKey('');
@@ -166,7 +165,7 @@ export const useVideoLifecycle = (activeVideo: Video | null): VideoLifecycleResu
   }, [activeVideo?.id, activeVideo?.type, cleanupPreviousVideo]);
 
   // Cleanup geral no unmount do componente
-  useEffect(() => {
+  React.useEffect(() => {
     return () => {
       cleanupPreviousVideo();
     };
