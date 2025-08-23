@@ -1,3 +1,4 @@
+
 /**
  * useVideoControls Hook
  * Responsabilidade: Lógica para aplicação de controles de vídeo
@@ -5,7 +6,7 @@
  * Princípio DRY: Hook reutilizável para qualquer componente que exiba vídeos
  */
 
-import { useMemo } from 'react';
+import React from 'react';
 import { VideoControls } from '@/services/supabase/videoService';
 
 interface VideoControlsHookResult {
@@ -16,7 +17,7 @@ interface VideoControlsHookResult {
 }
 
 export const useVideoControls = (controls?: VideoControls): VideoControlsHookResult => {
-  return useMemo(() => {
+  return React.useMemo(() => {
     if (!controls) {
       return {
         shouldShowOverlay: false,
