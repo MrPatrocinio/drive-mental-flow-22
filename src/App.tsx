@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   BrowserRouter as Router,
   Route,
@@ -40,8 +40,8 @@ const queryClient = new QueryClient({
   },
 });
 
-function AppInitializer() {
-  useEffect(() => {
+function AppRoutes() {
+  React.useEffect(() => {
     // Inicializar o serviço de sincronização
     dataSyncService.initialize();
   }, []);
@@ -138,19 +138,21 @@ function AppInitializer() {
 
 const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <SupabaseAuthProvider>
-        <AdminProvider>
-          <UserProvider>
-            <AudioPlaybackProvider>
-              <Router>
-                <AppInitializer />
-              </Router>
-            </AudioPlaybackProvider>
-          </UserProvider>
-        </AdminProvider>
-      </SupabaseAuthProvider>
-    </QueryClientProvider>
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <SupabaseAuthProvider>
+          <AdminProvider>
+            <UserProvider>
+              <AudioPlaybackProvider>
+                <Router>
+                  <AppRoutes />
+                </Router>
+              </AudioPlaybackProvider>
+            </UserProvider>
+          </AdminProvider>
+        </SupabaseAuthProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
   );
 };
 
