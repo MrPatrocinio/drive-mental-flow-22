@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,8 @@ interface PlaylistCardProps {
 }
 
 export function PlaylistCard({ playlist, onPlay, onEdit, onDelete }: PlaylistCardProps) {
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     return new Intl.DateTimeFormat('pt-BR', {
       day: 'numeric',
       month: 'short',
