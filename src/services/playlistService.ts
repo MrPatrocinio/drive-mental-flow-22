@@ -1,3 +1,23 @@
+
+/**
+ * Playlist Service - Serviço para gerenciamento de playlists
+ * Responsabilidade: CRUD de playlists no localStorage
+ * Princípio SRP: Apenas operações de playlist
+ * Princípio SSOT: Fonte única para dados de playlist
+ * OTIMIZADO: Operações performáticas com debounce
+ */
+
+import { LocalStoragePerformanceService } from './localStoragePerformanceService';
+
+export interface Playlist {
+  id: string;
+  name: string;
+  description?: string;
+  audios: PlaylistAudio[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PlaylistAudio {
   id: string;
   title: string;
@@ -7,110 +27,140 @@ export interface PlaylistAudio {
   fieldTitle: string;
 }
 
-export interface Playlist {
-  id: string;
-  name: string;
-  description: string;
-  audios: PlaylistAudio[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export class PlaylistService {
-  private static readonly STORAGE_KEY = 'user_playlists';
+  private static readonly STORAGE_KEY = 'playlists';
 
+  /**
+   * Buscar todas as playlists (operação otimizada)
+   */
   static getPlaylists(): Playlist[] {
-    const stored = localStorage.getItem(this.STORAGE_KEY);
-    if (!stored) return [];
+    try {
+      const data = LocalStoragePerformanceService.getItem(this.STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('PlaylistService: Erro ao buscar playlists:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Salvar playlists com debounce para performance
+   */
+  private static savePlaylists(playlists: Playlist[], immediate = false): void {
+    const data = JSON.stringify(playlists);
     
-    return JSON.parse(stored).map((playlist: any) => ({
-      ...playlist,
-      createdAt: new Date(playlist.createdAt),
-      updatedAt: new Date(playlist.updatedAt)
-    }));
+    if (immediate) {
+      LocalStoragePerformanceService.setItemImmediate(this.STORAGE_KEY, data);
+    } else {
+      LocalStoragePerformanceService.setItemDebounced(this.STORAGE_KEY, data);
+    }
   }
 
-  static savePlaylists(playlists: Playlist[]): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(playlists));
-  }
-
-  static createPlaylist(name: string, description: string = ''): Playlist {
+  /**
+   * Criar nova playlist
+   */
+  static createPlaylist(name: string, description?: string): Playlist {
+    const playlists = this.getPlaylists();
     const newPlaylist: Playlist = {
-      id: `playlist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: crypto.randomUUID(),
       name,
       description,
       audios: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    const playlists = this.getPlaylists();
     playlists.push(newPlaylist);
-    this.savePlaylists(playlists);
-
+    this.savePlaylists(playlists, true); // Salva imediatamente para criar
     return newPlaylist;
   }
 
+  /**
+   * Atualizar playlist
+   */
   static updatePlaylist(id: string, updates: Partial<Omit<Playlist, 'id' | 'createdAt'>>): Playlist | null {
     const playlists = this.getPlaylists();
-    const index = playlists.findIndex(p => p.id === id);
+    const playlistIndex = playlists.findIndex(p => p.id === id);
     
-    if (index === -1) return null;
+    if (playlistIndex === -1) return null;
 
-    playlists[index] = {
-      ...playlists[index],
+    playlists[playlistIndex] = {
+      ...playlists[playlistIndex],
       ...updates,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString(),
     };
 
     this.savePlaylists(playlists);
-    return playlists[index];
+    return playlists[playlistIndex];
   }
 
+  /**
+   * Deletar playlist
+   */
   static deletePlaylist(id: string): boolean {
     const playlists = this.getPlaylists();
-    const filtered = playlists.filter(p => p.id !== id);
+    const filteredPlaylists = playlists.filter(p => p.id !== id);
     
-    if (filtered.length === playlists.length) return false;
+    if (filteredPlaylists.length === playlists.length) return false;
 
-    this.savePlaylists(filtered);
+    this.savePlaylists(filteredPlaylists, true); // Salva imediatamente para deletar
     return true;
   }
 
-  static addAudioToPlaylist(playlistId: string, audio: PlaylistAudio): boolean {
+  /**
+   * Adicionar áudio à playlist (otimizado)
+   */
+  static addAudioToPlaylist(playlistId: string, audio: any): boolean {
     const playlists = this.getPlaylists();
     const playlist = playlists.find(p => p.id === playlistId);
     
     if (!playlist) return false;
 
-    // Evitar duplicatas
-    const exists = playlist.audios.some(a => a.id === audio.id);
-    if (exists) return false;
+    // Verifica se áudio já existe para evitar duplicatas
+    if (playlist.audios.some(a => a.id === audio.id)) {
+      return false;
+    }
 
-    playlist.audios.push(audio);
-    playlist.updatedAt = new Date();
-    
+    const playlistAudio: PlaylistAudio = {
+      id: audio.id,
+      title: audio.title,
+      description: audio.description || "",
+      duration: audio.duration || "0:00",
+      fieldId: audio.fieldId || "",
+      fieldTitle: audio.fieldTitle || ""
+    };
+
+    playlist.audios.push(playlistAudio);
+    playlist.updatedAt = new Date().toISOString();
+
     this.savePlaylists(playlists);
     return true;
   }
 
+  /**
+   * Remover áudio da playlist (otimizado)
+   */
   static removeAudioFromPlaylist(playlistId: string, audioId: string): boolean {
     const playlists = this.getPlaylists();
     const playlist = playlists.find(p => p.id === playlistId);
     
     if (!playlist) return false;
 
-    const initialLength = playlist.audios.length;
+    const originalLength = playlist.audios.length;
     playlist.audios = playlist.audios.filter(a => a.id !== audioId);
     
-    if (playlist.audios.length === initialLength) return false;
+    if (playlist.audios.length === originalLength) return false;
 
-    playlist.updatedAt = new Date();
+    playlist.updatedAt = new Date().toISOString();
     this.savePlaylists(playlists);
     return true;
   }
 
+  /**
+   * Buscar playlist por ID
+   */
   static getPlaylistById(id: string): Playlist | null {
-    return this.getPlaylists().find(p => p.id === id) || null;
+    const playlists = this.getPlaylists();
+    return playlists.find(p => p.id === id) || null;
   }
 }

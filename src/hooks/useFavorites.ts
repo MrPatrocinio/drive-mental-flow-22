@@ -1,13 +1,16 @@
+
 /**
  * Favorites Hook - Hook para gerenciamento de favoritos
  * Responsabilidade: Estado e lógica de favoritos
  * Princípio SRP: Apenas gerenciamento de favoritos
  * Princípio SSOT: Fonte única da verdade para favoritos
+ * OTIMIZADO: Debounce para operações performáticas
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePlaylistManager } from './usePlaylistManager';
 import { PlaylistService } from '@/services/playlistService';
+import { DebounceService } from '@/services/debounceService';
 
 export interface FavoriteStatus {
   isFavorite: boolean;
@@ -27,6 +30,7 @@ export function useFavorites(audioId: string) {
   /**
    * Verifica se o áudio está em alguma playlist diretamente do localStorage
    * Responsabilidade: Verificação síncrona e imediata
+   * OTIMIZADO: Operação performática
    */
   const checkFavoriteStatusFromStorage = useCallback(() => {
     const storedPlaylists = PlaylistService.getPlaylists();
@@ -54,6 +58,18 @@ export function useFavorites(audioId: string) {
   }, [audioId]);
 
   /**
+   * Versão com debounce para verificação otimizada
+   */
+  const debouncedCheckFromStorage = useCallback(
+    DebounceService.debounce(
+      `checkFavorite_${audioId}`,
+      checkFavoriteStatusFromStorage,
+      50
+    ),
+    [checkFavoriteStatusFromStorage, audioId]
+  );
+
+  /**
    * Verifica se o áudio está em alguma playlist (é favorito)
    * Responsabilidade: Verificação baseada no estado reativo
    */
@@ -79,7 +95,7 @@ export function useFavorites(audioId: string) {
   }, [playlists, audioId]);
 
   /**
-   * Força refresh imediato e com fallback
+   * Força refresh imediato e com fallback otimizado
    * Responsabilidade: Garantir sincronização imediata após operações
    */
   const forceRefresh = useCallback(() => {
@@ -91,11 +107,9 @@ export function useFavorites(audioId: string) {
     // Primeira verificação imediata
     checkFavoriteStatusFromStorage();
     
-    // Fallback após pequeno delay para garantir que localStorage foi processado
-    timeoutRef.current = setTimeout(() => {
-      checkFavoriteStatusFromStorage();
-    }, 50);
-  }, [checkFavoriteStatusFromStorage]);
+    // Fallback com debounce para evitar operações excessivas
+    debouncedCheckFromStorage();
+  }, [checkFavoriteStatusFromStorage, debouncedCheckFromStorage]);
 
   /**
    * Verifica se o áudio está numa playlist específica
@@ -126,8 +140,9 @@ export function useFavorites(audioId: string) {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      DebounceService.cancel(`checkFavorite_${audioId}`);
     };
-  }, []);
+  }, [audioId]);
 
   return {
     favoriteStatus,

@@ -1,10 +1,13 @@
+
 /**
  * Audio Card - Componente de card de áudio
  * Responsabilidade: UI de card de áudio
  * Princípio SRP: Apenas apresentação de áudio
  * Princípio DRY: Componente reutilizável
+ * OTIMIZADO: React.memo para performance
  */
 
+import React, { useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +30,11 @@ interface AudioCardProps {
   showTags?: boolean;
 }
 
-export function AudioCard({ audio, onPlay, showTags = true }: AudioCardProps) {
+const AudioCardComponent = ({ audio, onPlay, showTags = true }: AudioCardProps) => {
+  const handlePlay = useCallback(() => {
+    onPlay(audio);
+  }, [audio, onPlay]);
+
   return (
     <Card className="group hover-scale transition-all duration-200 hover:shadow-lg">
       <CardContent className="p-4">
@@ -78,7 +85,7 @@ export function AudioCard({ audio, onPlay, showTags = true }: AudioCardProps) {
             
             <Button
               size="sm"
-              onClick={() => onPlay(audio)}
+              onClick={handlePlay}
               className="w-8 h-8 p-0"
             >
               <Play className="w-3 h-3" />
@@ -88,4 +95,18 @@ export function AudioCard({ audio, onPlay, showTags = true }: AudioCardProps) {
       </CardContent>
     </Card>
   );
-}
+};
+
+// Otimização com React.memo para evitar re-renders desnecessários
+export const AudioCard = React.memo(AudioCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.audio.id === nextProps.audio.id &&
+    prevProps.audio.title === nextProps.audio.title &&
+    prevProps.audio.duration === nextProps.audio.duration &&
+    prevProps.audio.url === nextProps.audio.url &&
+    prevProps.showTags === nextProps.showTags &&
+    JSON.stringify(prevProps.audio.tags) === JSON.stringify(nextProps.audio.tags)
+  );
+});
+
+AudioCard.displayName = 'AudioCard';

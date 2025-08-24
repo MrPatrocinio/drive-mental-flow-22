@@ -1,11 +1,13 @@
+
 /**
  * Favorite Button - Componente para adicionar áudios à playlist
  * Responsabilidade: UI para adicionar à playlist
  * Princípio SRP: Apenas botão de playlist
  * Princípio DRY: Componente reutilizável
+ * OTIMIZADO: React.memo para evitar re-renders desnecessários
  */
 
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import { usePlaylistManager } from '@/hooks/usePlaylistManager';
@@ -21,19 +23,19 @@ interface FavoriteButtonProps {
   variant?: 'ghost' | 'outline' | 'default';
 }
 
-export function FavoriteButton({ 
+const FavoriteButtonComponent = ({ 
   audioId,
   audioTitle,
   size = 'default', 
   variant = 'ghost' 
-}: FavoriteButtonProps) {
+}: FavoriteButtonProps) => {
   const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { playlists, createPlaylist, addAudioToPlaylist, removeAudioFromPlaylist } = usePlaylistManager();
   const { favoriteStatus, forceRefresh } = useFavorites(audioId);
   const { toast } = useToast();
 
-  const handleToggleFavorite = async () => {
+  const handleToggleFavorite = useCallback(async () => {
     setIsLoading(true);
     
     try {
@@ -109,12 +111,29 @@ export function FavoriteButton({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [
+    favoriteStatus.isFavorite,
+    favoriteStatus.playlistId,
+    favoriteStatus.playlistName,
+    playlists.length,
+    removeAudioFromPlaylist,
+    audioId,
+    toast,
+    audioTitle,
+    forceRefresh,
+    createPlaylist,
+    addAudioToPlaylist,
+    playlists
+  ]);
 
-  const handlePlaylistDialogSuccess = () => {
+  const handlePlaylistDialogSuccess = useCallback(() => {
     forceRefresh();
     setShowPlaylistDialog(false);
-  };
+  }, [forceRefresh]);
+
+  const handleOpenChange = useCallback((open: boolean) => {
+    setShowPlaylistDialog(open);
+  }, []);
 
   return (
     <>
@@ -143,9 +162,21 @@ export function FavoriteButton({
         audioId={audioId}
         audioTitle={audioTitle}
         open={showPlaylistDialog}
-        onOpenChange={setShowPlaylistDialog}
+        onOpenChange={handleOpenChange}
         onSuccess={handlePlaylistDialogSuccess}
       />
     </>
   );
-}
+};
+
+// Otimização com React.memo para evitar re-renders desnecessários
+export const FavoriteButton = React.memo(FavoriteButtonComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.audioId === nextProps.audioId &&
+    prevProps.audioTitle === nextProps.audioTitle &&
+    prevProps.size === nextProps.size &&
+    prevProps.variant === nextProps.variant
+  );
+});
+
+FavoriteButton.displayName = 'FavoriteButton';
