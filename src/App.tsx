@@ -12,6 +12,7 @@ import LandingPage from '@/pages/LandingPage';
 import DemoPage from '@/pages/DemoPage';
 import UserLoginPage from '@/pages/UserLoginPage';
 import Dashboard from '@/pages/Dashboard';
+import FieldPage from '@/pages/FieldPage';
 import { AdminSubscriptionPlansPage } from '@/pages/admin/AdminSubscriptionPlansPage';
 import { AdminPricingPage } from '@/pages/admin/AdminPricingPage';
 import { AdminBackgroundMusicPage } from '@/pages/admin/AdminBackgroundMusicPage';
@@ -73,6 +74,13 @@ const App: React.FC = () => {
                       <Route path="/dashboard" element={
                         <UserProtectedRoute>
                           <Dashboard />
+                        </UserProtectedRoute>
+                      } />
+
+                      {/* Rota de Campo Protegida */}
+                      <Route path="/campo/:fieldId" element={
+                        <UserProtectedRoute>
+                          <FieldPage />
                         </UserProtectedRoute>
                       } />
 

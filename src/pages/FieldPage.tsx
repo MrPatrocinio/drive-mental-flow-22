@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +23,6 @@ interface FieldData {
   id: string;
   title: string;
   description?: string;
-  slug: string;
 }
 
 // Função para validar UUID
@@ -34,7 +32,7 @@ const isValidUUID = (str: string): boolean => {
 };
 
 export const FieldPage = () => {
-  const { slug } = useParams();
+  const { fieldId } = useParams();
   const [field, setField] = useState<FieldData | null>(null);
   const [audios, setAudios] = useState<AudioData[]>([]);
   const [filteredAudios, setFilteredAudios] = useState<AudioData[]>([]);
@@ -50,16 +48,16 @@ export const FieldPage = () => {
 
   useEffect(() => {
     const fetchFieldAndAudios = async () => {
-      if (!slug) {
-        console.error('FieldPage: Slug não fornecido');
+      if (!fieldId) {
+        console.error('FieldPage: fieldId não fornecido');
         setError('ID do campo não encontrado na URL');
         setIsLoading(false);
         return;
       }
 
-      // Validar se o slug é um UUID válido
-      if (!isValidUUID(slug)) {
-        console.error('FieldPage: Slug não é um UUID válido:', slug);
+      // Validar se o fieldId é um UUID válido
+      if (!isValidUUID(fieldId)) {
+        console.error('FieldPage: fieldId não é um UUID válido:', fieldId);
         setError('ID do campo inválido');
         setIsLoading(false);
         return;
@@ -69,13 +67,13 @@ export const FieldPage = () => {
         setIsLoading(true);
         setError(null);
 
-        console.log('FieldPage: Buscando campo por ID:', slug);
+        console.log('FieldPage: Buscando campo por ID:', fieldId);
 
         // Buscar informações do campo pelo ID
         const { data: fieldData, error: fieldError } = await supabase
           .from('fields')
           .select('*')
-          .eq('id', slug) // Corrigido: buscar por ID ao invés de title
+          .eq('id', fieldId)
           .single();
 
         if (fieldError) {
@@ -94,8 +92,7 @@ export const FieldPage = () => {
         const mappedField: FieldData = {
           id: fieldData.id,
           title: fieldData.title,
-          description: fieldData.description,
-          slug: fieldData.id // Usar ID como slug
+          description: fieldData.description
         };
         
         setField(mappedField);
@@ -147,7 +144,7 @@ export const FieldPage = () => {
     };
 
     fetchFieldAndAudios();
-  }, [slug, canAccessAudio, syncTrigger]);
+  }, [fieldId, canAccessAudio, syncTrigger]);
 
   // Filtra os áudios com base nas tags selecionadas
   const handleTagFilter = (tags: string[]) => {
