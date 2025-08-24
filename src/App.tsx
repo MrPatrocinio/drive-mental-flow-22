@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   BrowserRouter as Router,
@@ -12,6 +11,7 @@ import DemoPage from '@/pages/DemoPage';
 import UserLoginPage from '@/pages/UserLoginPage';
 import Dashboard from '@/pages/Dashboard';
 import FieldPage from '@/pages/FieldPage';
+import AudioPlayerPage from '@/pages/AudioPlayerPage';
 import { AdminSubscriptionPlansPage } from '@/pages/admin/AdminSubscriptionPlansPage';
 import { AdminPricingPage } from '@/pages/admin/AdminPricingPage';
 import { AdminBackgroundMusicPage } from '@/pages/admin/AdminBackgroundMusicPage';
@@ -66,6 +66,19 @@ function AppRoutes() {
       <Route path="/campo/:fieldId" element={
         <UserProtectedRoute>
           <FieldPage />
+        </UserProtectedRoute>
+      } />
+
+      {/* Rotas de Audio Player Protegidas */}
+      <Route path="/campo/:fieldId/audio/:audioId" element={
+        <UserProtectedRoute>
+          <AudioPlayerPage />
+        </UserProtectedRoute>
+      } />
+
+      <Route path="/audio/:audioId" element={
+        <UserProtectedRoute>
+          <AudioPlayerPage />
         </UserProtectedRoute>
       } />
 

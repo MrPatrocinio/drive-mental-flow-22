@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { AudioCard } from "@/components/AudioCard";
 import { TagFilter } from "@/components/TagFilter";
@@ -15,6 +15,7 @@ import { useFieldPage } from "@/hooks/useFieldPage";
  */
 export const FieldPage = () => {
   const { fieldId } = useParams();
+  const navigate = useNavigate();
   
   // Hook otimizado que encapsula toda a lógica
   const {
@@ -27,7 +28,7 @@ export const FieldPage = () => {
     handleTagFilter
   } = useFieldPage(fieldId);
 
-  // Função para lidar com reprodução de áudio
+  // Função para lidar com reprodução de áudio - navegação real para AudioPlayerPage
   const handlePlayAudio = (audio: { 
     id: string; 
     title: string; 
@@ -36,8 +37,15 @@ export const FieldPage = () => {
     tags?: string[]; 
     field_id?: string 
   }) => {
-    console.log('FieldPage: Reproduzindo áudio:', audio.title);
-    // Lógica de reprodução será implementada conforme necessário
+    console.log('FieldPage: Navegando para reprodução do áudio:', audio.title);
+    
+    if (fieldId) {
+      // Navegação para player com contexto do campo
+      navigate(`/campo/${fieldId}/audio/${audio.id}`);
+    } else {
+      // Navegação para player individual
+      navigate(`/audio/${audio.id}`);
+    }
   };
 
   if (isLoading) {
