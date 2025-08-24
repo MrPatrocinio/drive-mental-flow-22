@@ -1,12 +1,14 @@
 
+
 /**
  * useDataSync Hook
  * Responsabilidade: Interface React para sincronização de dados
  * Princípio SRP: Apenas lógica de hook
  * Princípio DRY: Hook reutilizável para qualquer componente
+ * OTIMIZADO: Evita re-renders desnecessários
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { dataSyncService, DataChangeEvent } from '@/services/dataSync';
 
 interface DataSyncCallbacks {
@@ -17,34 +19,38 @@ interface DataSyncCallbacks {
 }
 
 export const useDataSync = (callbacks?: DataSyncCallbacks) => {
-  const [syncTrigger, setSyncTrigger] = React.useState(0);
+  // Usar ref para manter referência estável das callbacks
+  const callbacksRef = useRef(callbacks);
+  
+  // Atualizar ref quando callbacks mudarem
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
 
   const handleDataChange = useCallback((event: DataChangeEvent, payload?: any) => {
     console.log('Data sync event received:', event, payload);
     
-    // Incrementa o trigger para forçar re-renderização
-    setSyncTrigger(prev => prev + 1);
-    
-    // Executa callbacks específicos se fornecidos
-    if (callbacks) {
+    // Executar callbacks específicos se fornecidos
+    const currentCallbacks = callbacksRef.current;
+    if (currentCallbacks) {
       switch (event) {
         case 'fields_changed':
-          callbacks.onFieldsChange?.();
+          currentCallbacks.onFieldsChange?.();
           break;
         case 'audios_changed':
-          callbacks.onAudiosChange?.();
+          currentCallbacks.onAudiosChange?.();
           break;
         case 'content_changed':
-          callbacks.onContentChange?.();
+          currentCallbacks.onContentChange?.();
           break;
         case 'videos_changed':
-          callbacks.onVideosChange?.();
+          currentCallbacks.onVideosChange?.();
           break;
       }
     }
-  }, [callbacks]);
+  }, []); // Dependências vazias pois usamos ref
 
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = dataSyncService.subscribe(handleDataChange);
     
     return () => {
@@ -52,7 +58,7 @@ export const useDataSync = (callbacks?: DataSyncCallbacks) => {
     };
   }, [handleDataChange]);
 
-  return {
-    syncTrigger
-  };
+  // Removido syncTrigger para evitar re-renders desnecessários
+  return {};
 };
+

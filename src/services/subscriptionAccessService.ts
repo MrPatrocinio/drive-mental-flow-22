@@ -1,4 +1,6 @@
 
+
+import { useCallback, useMemo } from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
 
 /**
@@ -40,21 +42,28 @@ export class SubscriptionAccessService {
 /**
  * Hook para verificação de acesso a conteúdo
  * Princípio DRY: Reutiliza lógica de verificação em toda aplicação
+ * OTIMIZADO: Funções memoizadas para evitar re-renders
  */
 export const useContentAccess = () => {
   const { subscribed, subscription_tier } = useSubscription();
 
-  const hasFullAccess = () => {
+  // Memoizar verificações para evitar recriações
+  const hasFullAccess = useMemo(() => {
     return SubscriptionAccessService.hasFullAccess(subscribed, subscription_tier);
-  };
+  }, [subscribed, subscription_tier]);
 
-  const canAccessAudio = (isPremium: boolean = false, isDemoAudio: boolean = false) => {
+  const hasActiveSubscription = useMemo(() => {
+    return subscribed && subscription_tier !== null;
+  }, [subscribed, subscription_tier]);
+
+  // Função estável com useCallback
+  const canAccessAudio = useCallback((isPremium: boolean = false, isDemoAudio: boolean = false) => {
     return SubscriptionAccessService.canAccessAudio(subscribed, subscription_tier, isPremium, isDemoAudio);
-  };
+  }, [subscribed, subscription_tier]);
 
-  const getAccessDeniedReason = (isPremium: boolean = false) => {
+  const getAccessDeniedReason = useCallback((isPremium: boolean = false) => {
     return SubscriptionAccessService.getAccessDeniedReason(subscribed, isPremium);
-  };
+  }, [subscribed]);
 
   return {
     hasFullAccess,
@@ -62,6 +71,7 @@ export const useContentAccess = () => {
     getAccessDeniedReason,
     subscribed,
     subscription_tier,
-    hasActiveSubscription: subscribed && subscription_tier !== null
+    hasActiveSubscription
   };
 };
+

@@ -1,174 +1,41 @@
-import React, { useState, useEffect } from "react";
+
+import React from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { AudioCard } from "@/components/AudioCard";
 import { TagFilter } from "@/components/TagFilter";
 import { Loader2 } from "lucide-react";
-import { useContentAccess } from "@/services/subscriptionAccessService";
-import { useDataSync } from "@/hooks/useDataSync";
+import { useFieldPage } from "@/hooks/useFieldPage";
 
-interface AudioData {
-  id: string;
-  title: string;
-  description?: string;
-  file_url: string;
-  cover_image_url?: string;
-  duration?: string;
-  is_premium: boolean;
-  tags?: string[];
-}
-
-interface FieldData {
-  id: string;
-  title: string;
-  description?: string;
-}
-
-// Função para validar UUID
-const isValidUUID = (str: string): boolean => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
-};
-
+/**
+ * FieldPage Component
+ * Responsabilidade: UI da página de campo
+ * Princípio SRP: Apenas apresentação e interação
+ * Princípio KISS: Implementação simplificada usando hook dedicado
+ */
 export const FieldPage = () => {
   const { fieldId } = useParams();
-  const [field, setField] = useState<FieldData | null>(null);
-  const [audios, setAudios] = useState<AudioData[]>([]);
-  const [filteredAudios, setFilteredAudios] = useState<AudioData[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  // Hook otimizado que encapsula toda a lógica
+  const {
+    field,
+    filteredAudios,
+    selectedTags,
+    isLoading,
+    error,
+    allTags,
+    handleTagFilter
+  } = useFieldPage(fieldId);
 
-  // Hook para controle de acesso baseado em assinatura
-  const { canAccessAudio } = useContentAccess();
-
-  // Hook para sincronização de dados
-  const { syncTrigger } = useDataSync();
-
-  useEffect(() => {
-    const fetchFieldAndAudios = async () => {
-      if (!fieldId) {
-        console.error('FieldPage: fieldId não fornecido');
-        setError('ID do campo não encontrado na URL');
-        setIsLoading(false);
-        return;
-      }
-
-      // Validar se o fieldId é um UUID válido
-      if (!isValidUUID(fieldId)) {
-        console.error('FieldPage: fieldId não é um UUID válido:', fieldId);
-        setError('ID do campo inválido');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        console.log('FieldPage: Buscando campo por ID:', fieldId);
-
-        // Buscar informações do campo pelo ID
-        const { data: fieldData, error: fieldError } = await supabase
-          .from('fields')
-          .select('*')
-          .eq('id', fieldId)
-          .single();
-
-        if (fieldError) {
-          console.error('FieldPage: Erro ao buscar campo:', fieldError);
-          if (fieldError.code === 'PGRST116') {
-            setError('Campo não encontrado');
-          } else {
-            setError('Erro ao carregar informações do campo');
-          }
-          return;
-        }
-
-        console.log('FieldPage: Campo encontrado:', fieldData);
-        
-        // Mapear dados do campo para interface local
-        const mappedField: FieldData = {
-          id: fieldData.id,
-          title: fieldData.title,
-          description: fieldData.description
-        };
-        
-        setField(mappedField);
-
-        // Buscar áudios do campo
-        console.log('FieldPage: Buscando áudios para o campo:', fieldData.id);
-        const { data: audiosData, error: audiosError } = await supabase
-          .from('audios')
-          .select('*')
-          .eq('field_id', fieldData.id)
-          .order('title');
-
-        if (audiosError) {
-          console.error('FieldPage: Erro ao buscar áudios:', audiosError);
-          setError('Erro ao carregar áudios');
-          return;
-        }
-
-        console.log('FieldPage: Áudios encontrados:', audiosData?.length || 0);
-
-        // Mapear dados dos áudios para interface local
-        const mappedAudios: AudioData[] = audiosData?.map(audio => ({
-          id: audio.id,
-          title: audio.title,
-          description: undefined, // Campo não existe na tabela audios
-          file_url: audio.url, // Mapear url para file_url
-          cover_image_url: undefined, // Não disponível no banco atual
-          duration: audio.duration,
-          is_premium: audio.is_premium,
-          tags: audio.tags || []
-        })) || [];
-
-        // Filtrar áudios baseado na assinatura do usuário
-        const accessibleAudios = mappedAudios.filter(audio => 
-          canAccessAudio(audio.is_premium, false) // is_demo sempre false para simplicidade
-        );
-
-        console.log('FieldPage: Áudios acessíveis:', accessibleAudios.length);
-
-        setAudios(accessibleAudios);
-        setFilteredAudios(accessibleAudios);
-
-      } catch (error) {
-        console.error('FieldPage: Erro geral:', error);
-        setError('Erro inesperado ao carregar dados');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchFieldAndAudios();
-  }, [fieldId, canAccessAudio, syncTrigger]);
-
-  // Filtra os áudios com base nas tags selecionadas
-  const handleTagFilter = (tags: string[]) => {
-    console.log('FieldPage: Filtrando por tags:', tags);
-    setSelectedTags(tags);
-    
-    if (tags.length === 0) {
-      setFilteredAudios(audios);
-    } else {
-      const filtered = audios.filter(audio => 
-        audio.tags && audio.tags.some((tag: string) => tags.includes(tag))
-      );
-      setFilteredAudios(filtered);
-    }
-  };
-
-  const allTags = Array.from(
-    new Set(
-      audios.flatMap(audio => audio.tags || [])
-    )
-  ).sort();
-
-  // Função para lidar com reprodução de áudio - usar interface Audio do AudioCard
-  const handlePlayAudio = (audio: { id: string; title: string; duration: string; url: string; tags?: string[]; field_id?: string }) => {
+  // Função para lidar com reprodução de áudio
+  const handlePlayAudio = (audio: { 
+    id: string; 
+    title: string; 
+    duration: string; 
+    url: string; 
+    tags?: string[]; 
+    field_id?: string 
+  }) => {
     console.log('FieldPage: Reproduzindo áudio:', audio.title);
     // Lógica de reprodução será implementada conforme necessário
   };
