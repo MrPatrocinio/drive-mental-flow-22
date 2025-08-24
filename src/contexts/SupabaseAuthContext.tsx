@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { SupabaseAuthService, type AuthUser, type LoginCredentials, type SignUpCredentials } from "@/services/supabase/authService";
 import type { Session } from "@supabase/supabase-js";
 
@@ -36,14 +36,19 @@ interface SupabaseAuthProviderProps {
  * Princípios: SSOT para estado de auth, SRP para contexto
  */
 export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = React.useState<AuthUser | null>(null);
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  useEffect(() => {
+  React.useEffect(() => {
+    let isMounted = true;
+
     // Configurar listener de mudanças de auth PRIMEIRO
     const { data: { subscription } } = SupabaseAuthService.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         
         if (session?.user) {
@@ -66,40 +71,45 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
 
     // DEPOIS verificar sessão existente
     SupabaseAuthService.getSession().then(({ session, user }) => {
+      if (!isMounted) return;
+      
       setSession(session);
       setUser(user);
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const signIn = async (credentials: LoginCredentials) => {
+  const signIn = React.useCallback(async (credentials: LoginCredentials) => {
     const { user: authUser, error } = await SupabaseAuthService.signIn(credentials);
     if (authUser && !error) {
       setUser(authUser);
     }
     return { error };
-  };
+  }, []);
 
-  const signUp = async (credentials: SignUpCredentials) => {
+  const signUp = React.useCallback(async (credentials: SignUpCredentials) => {
     const { user: authUser, error } = await SupabaseAuthService.signUp(credentials);
     if (authUser && !error) {
       setUser(authUser);
     }
     return { error };
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = React.useCallback(async () => {
     const { error } = await SupabaseAuthService.signOut();
     if (!error) {
       setUser(null);
       setSession(null);
     }
     return { error };
-  };
+  }, []);
 
-  const value = {
+  const value = React.useMemo(() => ({
     user,
     session,
     isAuthenticated: !!user && !!session,
@@ -107,7 +117,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     signIn,
     signUp,
     signOut
-  };
+  }), [user, session, isLoading, signIn, signUp, signOut]);
 
   return (
     <SupabaseAuthContext.Provider value={value}>
