@@ -1,21 +1,25 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Shield, AlertCircle } from "lucide-react";
+import { useAdminAuthentication } from "@/hooks/useAdminAuthentication";
 
+/**
+ * AdminLoginPage - Página de login administrativa
+ * Responsabilidade: Interface para login de administradores (princípio SRP)
+ * Princípio KISS: Interface limpa focada no essencial
+ */
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("dppsoft@gmail.com");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const { signIn } = useSupabaseAuth();
+  const { isLoading, error, loginAdmin, clearError } = useAdminAuthentication();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,20 +27,15 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const { error } = await signIn({ email, password });
-      if (error) {
-        setError(error);
-      } else {
-        navigate(from, { replace: true });
-      }
-    } catch (err) {
-      setError("Erro interno no login.");
-    } finally {
-      setIsLoading(false);
+    console.log('AdminLoginPage: Formulário de login submetido');
+    
+    clearError();
+    
+    const { success } = await loginAdmin({ email, password });
+    
+    if (success) {
+      console.log('AdminLoginPage: Redirecionando para:', from);
+      navigate(from, { replace: true });
     }
   };
 
