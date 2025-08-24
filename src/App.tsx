@@ -4,7 +4,6 @@ import {
   BrowserRouter as Router,
   Route,
   Routes,
-  useNavigate,
 } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { dataSyncService } from '@/services/dataSync';
@@ -41,121 +40,117 @@ const queryClient = new QueryClient({
   },
 });
 
-function AuthProvider({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
-
+function AppInitializer() {
   useEffect(() => {
     // Inicializar o serviço de sincronização
     dataSyncService.initialize();
   }, []);
 
-  return <React.Fragment>{children}</React.Fragment>;
+  return (
+    <Routes>
+      {/* Rotas Públicas */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/demo" element={<DemoPage />} />
+
+      {/* Rota de Login de Usuários */}
+      <Route path="/login" element={<UserLoginPage />} />
+
+      {/* Rotas de Usuários Protegidas */}
+      <Route path="/dashboard" element={
+        <UserProtectedRoute>
+          <Dashboard />
+        </UserProtectedRoute>
+      } />
+
+      {/* Rota de Campo Protegida */}
+      <Route path="/campo/:fieldId" element={
+        <UserProtectedRoute>
+          <FieldPage />
+        </UserProtectedRoute>
+      } />
+
+      {/* Rota de Login Administrativo */}
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+
+      {/* Rotas Administrativas Protegidas */}
+      <Route path="/admin" element={
+        <AdminProtectedRoute>
+          <AdminDashboard />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/landing" element={
+        <AdminProtectedRoute>
+          <AdminLandingPage />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/pricing" element={
+        <AdminProtectedRoute>
+          <AdminPricingPage />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/subscription-plans" element={
+        <AdminProtectedRoute>
+          <AdminSubscriptionPlansPage />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/fields" element={
+        <AdminProtectedRoute>
+          <AdminFieldsPageNew />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/audios" element={
+        <AdminProtectedRoute>
+          <AdminAudiosPageNew />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/background-music" element={
+        <AdminProtectedRoute>
+          <AdminBackgroundMusicPage />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/stats" element={
+        <AdminProtectedRoute>
+          <AdminStatsPage />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/analytics" element={
+        <AdminProtectedRoute>
+          <AdminAnalyticsPage />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/validation" element={
+        <AdminProtectedRoute>
+          <AdminValidationPage />
+        </AdminProtectedRoute>
+      } />
+    </Routes>
+  );
 }
 
 const App: React.FC = () => {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <SupabaseAuthProvider>
-          <AdminProvider>
-            <UserProvider>
-              <AudioPlaybackProvider>
-                <Router>
-                  <AuthProvider>
-                    <Routes>
-                      {/* Rotas Públicas */}
-                      <Route path="/" element={<LandingPage />} />
-                      <Route path="/demo" element={<DemoPage />} />
-
-                      {/* Rota de Login de Usuários */}
-                      <Route path="/login" element={<UserLoginPage />} />
-
-                      {/* Rotas de Usuários Protegidas */}
-                      <Route path="/dashboard" element={
-                        <UserProtectedRoute>
-                          <Dashboard />
-                        </UserProtectedRoute>
-                      } />
-
-                      {/* Rota de Campo Protegida */}
-                      <Route path="/campo/:fieldId" element={
-                        <UserProtectedRoute>
-                          <FieldPage />
-                        </UserProtectedRoute>
-                      } />
-
-                      {/* Rota de Login Administrativo */}
-                      <Route path="/admin/login" element={<AdminLoginPage />} />
-
-                      {/* Rotas Administrativas Protegidas */}
-                      <Route path="/admin" element={
-                        <AdminProtectedRoute>
-                          <AdminDashboard />
-                        </AdminProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin/landing" element={
-                        <AdminProtectedRoute>
-                          <AdminLandingPage />
-                        </AdminProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin/pricing" element={
-                        <AdminProtectedRoute>
-                          <AdminPricingPage />
-                        </AdminProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin/subscription-plans" element={
-                        <AdminProtectedRoute>
-                          <AdminSubscriptionPlansPage />
-                        </AdminProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin/fields" element={
-                        <AdminProtectedRoute>
-                          <AdminFieldsPageNew />
-                        </AdminProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin/audios" element={
-                        <AdminProtectedRoute>
-                          <AdminAudiosPageNew />
-                        </AdminProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin/background-music" element={
-                        <AdminProtectedRoute>
-                          <AdminBackgroundMusicPage />
-                        </AdminProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin/stats" element={
-                        <AdminProtectedRoute>
-                          <AdminStatsPage />
-                        </AdminProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin/analytics" element={
-                        <AdminProtectedRoute>
-                          <AdminAnalyticsPage />
-                        </AdminProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin/validation" element={
-                        <AdminProtectedRoute>
-                          <AdminValidationPage />
-                        </AdminProtectedRoute>
-                      } />
-                    </Routes>
-                  </AuthProvider>
-                </Router>
-              </AudioPlaybackProvider>
-            </UserProvider>
-          </AdminProvider>
-        </SupabaseAuthProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <SupabaseAuthProvider>
+        <AdminProvider>
+          <UserProvider>
+            <AudioPlaybackProvider>
+              <Router>
+                <AppInitializer />
+              </Router>
+            </AudioPlaybackProvider>
+          </UserProvider>
+        </AdminProvider>
+      </SupabaseAuthProvider>
+    </QueryClientProvider>
   );
 };
 
