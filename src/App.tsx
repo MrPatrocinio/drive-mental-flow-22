@@ -138,21 +138,19 @@ function AppRoutes() {
 
 const App: React.FC = () => {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <SupabaseAuthProvider>
-          <AdminProvider>
-            <UserProvider>
-              <AudioPlaybackProvider>
-                <Router>
-                  <AppRoutes />
-                </Router>
-              </AudioPlaybackProvider>
-            </UserProvider>
-          </AdminProvider>
-        </SupabaseAuthProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <SupabaseAuthProvider>
+        <AdminProvider>
+          <UserProvider>
+            <AudioPlaybackProvider>
+              <Router>
+                <AppRoutes />
+              </Router>
+            </AudioPlaybackProvider>
+          </UserProvider>
+        </AdminProvider>
+      </SupabaseAuthProvider>
+    </QueryClientProvider>
   );
 };
 
