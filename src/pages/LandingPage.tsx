@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
+import { LandingPageMobileHeader } from "@/components/mobile/LandingPageMobileHeader";
+import { LandingPageBottomNav } from "@/components/mobile/LandingPageBottomNav";
 import { ArrowRight, Brain, Heart, Target, DollarSign, Activity, Sparkles, Play, Users, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { SupabaseContentService, LandingPageContent } from "@/services/supabase/contentService";
 import { VideoService, Video } from "@/services/supabase/videoService";
 import { FieldService } from "@/services/supabase/fieldService";
@@ -16,6 +19,7 @@ import * as Icons from "lucide-react";
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [content, setContent] = useState<LandingPageContent | null>(null);
   const [fields, setFields] = useState<any[]>([]);
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
@@ -72,7 +76,6 @@ export default function LandingPage() {
     onVideosChange: loadContent
   });
 
-  // Renderizar vídeo com base no tipo
   const renderVideoPlayer = () => {
     if (!activeVideo || !isVideoReady) return null;
 
@@ -177,8 +180,9 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen hero-gradient">
-      <Header />
+    <div className={`min-h-screen hero-gradient ${isMobile ? 'pb-16' : ''}`}>
+      {/* Header Responsivo */}
+      {isMobile ? <LandingPageMobileHeader /> : <Header />}
       
       {/* Hero Section */}
       <section className="py-12 md:py-20 px-4">
@@ -355,6 +359,9 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Bottom Navigation Mobile */}
+      {isMobile && <LandingPageBottomNav />}
     </div>
   );
 }
