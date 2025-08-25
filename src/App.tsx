@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   BrowserRouter as Router,
@@ -30,7 +31,7 @@ import { AudioPlaybackProvider } from '@/contexts/AudioPlaybackContext';
 import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { UserProtectedRoute } from '@/components/UserProtectedRoute';
 
-// Create a client with explicit React context
+// Create a single client instance outside of the component
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -40,9 +41,10 @@ const queryClient = new QueryClient({
   },
 });
 
-function AppRoutes() {
+// Separate component for routes to ensure proper context nesting
+const AppContent: React.FC = () => {
   React.useEffect(() => {
-    // Inicializar o serviço de sincronização
+    console.log('App: Inicializando serviço de sincronização');
     dataSyncService.initialize();
   }, []);
 
@@ -147,23 +149,25 @@ function AppRoutes() {
       } />
     </Routes>
   );
-}
+};
 
 const App: React.FC = () => {
+  console.log('App: Componente principal inicializando');
+  
   return (
-    <QueryClientProvider client={queryClient}>
-      <SupabaseAuthProvider>
-        <AdminProvider>
-          <UserProvider>
-            <AudioPlaybackProvider>
-              <Router>
-                <AppRoutes />
-              </Router>
-            </AudioPlaybackProvider>
-          </UserProvider>
-        </AdminProvider>
-      </SupabaseAuthProvider>
-    </QueryClientProvider>
+    <Router>
+      <QueryClientProvider client={queryClient}>
+        <SupabaseAuthProvider>
+          <AdminProvider>
+            <UserProvider>
+              <AudioPlaybackProvider>
+                <AppContent />
+              </AudioPlaybackProvider>
+            </UserProvider>
+          </AdminProvider>
+        </SupabaseAuthProvider>
+      </QueryClientProvider>
+    </Router>
   );
 };
 
