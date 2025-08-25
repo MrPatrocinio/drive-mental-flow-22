@@ -25,6 +25,9 @@ export default function LandingPage() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   
+  // Debug logs
+  console.log('LandingPage: Renderizando - isMobile:', isMobile, 'loading:', loading);
+  
   // Hooks para controles e lifecycle de vídeo
   const videoControlsSettings = useVideoControls(activeVideo?.video_controls);
   const { isVideoReady, videoKey, cleanupPreviousVideo } = useVideoLifecycle(activeVideo);
@@ -37,6 +40,7 @@ export default function LandingPage() {
 
   const loadContent = useCallback(async () => {
     try {
+      console.log('LandingPage: Iniciando carregamento de conteúdo');
       setLoading(true);
       
       const [landingContent, fieldsData, videoData] = await Promise.all([
@@ -44,6 +48,8 @@ export default function LandingPage() {
         FieldService.getAll(),
         VideoService.getActiveVideo()
       ]);
+      
+      console.log('LandingPage: Conteúdo carregado:', { landingContent, fieldsData, videoData });
       
       setContent(landingContent);
       
@@ -59,8 +65,9 @@ export default function LandingPage() {
         count: `${field.audio_count} áudio${field.audio_count !== 1 ? 's' : ''}`
       })));
     } catch (error) {
-      console.error('Error loading content:', error);
+      console.error('LandingPage: Erro ao carregar conteúdo:', error);
     } finally {
+      console.log('LandingPage: Finalizando carregamento');
       setLoading(false);
     }
   }, [activeVideo?.id]);
@@ -168,16 +175,26 @@ export default function LandingPage() {
     );
   };
 
+  // Loading com fallback melhorado
   if (loading || !content) {
+    console.log('LandingPage: Mostrando tela de loading');
     return (
-      <div className="min-h-screen hero-gradient flex items-center justify-center">
+      <div className={`min-h-screen hero-gradient flex items-center justify-center ${isMobile ? 'pb-16' : ''}`}>
+        {/* Header mesmo durante loading */}
+        {isMobile ? <LandingPageMobileHeader /> : <Header />}
+        
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-lg text-muted-foreground">Carregando...</p>
         </div>
+        
+        {/* Bottom nav mesmo durante loading */}
+        {isMobile && <LandingPageBottomNav />}
       </div>
     );
   }
+
+  console.log('LandingPage: Renderizando conteúdo principal - isMobile:', isMobile);
 
   return (
     <div className={`min-h-screen hero-gradient ${isMobile ? 'pb-16' : ''}`}>

@@ -15,7 +15,11 @@ export const LandingPageBottomNav = () => {
   const navigate = useNavigate();
   const { isAuthenticated, signOut, isLoading } = useSupabaseAuth();
 
+  console.log('LandingPageBottomNav: Renderizando - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+
   const handleAuthAction = async () => {
+    console.log('LandingPageBottomNav: handleAuthAction - isAuthenticated:', isAuthenticated);
+    
     if (isAuthenticated) {
       // Fazer logout
       const { error } = await signOut();
@@ -31,7 +35,10 @@ export const LandingPageBottomNav = () => {
     }
   };
 
-  if (isLoading) return null;
+  if (isLoading) {
+    console.log('LandingPageBottomNav: Auth ainda carregando, não renderizando nav');
+    return null;
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/30 backdrop-blur-md border-t border-border/50 block md:hidden">
