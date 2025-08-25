@@ -56,12 +56,16 @@ export const UserLoginForm: React.FC = () => {
         <Input
           id="email"
           type="email"
+          inputMode="email"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="seu@email.com"
           required
           disabled={isLoading}
-          className="bg-background/50"
+          className="bg-background/50 h-12 text-base"
+          spellCheck="false"
+          enterKeyHint="next"
         />
       </div>
 
@@ -71,12 +75,16 @@ export const UserLoginForm: React.FC = () => {
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
+            inputMode="text"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             required
             disabled={isLoading}
-            className="bg-background/50 pr-10"
+            className="bg-background/50 pr-10 h-12 text-base"
+            spellCheck="false"
+            enterKeyHint="done"
           />
           <Button
             type="button"
@@ -85,6 +93,7 @@ export const UserLoginForm: React.FC = () => {
             className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
             onClick={() => setShowPassword(!showPassword)}
             disabled={isLoading}
+            tabIndex={-1}
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -99,7 +108,7 @@ export const UserLoginForm: React.FC = () => {
         type="submit"
         variant="premium"
         size="lg"
-        className="w-full"
+        className="w-full h-12 text-base"
         disabled={isLoading}
       >
         {isLoading ? "Entrando..." : "Entrar"}
