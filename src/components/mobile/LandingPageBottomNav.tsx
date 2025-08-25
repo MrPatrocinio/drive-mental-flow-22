@@ -1,7 +1,7 @@
 
 /**
  * LandingPageBottomNav - Menu inferior fixo para mobile
- * Responsabilidade: Apenas botão ENTRAR fixo na parte inferior (princípio SRP)
+ * Responsabilidade: Apenas botão ENTRAR discreto no canto direito (princípio SRP)
  * Princípio DRY: Reutiliza lógica de auth do SupabaseAuthContext
  */
 
@@ -41,33 +41,33 @@ export const LandingPageBottomNav = () => {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/30 backdrop-blur-md border-t border-border/50 block md:hidden">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex justify-center">
-          <Button
-            variant={isAuthenticated ? "ghost" : "premium"}
-            size="lg"
-            onClick={handleAuthAction}
-            className={`min-w-[120px] ${
-              isAuthenticated 
-                ? "hover:bg-primary/10 hover:text-primary" 
-                : "animate-pulse-glow"
-            }`}
-          >
-            {isAuthenticated ? (
-              <>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
-              </>
-            ) : (
-              <>
-                <LogIn className="h-4 w-4 mr-2" />
-                ENTRAR
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+    <nav className="fixed bottom-4 right-4 z-50 block md:hidden">
+      <Button
+        variant={isAuthenticated ? "ghost" : "default"}
+        size="sm"
+        onClick={handleAuthAction}
+        className={`
+          backdrop-blur-md bg-background/80 border border-border/50 
+          text-xs px-3 py-2 rounded-full shadow-lg
+          ${isAuthenticated 
+            ? "hover:bg-muted/80" 
+            : "hover:bg-primary/90"
+          }
+          transition-all duration-200
+        `}
+      >
+        {isAuthenticated ? (
+          <>
+            <LogOut className="h-3 w-3 mr-1" />
+            Sair
+          </>
+        ) : (
+          <>
+            <LogIn className="h-3 w-3 mr-1" />
+            Entrar
+          </>
+        )}
+      </Button>
     </nav>
   );
 };
