@@ -46,19 +46,18 @@ export const LandingPageBottomNav = () => {
       <div className="backdrop-blur-md bg-background/20 border-t border-border/30">
         {/* Container do menu */}
         <div className="container mx-auto px-4 h-16 flex items-center justify-end">
-          {/* Botão Entrar/Sair no canto direito com visual das imagens de referência */}
+          {/* Botão Entrar/Sair discreto no canto direito - apenas ícone e texto */}
           <Button
             variant="ghost"
             size="sm"
             onClick={handleAuthAction}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg
-              bg-black/80 backdrop-blur-sm border border-white/20
-              text-white text-sm font-medium
-              hover:bg-black/90 hover:border-white/30
+            className="
+              flex items-center gap-2 px-3 py-2
+              text-white/80 text-sm font-normal
+              hover:text-white
               transition-all duration-200
-              shadow-lg
-            `}
+              bg-transparent border-0
+            "
           >
             {isAuthenticated ? (
               <>
