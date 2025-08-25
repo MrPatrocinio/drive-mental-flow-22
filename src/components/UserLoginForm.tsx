@@ -56,8 +56,7 @@ export const UserLoginForm: React.FC = () => {
         <Input
           id="email"
           type="email"
-          inputMode="email"
-          autoComplete="email"
+          autoComplete="username"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="seu@email.com"
@@ -65,7 +64,9 @@ export const UserLoginForm: React.FC = () => {
           disabled={isLoading}
           className="bg-background/50 h-12 text-base"
           spellCheck="false"
-          enterKeyHint="next"
+          autoCapitalize="none"
+          autoCorrect="off"
+          data-form-type="email"
         />
       </div>
 
@@ -75,7 +76,6 @@ export const UserLoginForm: React.FC = () => {
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
-            inputMode="text"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -84,7 +84,9 @@ export const UserLoginForm: React.FC = () => {
             disabled={isLoading}
             className="bg-background/50 pr-10 h-12 text-base"
             spellCheck="false"
-            enterKeyHint="done"
+            autoCapitalize="none"
+            autoCorrect="off"
+            data-form-type="password"
           />
           <Button
             type="button"
