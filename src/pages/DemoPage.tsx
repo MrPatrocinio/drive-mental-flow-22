@@ -4,21 +4,21 @@
  * Responsabilidade: Exibir áudio de demonstração para visitantes
  * Princípio SRP: Apenas lógica de demonstração
  * Princípio KISS: Interface simples e direta
- * CORRIGIDO: Usa o novo sistema de áudio demo baseado em is_demo
+ * MELHORADO: Com validação robusta e fallback
  */
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Volume2, RefreshCw } from 'lucide-react';
-import { AudioService } from '@/services/supabase/audioService';
+import { ArrowLeft, Play, Volume2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { FieldService } from '@/services/supabase/fieldService';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { Header } from '@/components/Header';
 import { BackgroundMusicDebug } from '@/components/BackgroundMusicDebug';
 import { toast } from 'sonner';
 import { Audio } from '@/services/supabase/audioService';
+import { DemoAudioValidationService } from '@/services/demoAudioValidationService';
 
 // Hook seguro para navegação que funciona dentro e fora do contexto do Router
 const useSafeNavigate = () => {
@@ -37,6 +37,7 @@ export default function DemoPage() {
   const [demoAudio, setDemoAudio] = useState<Audio | null>(null);
   const [fieldTitle, setFieldTitle] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [validationError, setValidationError] = useState<string>('');
   const [playCount, setPlayCount] = useState(0);
 
   useEffect(() => {
@@ -46,30 +47,53 @@ export default function DemoPage() {
   const loadDemoAudio = async () => {
     try {
       setLoading(true);
+      setValidationError('');
       console.log('DemoPage: Carregando áudio de demonstração');
       
-      // Usar o método correto que busca pela coluna is_demo
-      const audio = await AudioService.getDemoAudio();
+      // Usar o serviço de validação (princípio SRP)
+      const validation = await DemoAudioValidationService.validateCurrentDemoAudio();
       
-      if (audio) {
-        console.log('DemoPage: Áudio demo encontrado:', audio.title);
-        setDemoAudio(audio);
+      if (validation.isValid && validation.audio) {
+        console.log('DemoPage: Áudio demo válido encontrado:', validation.audio.title);
+        setDemoAudio(validation.audio);
         
         // Buscar título do campo
         try {
-          const field = await FieldService.getById(audio.field_id);
+          const field = await FieldService.getById(validation.audio.field_id);
           setFieldTitle(field?.title || 'Campo não encontrado');
         } catch (error) {
           console.error('DemoPage: Erro ao buscar campo:', error);
           setFieldTitle('Campo não encontrado');
         }
       } else {
-        console.log('DemoPage: Nenhum áudio demo encontrado');
-        setDemoAudio(null);
-        toast.error('Nenhuma demonstração disponível no momento');
+        console.log('DemoPage: Áudio demo inválido, buscando alternativa');
+        setValidationError(validation.error || 'Erro desconhecido');
+        
+        // Buscar alternativa válida (princípio KISS - fallback simples)
+        const alternative = await DemoAudioValidationService.findValidDemoAlternative();
+        
+        if (alternative) {
+          console.log('DemoPage: Usando áudio alternativo:', alternative.title);
+          setDemoAudio(alternative);
+          
+          try {
+            const field = await FieldService.getById(alternative.field_id);
+            setFieldTitle(field?.title || 'Campo não encontrado');
+          } catch (error) {
+            console.error('DemoPage: Erro ao buscar campo alternativo:', error);
+            setFieldTitle('Campo não encontrado');
+          }
+          
+          toast.info('Usando áudio alternativo para demonstração');
+        } else {
+          console.log('DemoPage: Nenhuma alternativa válida encontrada');
+          setDemoAudio(null);
+          toast.error('Nenhuma demonstração disponível no momento');
+        }
       }
     } catch (error) {
       console.error('DemoPage: Erro ao carregar áudio demo:', error);
+      setValidationError('Erro ao carregar demonstração');
       toast.error('Erro ao carregar demonstração');
     } finally {
       setLoading(false);
@@ -129,18 +153,27 @@ export default function DemoPage() {
 
             <Card>
               <CardHeader className="text-center">
-                <CardTitle>Demonstração Temporariamente Indisponível</CardTitle>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <AlertTriangle className="h-6 w-6 text-warning" />
+                  <CardTitle>Demonstração Temporariamente Indisponível</CardTitle>
+                </div>
                 <CardDescription>
-                  Não há demonstração configurada no momento. Tente novamente mais tarde.
+                  {validationError || 'Não há demonstração configurada no momento.'} Tente novamente mais tarde.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-center">
-                <Button onClick={() => handleNavigation('/pagamento')} className="mr-4">
-                  Ver Planos Completos
+              <CardContent className="text-center space-y-4">
+                <Button onClick={loadDemoAudio} variant="outline">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Tentar Novamente
                 </Button>
-                <Button variant="outline" onClick={() => handleNavigation('/')}>
-                  Voltar ao Início
-                </Button>
+                <div className="flex gap-4 justify-center">
+                  <Button onClick={() => handleNavigation('/pagamento')}>
+                    Ver Planos Completos
+                  </Button>
+                  <Button variant="outline" onClick={() => handleNavigation('/')}>
+                    Voltar ao Início
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -165,6 +198,20 @@ export default function DemoPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar ao início
           </Button>
+
+          {/* Aviso se usando áudio alternativo */}
+          {validationError && (
+            <Card className="mb-6 border-warning/50 bg-warning/5">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 text-warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  <p className="text-sm">
+                    Áudio demo original indisponível. Usando áudio alternativo para demonstração.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Cabeçalho */}
           <div className="text-center mb-8">

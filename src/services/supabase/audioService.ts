@@ -156,13 +156,13 @@ export class AudioService {
   }
 
   /**
-   * Busca o áudio atual de demonstração
-   * Agora usando a coluna is_demo corretamente
+   * Busca o áudio atual de demonstração com validação
+   * MELHORADO: Agora com validação de URL e fallback
    */
   static async getDemoAudio(): Promise<Audio | null> {
-    console.log('AudioService: Buscando áudio de demonstração');
-    
     try {
+      console.log('AudioService: Buscando áudio de demonstração');
+      
       const { data, error } = await supabase
         .from('audios')
         .select('*')
@@ -180,6 +180,13 @@ export class AudioService {
       }
       
       const demoAudio = data[0];
+      
+      // Validar se URL não está vazia (princípio Fail Fast)
+      if (!demoAudio.url || demoAudio.url.trim() === '') {
+        console.error('AudioService: Áudio demo tem URL inválida:', demoAudio.title);
+        return null;
+      }
+      
       console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
       return demoAudio;
     } catch (error) {
