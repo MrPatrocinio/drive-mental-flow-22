@@ -13,6 +13,10 @@ import UserLoginPage from '@/pages/UserLoginPage';
 import Dashboard from '@/pages/Dashboard';
 import FieldPage from '@/pages/FieldPage';
 import AudioPlayerPage from '@/pages/AudioPlayerPage';
+import { SubscriptionPage } from '@/pages/SubscriptionPage';
+import PaymentPage from '@/pages/PaymentPage';
+import PaymentSuccessPage from '@/pages/PaymentSuccessPage';
+import PaymentCancelPage from '@/pages/PaymentCancelPage';
 import { AdminSubscriptionPlansPage } from '@/pages/admin/AdminSubscriptionPlansPage';
 import { AdminPricingPage } from '@/pages/admin/AdminPricingPage';
 import { AdminBackgroundMusicPage } from '@/pages/admin/AdminBackgroundMusicPage';
@@ -53,6 +57,10 @@ const AppContent: React.FC = () => {
       {/* Rotas Públicas */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/demo" element={<DemoPage />} />
+      <Route path="/assinatura" element={<SubscriptionPage />} />
+      <Route path="/pagamento" element={<PaymentPage />} />
+      <Route path="/pagamento/sucesso" element={<PaymentSuccessPage />} />
+      <Route path="/pagamento/cancelado" element={<PaymentCancelPage />} />
 
       {/* Rota de Login de Usuários */}
       <Route path="/login" element={<UserLoginPage />} />
