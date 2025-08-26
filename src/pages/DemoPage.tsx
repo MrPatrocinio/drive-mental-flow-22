@@ -1,3 +1,4 @@
+
 /**
  * DemoPage - Página de demonstração gratuita
  * Responsabilidade: Exibir áudio de demonstração para visitantes
@@ -37,7 +38,6 @@ export default function DemoPage() {
   const [fieldTitle, setFieldTitle] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [playCount, setPlayCount] = useState(0);
-  const [validationError, setValidationError] = useState<string>('');
 
   useEffect(() => {
     loadDemoAudio();
@@ -46,23 +46,13 @@ export default function DemoPage() {
   const loadDemoAudio = async () => {
     try {
       setLoading(true);
-      setValidationError('');
       console.log('DemoPage: Carregando áudio de demonstração');
       
       // Usar o método correto que busca pela coluna is_demo
       const audio = await AudioService.getDemoAudio();
       
       if (audio) {
-        // NOVA VALIDAÇÃO: Verificar se a URL é válida antes de usar
-        if (!audio.url || audio.url.trim() === '') {
-          console.error('DemoPage: Áudio demo tem URL vazia:', audio);
-          setValidationError('O áudio de demonstração não possui URL válida.');
-          setDemoAudio(null);
-          toast.error('Erro: áudio de demonstração sem URL válida');
-          return;
-        }
-
-        console.log('DemoPage: Áudio demo encontrado e validado:', audio.title);
+        console.log('DemoPage: Áudio demo encontrado:', audio.title);
         setDemoAudio(audio);
         
         // Buscar título do campo
@@ -76,12 +66,10 @@ export default function DemoPage() {
       } else {
         console.log('DemoPage: Nenhum áudio demo encontrado');
         setDemoAudio(null);
-        setValidationError('Nenhum áudio de demonstração válido está configurado no momento.');
-        toast.error('Nenhuma demonstração válida disponível no momento');
+        toast.error('Nenhuma demonstração disponível no momento');
       }
     } catch (error) {
       console.error('DemoPage: Erro ao carregar áudio demo:', error);
-      setValidationError('Erro técnico ao carregar a demonstração.');
       toast.error('Erro ao carregar demonstração');
     } finally {
       setLoading(false);
@@ -124,7 +112,7 @@ export default function DemoPage() {
     );
   }
 
-  if (!demoAudio || validationError) {
+  if (!demoAudio) {
     return (
       <div className="min-h-screen hero-gradient">
         <Header />
@@ -143,28 +131,16 @@ export default function DemoPage() {
               <CardHeader className="text-center">
                 <CardTitle>Demonstração Temporariamente Indisponível</CardTitle>
                 <CardDescription>
-                  {validationError || 'Não há demonstração configurada no momento. Tente novamente mais tarde.'}
+                  Não há demonstração configurada no momento. Tente novamente mais tarde.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-center space-y-4">
-                {validationError && (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800">
-                      <strong>Detalhes:</strong> {validationError}
-                    </p>
-                  </div>
-                )}
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button onClick={() => handleNavigation('/pagamento')} className="mr-4">
-                    Ver Planos Completos
-                  </Button>
-                  <Button variant="outline" onClick={() => handleNavigation('/')}>
-                    Voltar ao Início
-                  </Button>
-                  <Button variant="outline" onClick={loadDemoAudio}>
-                    Tentar Novamente
-                  </Button>
-                </div>
+              <CardContent className="text-center">
+                <Button onClick={() => handleNavigation('/pagamento')} className="mr-4">
+                  Ver Planos Completos
+                </Button>
+                <Button variant="outline" onClick={() => handleNavigation('/')}>
+                  Voltar ao Início
+                </Button>
               </CardContent>
             </Card>
           </div>

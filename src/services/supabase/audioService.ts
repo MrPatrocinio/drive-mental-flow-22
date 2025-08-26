@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Audio {
@@ -155,66 +156,35 @@ export class AudioService {
   }
 
   /**
-   * Obter áudio de demonstração
-   * MELHORADO: Validação de URL obrigatória
+   * Busca o áudio atual de demonstração
+   * Agora usando a coluna is_demo corretamente
    */
   static async getDemoAudio(): Promise<Audio | null> {
     console.log('AudioService: Buscando áudio de demonstração');
     
-    const { data, error } = await supabase
-      .from('audios')
-      .select('*')
-      .eq('is_demo', true)
-      .single();
-
-    if (error) {
-      console.error('AudioService: Erro ao buscar áudio demo:', error);
-      return null;
-    }
-
-    if (!data) {
-      console.log('AudioService: Nenhum áudio demo encontrado');
-      return null;
-    }
-
-    // NOVA VALIDAÇÃO: Verificar se a URL não está vazia
-    if (!data.url || data.url.trim() === '') {
-      console.error('AudioService: Áudio demo encontrado mas URL está vazia:', {
-        id: data.id,
-        title: data.title,
-        url: data.url
-      });
+    try {
+      const { data, error } = await supabase
+        .from('audios')
+        .select('*')
+        .eq('is_demo', true)
+        .limit(1);
       
-      // Tentar corrigir automaticamente desmarcando este áudio como demo
-      try {
-        await this.update(data.id, { is_demo: false });
-        console.log('AudioService: Áudio demo com URL vazia foi desmarcado automaticamente');
-      } catch (updateError) {
-        console.error('AudioService: Erro ao desmarcar áudio demo inválido:', updateError);
+      if (error) {
+        console.error('AudioService: Erro ao buscar áudio demo:', error);
+        throw error;
       }
       
-      return null;
+      if (!data || data.length === 0) {
+        console.log('AudioService: Nenhum áudio demo encontrado');
+        return null;
+      }
+      
+      const demoAudio = data[0];
+      console.log('AudioService: Áudio demo encontrado:', demoAudio.title);
+      return demoAudio;
+    } catch (error) {
+      console.error('AudioService: Erro inesperado ao buscar áudio demo:', error);
+      throw error;
     }
-
-    const audio: Audio = {
-      id: data.id,
-      title: data.title,
-      url: data.url,
-      duration: data.duration,
-      field_id: data.field_id,
-      tags: data.tags || [],
-      is_premium: data.is_premium || false,
-      is_demo: data.is_demo || false,
-      created_at: data.created_at,
-      updated_at: data.updated_at
-    };
-
-    console.log('AudioService: Áudio demo encontrado:', {
-      id: audio.id,
-      title: audio.title,
-      hasValidUrl: !!audio.url && audio.url.trim() !== ''
-    });
-
-    return audio;
   }
 }
