@@ -1,12 +1,12 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { ContentService } from '@/services/contentService';
 import { Field as EditableField, FieldService } from '@/services/supabase/fieldService';
 import { Audio as EditableAudio, AudioService } from '@/services/supabase/audioService';
-import { SupabaseContentService, LandingPageContent } from '@/services/supabase/contentService';
+import { landingContentService, LandingPageContent } from '@/services/landingContentService';
 import { PricingService, PricingInfo, PricingInsert } from '@/services/supabase/pricingService';
 import { useDataSync } from '@/hooks/useDataSync';
+import { syncDiagnostics } from '@/services/syncDiagnostics';
 import type { AuthUser } from '@/services/supabase/authService';
 
 interface AdminContextType {
@@ -39,12 +39,10 @@ interface AdminProviderProps {
 }
 
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
-  // Use Supabase Auth for authentication
   const { user, isAuthenticated, isLoading, signOut } = useSupabaseAuth();
   
-  // Content state - Initialize with default content from Supabase service
+  // Content state - usar o serviço unificado
   const [landingContent, setLandingContent] = useState<LandingPageContent>(() => {
-    // Use a default structure that matches our Supabase type
     return {
       hero: {
         title: "Transforme sua mente e conquiste",
@@ -77,20 +75,19 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   // Setup data sync
   useDataSync({
     onFieldsChange: () => {
-      console.log('AdminContext: Recebeu notificação de mudança nos fields');
+      syncDiagnostics.log('admin_fields_change_notification', 'success');
       refreshData();
     },
     onAudiosChange: () => {
-      console.log('AdminContext: Recebeu notificação de mudança nos audios');
+      syncDiagnostics.log('admin_audios_change_notification', 'success');
       refreshData();
     },
     onContentChange: () => {
-      console.log('AdminContext: Recebeu notificação de mudança no landing content');
+      syncDiagnostics.log('admin_content_change_notification', 'success');
       refreshData();
     }
   });
 
-  // Auth actions - delegate to Supabase
   const logout = async () => {
     const { error } = await signOut();
     if (error) {
@@ -99,26 +96,34 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     }
   };
 
-  // Content actions with real-time notifications
+  // Content actions com melhor sincronização
   const updateLandingContent = async (content: LandingPageContent) => {
-    console.log('AdminContext: Salvando landing content', content);
+    syncDiagnostics.log('admin_saving_landing_content', 'success', content);
+    
     try {
-      await SupabaseContentService.saveLandingPageContent(content);
-      // Update local ContentService cache
-      ContentService.saveLandingPageContent(content);
+      // Salvar no serviço unificado (que já gerencia cache e logs)
+      await landingContentService.saveLandingPageContent(content);
+      
+      // Atualizar estado local
       setLandingContent(content);
-      // Force refresh for other components
-      import('@/services/dataSync').then(({ DataSyncService }) => {
-        DataSyncService.forceNotification('content_changed');
-      });
+      
+      syncDiagnostics.log('admin_landing_content_saved', 'success');
+
+      // Aguardar um pouco antes de forçar notificação (dar tempo para o realtime processar)
+      setTimeout(() => {
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('content_changed');
+        });
+      }, 100);
+
     } catch (error) {
-      console.error('AdminContext: Erro ao salvar landing content:', error);
+      syncDiagnostics.log('admin_landing_content_save_error', 'error', error);
       throw error;
     }
   };
 
   const updateField = async (field: EditableField) => {
-    console.log('AdminContext: Salvando field', field);
+    syncDiagnostics.log('admin_saving_field', 'success', field);
     try {
       if (field.id) {
         await FieldService.update(field.id, {
@@ -128,33 +133,39 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         });
       }
       await refreshData();
-      // Force refresh for other components
-      import('@/services/dataSync').then(({ DataSyncService }) => {
-        DataSyncService.forceNotification('fields_changed');
-      });
+      
+      setTimeout(() => {
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('fields_changed');
+        });
+      }, 100);
+      
     } catch (error) {
-      console.error('AdminContext: Erro ao salvar field:', error);
+      syncDiagnostics.log('admin_field_save_error', 'error', error);
       throw error;
     }
   };
 
   const deleteField = async (fieldId: string) => {
-    console.log('AdminContext: Deletando field', fieldId);
+    syncDiagnostics.log('admin_deleting_field', 'success', fieldId);
     try {
       await FieldService.delete(fieldId);
       await refreshData();
-      // Force refresh for other components
-      import('@/services/dataSync').then(({ DataSyncService }) => {
-        DataSyncService.forceNotification('fields_changed');
-      });
+      
+      setTimeout(() => {
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('fields_changed');
+        });
+      }, 100);
+      
     } catch (error) {
-      console.error('AdminContext: Erro ao deletar field:', error);
+      syncDiagnostics.log('admin_field_delete_error', 'error', error);
       throw error;
     }
   };
 
   const updateAudio = async (audio: EditableAudio) => {
-    console.log('AdminContext: Salvando audio', audio);
+    syncDiagnostics.log('admin_saving_audio', 'success', audio);
     try {
       if (audio.id) {
         await AudioService.update(audio.id, {
@@ -166,67 +177,73 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         });
       }
       await refreshData();
-      // Force refresh for other components
-      import('@/services/dataSync').then(({ DataSyncService }) => {
-        DataSyncService.forceNotification('audios_changed');
-      });
+      
+      setTimeout(() => {
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('audios_changed');
+        });
+      }, 100);
+      
     } catch (error) {
-      console.error('AdminContext: Erro ao salvar audio:', error);
+      syncDiagnostics.log('admin_audio_save_error', 'error', error);
       throw error;
     }
   };
 
   const deleteAudio = async (audioId: string) => {
-    console.log('AdminContext: Deletando audio', audioId);
+    syncDiagnostics.log('admin_deleting_audio', 'success', audioId);
     try {
       await AudioService.delete(audioId);
       await refreshData();
-      // Force refresh for other components
-      import('@/services/dataSync').then(({ DataSyncService }) => {
-        DataSyncService.forceNotification('audios_changed');
-      });
+      
+      setTimeout(() => {
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('audios_changed');
+        });
+      }, 100);
+      
     } catch (error) {
-      console.error('AdminContext: Erro ao deletar audio:', error);
+      syncDiagnostics.log('admin_audio_delete_error', 'error', error);
       throw error;
     }
   };
 
   const updatePricing = async (pricingData: PricingInsert) => {
-    console.log('AdminContext: Salvando pricing', pricingData);
+    syncDiagnostics.log('admin_saving_pricing', 'success', pricingData);
     try {
       const savedPricing = await PricingService.save(pricingData);
       setPricing(savedPricing);
-      // Force refresh for other components
-      import('@/services/dataSync').then(({ DataSyncService }) => {
-        DataSyncService.forceNotification('content_changed');
-      });
+      
+      setTimeout(() => {
+        import('@/services/dataSync').then(({ DataSyncService }) => {
+          DataSyncService.forceNotification('content_changed');
+        });
+      }, 100);
+      
     } catch (error) {
-      console.error('AdminContext: Erro ao salvar pricing:', error);
+      syncDiagnostics.log('admin_pricing_save_error', 'error', error);
       throw error;
     }
   };
 
   const refreshData = async () => {
-    console.log('AdminContext: Atualizando todos os dados');
+    syncDiagnostics.log('admin_refreshing_all_data', 'success');
     try {
       const [landingContentData, fieldsData, audiosData, pricingData] = await Promise.all([
-        SupabaseContentService.getLandingPageContent(),
+        landingContentService.getLandingPageContent(true), // Force refresh
         FieldService.getAll(),
         AudioService.getAll(),
         PricingService.get()
       ]);
 
-      // Update local ContentService cache
-      ContentService.saveLandingPageContent(landingContentData);
-      
       setLandingContent(landingContentData);
       setFields(fieldsData);
       setAudios(audiosData);
       setPricing(pricingData);
 
-      console.log('AdminContext: Dados atualizados com sucesso');
+      syncDiagnostics.log('admin_data_refreshed_successfully', 'success');
     } catch (error) {
-      console.error('AdminContext: Erro ao atualizar dados:', error);
+      syncDiagnostics.log('admin_data_refresh_error', 'error', error);
     }
   };
 
@@ -238,19 +255,14 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   }, [user]);
 
   const value: AdminContextType = {
-    // Auth
     user,
     isAuthenticated: isAuthenticated && user?.role === 'admin',
     isLoading,
     logout,
-    
-    // Content
     landingContent,
     fields,
     audios,
     pricing,
-    
-    // Actions
     updateLandingContent,
     updateField,
     deleteField,

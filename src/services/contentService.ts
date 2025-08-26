@@ -1,89 +1,25 @@
 
+/**
+ * @deprecated Este serviço está sendo substituído pelo landingContentService
+ * Use landingContentService para nova funcionalidade
+ * Mantido apenas para compatibilidade com código legado
+ */
+
 import { PricingInfo } from "./supabase/pricingService";
+import { landingContentService, LandingPageContent } from "./landingContentService";
 
-export interface LandingPageContent {
-  hero: {
-    title: string;
-    titleHighlight: string;
-    subtitle: string;
-    ctaText: string;
-    demoText: string;
-  };
-  features: Array<{
-    id: string;
-    icon: string;
-    title: string;
-    description: string;
-  }>;
-  footer: {
-    copyright: string;
-    lgpdText: string;
-    lgpdLink: string;
-    privacyPolicyLink: string;
-    termsOfServiceLink: string;
-  };
-}
-
+// Redirecionar para o novo serviço
 class ContentServiceClass {
-  private landingPageContent: LandingPageContent;
-
-  constructor() {
-    // Initialize with default content
-    this.landingPageContent = this.getDefaultLandingPageContent();
-  }
-
-  getLandingPageContent(): LandingPageContent {
-    return this.landingPageContent;
+  async getLandingPageContent(): Promise<LandingPageContent> {
+    console.warn('ContentService is deprecated. Use landingContentService instead.');
+    return landingContentService.getLandingPageContent();
   }
 
   saveLandingPageContent(content: LandingPageContent): void {
-    this.landingPageContent = content;
-  }
-
-  private getDefaultLandingPageContent(): LandingPageContent {
-    return {
-      hero: {
-        title: "Transforme sua mente e conquiste",
-        titleHighlight: "seus objetivos mais ambiciosos",
-        subtitle: "Desbloqueie todo o seu potencial com áudios de programação mental cientificamente desenvolvidos. Alcance o sucesso, a abundância e a realização pessoal que você sempre desejou.",
-        ctaText: "Começar Agora",
-        demoText: "Ver Demo"
-      },
-      features: [
-        {
-          id: "feature-1",
-          icon: "Brain",
-          title: "Programação Mental Avançada",
-          description: "Áudios desenvolvidos com técnicas neurocientíficas para reprogramar padrões mentais limitantes"
-        },
-        {
-          id: "feature-2",
-          icon: "Target",
-          title: "Resultados Comprovados",
-          description: "Método testado e aprovado por milhares de pessoas que transformaram suas vidas"
-        },
-        {
-          id: "feature-3",
-          icon: "Clock",
-          title: "Apenas 20 Minutos por Dia",
-          description: "Transformação real com apenas alguns minutos de dedicação diária"
-        },
-        {
-          id: "feature-4",
-          icon: "Shield",
-          title: "100% Seguro e Natural",
-          description: "Técnicas naturais sem efeitos colaterais, baseadas em neurociência"
-        }
-      ],
-      footer: {
-        copyright: "© 2024 Drive Mental. Todos os direitos reservados.",
-        lgpdText: "Este site está em conformidade com a LGPD",
-        lgpdLink: "/lgpd",
-        privacyPolicyLink: "/privacy",
-        termsOfServiceLink: "/terms"
-      }
-    };
+    console.warn('ContentService is deprecated. Use landingContentService instead.');
+    // Não fazer nada aqui, pois o novo serviço é assíncrono
   }
 }
 
 export const ContentService = new ContentServiceClass();
+export type { LandingPageContent };

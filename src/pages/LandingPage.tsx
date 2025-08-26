@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -6,12 +7,12 @@ import { LandingPageBottomNav } from "@/components/mobile/LandingPageBottomNav";
 import { ArrowRight, Brain, Heart, Target, DollarSign, Activity, Sparkles, Play, Users, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { SupabaseContentService, LandingPageContent } from "@/services/supabase/contentService";
 import { VideoService, Video } from "@/services/supabase/videoService";
 import { FieldService } from "@/services/supabase/fieldService";
 import { useDataSync } from "@/hooks/useDataSync";
 import { useVideoControls } from "@/hooks/useVideoControls";
 import { useVideoLifecycle } from "@/hooks/useVideoLifecycle";
+import { useLandingContent } from "@/hooks/useLandingContent";
 import { SubscriptionPlans } from "@/components/subscription/SubscriptionPlans";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
@@ -20,13 +21,24 @@ import * as Icons from "lucide-react";
 export default function LandingPage() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [content, setContent] = useState<LandingPageContent | null>(null);
+  
+  // Usar o novo hook para conteúdo da landing
+  const { content, loading: contentLoading, error: contentError, refreshContent } = useLandingContent();
+  
   const [fields, setFields] = useState<any[]>([]);
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [fieldsLoading, setFieldsLoading] = useState(true);
   
-  // Debug logs
-  console.log('LandingPage: Renderizando - isMobile:', isMobile, 'loading:', loading);
+  // Loading geral
+  const loading = contentLoading || fieldsLoading;
+  
+  console.log('LandingPage: Renderizando', { 
+    isMobile, 
+    contentLoading, 
+    fieldsLoading, 
+    hasContent: !!content,
+    contentError 
+  });
   
   // Hooks para controles e lifecycle de vídeo
   const videoControlsSettings = useVideoControls(activeVideo?.video_controls);
@@ -35,23 +47,20 @@ export default function LandingPage() {
   // Get dynamic icon component
   const getIconComponent = (iconName: string) => {
     const IconComponent = (Icons as any)[iconName];
-    return IconComponent || Brain; // Fallback to Brain icon
+    return IconComponent || Brain;
   };
 
-  const loadContent = useCallback(async () => {
+  const loadFieldsAndVideo = useCallback(async () => {
     try {
-      console.log('LandingPage: Iniciando carregamento de conteúdo');
-      setLoading(true);
+      console.log('LandingPage: Carregando fields e vídeo');
+      setFieldsLoading(true);
       
-      const [landingContent, fieldsData, videoData] = await Promise.all([
-        SupabaseContentService.getLandingPageContent(),
+      const [fieldsData, videoData] = await Promise.all([
         FieldService.getAll(),
         VideoService.getActiveVideo()
       ]);
       
-      console.log('LandingPage: Conteúdo carregado:', { landingContent, fieldsData, videoData });
-      
-      setContent(landingContent);
+      console.log('LandingPage: Fields e vídeo carregados:', { fieldsData, videoData });
       
       // Verificar se o vídeo realmente mudou antes de atualizar
       if (videoData?.id !== activeVideo?.id) {
@@ -65,22 +74,21 @@ export default function LandingPage() {
         count: `${field.audio_count} áudio${field.audio_count !== 1 ? 's' : ''}`
       })));
     } catch (error) {
-      console.error('LandingPage: Erro ao carregar conteúdo:', error);
+      console.error('LandingPage: Erro ao carregar fields e vídeo:', error);
     } finally {
-      console.log('LandingPage: Finalizando carregamento');
-      setLoading(false);
+      console.log('LandingPage: Finalizando carregamento de fields');
+      setFieldsLoading(false);
     }
   }, [activeVideo?.id]);
 
   useEffect(() => {
-    loadContent();
-  }, [loadContent]);
+    loadFieldsAndVideo();
+  }, [loadFieldsAndVideo]);
 
-  // Setup data sync
+  // Setup data sync para fields e vídeos
   useDataSync({
-    onFieldsChange: loadContent,
-    onContentChange: loadContent,
-    onVideosChange: loadContent
+    onFieldsChange: loadFieldsAndVideo,
+    onVideosChange: loadFieldsAndVideo
   });
 
   const renderVideoPlayer = () => {
@@ -94,8 +102,8 @@ export default function LandingPage() {
     if (isAtomicatHtml) {
       const videoUrl = VideoService.generateVideoUrlWithControls(activeVideo.url, {
         ...activeVideo.video_controls,
-        autoplay: false, // Evitar autoplay inicial
-        muted: true // Garantir muted para HLS
+        autoplay: false,
+        muted: true
       });
 
       console.log('LandingPage: Renderizando Atomicat HTML com data URL', {
@@ -180,15 +188,25 @@ export default function LandingPage() {
     console.log('LandingPage: Mostrando tela de loading');
     return (
       <div className={`min-h-screen hero-gradient flex items-center justify-center ${isMobile ? 'pb-16' : ''}`}>
-        {/* Header mesmo durante loading */}
         {isMobile ? <LandingPageMobileHeader /> : <Header />}
         
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-lg text-muted-foreground">Carregando...</p>
+          {contentError && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-destructive">Erro: {contentError}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refreshContent}
+              >
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
         </div>
         
-        {/* Bottom nav mesmo durante loading */}
         {isMobile && <LandingPageBottomNav />}
       </div>
     );
@@ -215,10 +233,9 @@ export default function LandingPage() {
             {activeVideo && (
               <div className="mb-8">
                 <div className="max-w-4xl mx-auto px-2">
-                  <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+                  <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' }}>
                     {renderVideoPlayer()}
 
-                    {/* Overlay transparente para bloquear interações quando necessário */}
                     {videoControlsSettings.shouldShowOverlay && (
                       <div 
                         className="absolute inset-0"
@@ -316,7 +333,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Subscription Plans Section - NOVO SISTEMA */}
+      {/* Subscription Plans Section */}
       <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 px-2">
