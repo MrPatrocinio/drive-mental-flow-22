@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { AudioValidationService } from '@/services/audioValidationService';
 import { AudioPreferences } from '@/services/audioPreferencesService';
@@ -71,6 +70,22 @@ export const useAudioPlayer = (
       errorMessage: loadingState.errorMessage
     }));
   }, [loadingState]);
+
+  // NOVA FUNCIONALIDADE: Sincronizar volume com as preferências
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Aplicar o volume normalizado (0-1) baseado nas preferências (0-100)
+    const normalizedVolume = preferences.volume / 100;
+    audio.volume = Math.max(0, Math.min(1, normalizedVolume));
+    
+    console.log('useAudioPlayer: Volume sincronizado com preferências:', {
+      preferencesVolume: preferences.volume,
+      normalizedVolume,
+      audioElementVolume: audio.volume
+    });
+  }, [preferences.volume]);
 
   const updateLoadingState = React.useCallback((updates: Partial<AudioLoadingState>) => {
     setLoadingState(prev => ({ ...prev, ...updates }));
@@ -348,7 +363,7 @@ export const useAudioPlayer = (
       AudioLoadingTimeoutService.clearTimeout(audioUrl);
       AudioEventManagerService.removeEventListeners(audioUrl);
     };
-  }, [audioUrl, setMainAudioPlaying]); // Adicionado setMainAudioPlaying às dependências
+  }, [audioUrl, setMainAudioPlaying]);
 
   // Verificação de timeout periódica
   React.useEffect(() => {
