@@ -71,7 +71,7 @@ export class DemoService {
 
   /**
    * Obter áudio de demonstração com detalhes
-   * MELHORADO: Validação de URL
+   * MELHORADO: Validação de URL obrigatória
    */
   static async getDemoAudio(): Promise<DemoAudio | null> {
     const config = await this.getDemoConfig();
@@ -94,6 +94,28 @@ export class DemoService {
 
     if (error) {
       console.error('Error fetching demo audio:', error);
+      return null;
+    }
+
+    // NOVA VALIDAÇÃO: Verificar URL antes de retornar
+    if (!data.url || data.url.trim() === '') {
+      console.error('DemoService: Áudio demo configurado mas URL está vazia:', {
+        id: data.id,
+        title: data.title,
+        url: data.url
+      });
+
+      // Limpar configuração de demo inválida
+      try {
+        await this.saveDemoConfig({
+          ...config,
+          demo_audio_id: null
+        });
+        console.log('DemoService: Configuração de demo inválida foi limpa automaticamente');
+      } catch (cleanupError) {
+        console.error('DemoService: Erro ao limpar configuração inválida:', cleanupError);
+      }
+
       return null;
     }
 
@@ -162,7 +184,7 @@ export class DemoService {
 
   /**
    * Definir áudio como demonstração
-   * MELHORADO: Validação antes de definir
+   * MELHORADO: Validação obrigatória antes de definir
    */
   static async setDemoAudio(audioId: string | null): Promise<void> {
     // Se audioId é null, apenas limpar a demo
@@ -178,13 +200,23 @@ export class DemoService {
     // Buscar dados do áudio para validação
     const { data: audioData, error } = await supabase
       .from('audios')
-      .select('url')
+      .select('url, title')
       .eq('id', audioId)
       .single();
 
     if (error) {
       console.error('DemoService: Erro ao buscar áudio para validação:', error);
       throw new Error('Áudio não encontrado');
+    }
+
+    // VALIDAÇÃO OBRIGATÓRIA: Verificar se tem URL válida
+    if (!audioData.url || audioData.url.trim() === '') {
+      console.error('DemoService: Tentativa de definir áudio sem URL como demo:', {
+        id: audioId,
+        title: audioData.title,
+        url: audioData.url
+      });
+      throw new Error('Não é possível definir como demo: áudio não possui URL válida');
     }
 
     // Validar URL antes de definir como demo

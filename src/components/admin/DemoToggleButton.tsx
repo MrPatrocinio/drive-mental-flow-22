@@ -1,72 +1,52 @@
-
-/**
- * Demo Toggle Button - Componente para alternar áudio como demo
- * Responsabilidade: Apenas UI do botão de toggle de demo
- * Princípio SRP: Apenas renderização e eventos do botão
- * Princípio DRY: Componente reutilizável
- * ATUALIZADO: Estrela vermelha para áudios demo
- */
-
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Star, StarOff } from 'lucide-react';
-import { useState } from 'react';
+import { useAudioDemo } from '@/hooks/useAudioDemo';
+import { toast } from 'sonner';
 
 interface DemoToggleButtonProps {
-  isDemo: boolean;
+  audioId: string;
   audioTitle: string;
-  onToggle: (setAsDemo: boolean) => Promise<void>;
+  audioUrl: string; // NOVA PROP: URL do áudio para validação
+  isDemo: boolean;
   disabled?: boolean;
 }
 
-export const DemoToggleButton = ({ 
+export const DemoToggleButton: React.FC<DemoToggleButtonProps> = ({ 
+  audioId, 
+  audioTitle,
+  audioUrl, // NOVA PROP: URL do áudio para validação
   isDemo, 
-  audioTitle, 
-  onToggle, 
-  disabled = false 
-}: DemoToggleButtonProps) => {
-  const [loading, setLoading] = useState(false);
+  disabled 
+}) => {
+  const { loading, toggleDemo } = useAudioDemo();
 
   const handleToggle = async () => {
-    setLoading(true);
+    // NOVA VALIDAÇÃO: Verificar se tem URL válida antes de marcar como demo
+    if (!isDemo && (!audioUrl || audioUrl.trim() === '')) {
+      toast.error('Não é possível marcar como demo: áudio não possui URL válida');
+      return;
+    }
+
     try {
-      await onToggle(!isDemo);
-    } finally {
-      setLoading(false);
+      await toggleDemo(audioId, audioTitle, isDemo);
+    } catch (error) {
+      console.error('Erro no toggle demo:', error);
+      // Error já é tratado no hook useAudioDemo
     }
   };
 
-  if (isDemo) {
-    return (
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-200">
-          <Star className="w-3 h-3 mr-1 fill-red-600 text-red-600" />
-          Áudio Demo
-        </Badge>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleToggle}
-          disabled={disabled || loading}
-          className="text-xs"
-        >
-          <StarOff className="w-3 h-3 mr-1" />
-          Remover Demo
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <Button
-      variant="outline"
+      variant={isDemo ? "default" : "outline"}
       size="sm"
       onClick={handleToggle}
       disabled={disabled || loading}
-      className="text-xs"
+      className={isDemo ? "bg-green-600 hover:bg-green-700" : ""}
     >
-      <Star className="w-3 h-3 mr-1" />
-      {loading ? 'Definindo...' : 'Definir como Demo'}
+      {loading ? (
+        <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full mr-1" />
+      ) : null}
+      {isDemo ? 'Demo Ativo' : 'Marcar Demo'}
     </Button>
   );
 };
