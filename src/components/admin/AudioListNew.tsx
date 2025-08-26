@@ -14,7 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Audio } from "@/services/supabase/audioService";
 import { Field } from "@/services/supabase/fieldService";
 import { DemoToggleButton } from "./DemoToggleButton";
-import { useAudioDemo } from "@/hooks/useAudioDemo";
 import { Search, Edit, Trash2, Music, Clock } from "lucide-react";
 
 interface AudioListProps {
@@ -26,7 +25,6 @@ interface AudioListProps {
 
 export const AudioList = ({ audios, fields, onEdit, onDelete }: AudioListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { toggleDemo, loading: demoLoading } = useAudioDemo();
 
   // Filtrar áudios baseado no termo de busca
   const filteredAudios = audios.filter(audio =>
@@ -36,10 +34,6 @@ export const AudioList = ({ audios, fields, onEdit, onDelete }: AudioListProps) 
   const getFieldTitle = (fieldId: string) => {
     const field = fields.find(f => f.id === fieldId);
     return field?.title || "Campo não encontrado";
-  };
-
-  const handleDemoToggle = async (audio: Audio, setAsDemo: boolean) => {
-    await toggleDemo(audio.id, audio.title, !setAsDemo);
   };
 
   if (audios.length === 0) {
@@ -117,10 +111,10 @@ export const AudioList = ({ audios, fields, onEdit, onDelete }: AudioListProps) 
                   )}
                 </div>
                 <DemoToggleButton
-                  isDemo={audio.is_demo || false}
+                  audioId={audio.id}
                   audioTitle={audio.title}
-                  onToggle={(setAsDemo) => handleDemoToggle(audio, setAsDemo)}
-                  disabled={demoLoading}
+                  audioUrl={audio.url}
+                  isDemo={audio.is_demo || false}
                 />
               </div>
             </CardContent>

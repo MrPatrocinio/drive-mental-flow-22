@@ -163,16 +163,7 @@ export class AudioService {
     
     const { data, error } = await supabase
       .from('audios')
-      .select(`
-        id,
-        title,
-        url,
-        duration,
-        field_id,
-        is_premium,
-        is_demo,
-        fields!inner(title)
-      `)
+      .select('*')
       .eq('is_demo', true)
       .single();
 
@@ -211,8 +202,11 @@ export class AudioService {
       url: data.url,
       duration: data.duration,
       field_id: data.field_id,
+      tags: data.tags || [],
       is_premium: data.is_premium || false,
-      is_demo: data.is_demo || false
+      is_demo: data.is_demo || false,
+      created_at: data.created_at,
+      updated_at: data.updated_at
     };
 
     console.log('AudioService: Áudio demo encontrado:', {
