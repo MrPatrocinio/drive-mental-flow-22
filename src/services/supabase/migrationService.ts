@@ -1,5 +1,6 @@
-import { ContentService } from "@/services/contentService";
+
 import { SupabaseDataService } from "./dataService";
+import { landingContentService } from "@/services/landingContentService";
 
 /**
  * Serviço para migração de dados do localStorage para Supabase
@@ -137,7 +138,8 @@ export class MigrationService {
     const errors: string[] = [];
     
     try {
-      const localContent = ContentService.getLandingPageContent();
+      // Aguardar a Promise para obter o conteúdo
+      const localContent = await landingContentService.getLandingPageContent();
       
       // Migrar seção hero
       const { error: heroError } = await SupabaseDataService.updateLandingContent('hero', localContent.hero);
