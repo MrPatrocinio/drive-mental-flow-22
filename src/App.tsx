@@ -163,19 +163,19 @@ const App: React.FC = () => {
   console.log('App: Componente principal inicializando');
   
   return (
-    <Router>
-      <QueryClientProvider client={queryClient}>
-        <SupabaseAuthProvider>
-          <AdminProvider>
-            <UserProvider>
-              <AudioPlaybackProvider>
+    <QueryClientProvider client={queryClient}>
+      <SupabaseAuthProvider>
+        <AdminProvider>
+          <UserProvider>
+            <AudioPlaybackProvider>
+              <Router>
                 <AppContent />
-              </AudioPlaybackProvider>
-            </UserProvider>
-          </AdminProvider>
-        </SupabaseAuthProvider>
-      </QueryClientProvider>
-    </Router>
+              </Router>
+            </AudioPlaybackProvider>
+          </UserProvider>
+        </AdminProvider>
+      </SupabaseAuthProvider>
+    </QueryClientProvider>
   );
 };
 
