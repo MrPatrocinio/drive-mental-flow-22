@@ -167,7 +167,7 @@ export default function DemoPage() {
                   Tentar Novamente
                 </Button>
                 <div className="flex gap-4 justify-center">
-                  <Button onClick={() => handleNavigation('/pagamento')}>
+                  <Button onClick={() => handleNavigation('/assinatura')}>
                     Ver Planos Completos
                   </Button>
                   <Button variant="outline" onClick={() => handleNavigation('/')}>
@@ -266,7 +266,7 @@ export default function DemoPage() {
               Reiniciar Contador
             </Button>
             <Button
-              onClick={() => handleNavigation('/pagamento')}
+              onClick={() => handleNavigation('/assinatura')}
               className="flex items-center gap-2"
             >
               <Play className="h-4 w-4" />
@@ -305,7 +305,7 @@ export default function DemoPage() {
                 </div>
               </div>
               
-              <Button onClick={() => handleNavigation('/pagamento')} size="lg" className="px-8 py-4 text-lg animate-fade-in">
+              <Button onClick={() => handleNavigation('/assinatura')} size="lg" className="px-8 py-4 text-lg animate-fade-in">
                 Sua mente Merece!
               </Button>
             </CardContent>
