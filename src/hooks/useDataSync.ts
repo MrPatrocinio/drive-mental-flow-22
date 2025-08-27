@@ -1,5 +1,4 @@
 
-
 /**
  * useDataSync Hook
  * Responsabilidade: Interface React para sincronização de dados
@@ -61,4 +60,3 @@ export const useDataSync = (callbacks?: DataSyncCallbacks) => {
   // Removido syncTrigger para evitar re-renders desnecessários
   return {};
 };
-
