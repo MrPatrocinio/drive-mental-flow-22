@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from "react";
 import { SupabaseAuthService, type AuthUser, type LoginCredentials, type SignUpCredentials } from "@/services/supabase/authService";
 import type { Session } from "@supabase/supabase-js";
 
@@ -36,11 +36,11 @@ interface SupabaseAuthProviderProps {
  * Princípios: SSOT para estado de auth, SRP para contexto
  */
 export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ children }) => {
-  const [user, setUser] = React.useState<AuthUser | null>(null);
-  const [session, setSession] = React.useState<Session | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let isMounted = true;
 
     // Configurar listener de mudanças de auth PRIMEIRO
@@ -84,7 +84,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     };
   }, []);
 
-  const signIn = React.useCallback(async (credentials: LoginCredentials) => {
+  const signIn = useCallback(async (credentials: LoginCredentials) => {
     const { user: authUser, error } = await SupabaseAuthService.signIn(credentials);
     if (authUser && !error) {
       setUser(authUser);
@@ -92,7 +92,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     return { error };
   }, []);
 
-  const signUp = React.useCallback(async (credentials: SignUpCredentials) => {
+  const signUp = useCallback(async (credentials: SignUpCredentials) => {
     const { user: authUser, error } = await SupabaseAuthService.signUp(credentials);
     if (authUser && !error) {
       setUser(authUser);
@@ -100,7 +100,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     return { error };
   }, []);
 
-  const signOut = React.useCallback(async () => {
+  const signOut = useCallback(async () => {
     const { error } = await SupabaseAuthService.signOut();
     if (!error) {
       setUser(null);
@@ -109,7 +109,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     return { error };
   }, []);
 
-  const value = React.useMemo(() => ({
+  const value = useMemo(() => ({
     user,
     session,
     isAuthenticated: !!user && !!session,
