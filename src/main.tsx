@@ -1,32 +1,34 @@
+import React from 'react';
 import { createRoot } from 'react-dom/client';
-import TestApp from './TestApp';
+import App from './App.tsx';
+import './index.css';
+import { OfflineAudioService } from './services/offlineAudioService';
+import { PWAService } from './services/pwaService';
 
-console.log('=== INICIO DEBUG MAIN.TSX ===');
-console.log('Versão mínima para isolar problema React');
+// Verificar se React está disponível globalmente
+if (typeof window !== 'undefined') {
+  (window as any).React = React;
+}
+
+console.log('main.tsx: Verificando React', {
+  React: typeof React,
+  version: React.version,
+  windowReact: typeof (window as any).React
+});
+
+// Inicializa serviços
+OfflineAudioService.initialize();
+PWAService.initialize();
 
 const container = document.getElementById("root");
 if (!container) {
-  console.error('Container root não encontrado');
   throw new Error("Root element not found");
 }
 
-console.log('Container encontrado:', container);
+const root = createRoot(container);
 
-try {
-  const root = createRoot(container);
-  console.log('Root criado com sucesso');
-  
-  root.render(TestApp());
-  console.log('TestApp renderizado com sucesso');
-} catch (error) {
-  console.error('ERRO durante renderização:', error);
-  
-  // Fallback: renderização HTML pura
-  container.innerHTML = `
-    <div style="padding: 20px; background: #ffe6e6; border: 2px solid #ff0000;">
-      <h1>🚨 ERRO CRÍTICO</h1>
-      <p>Erro durante renderização React: ${error}</p>
-      <p>Timestamp: ${new Date().toISOString()}</p>
-    </div>
-  `;
-}
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

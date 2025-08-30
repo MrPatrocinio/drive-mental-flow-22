@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   BrowserRouter as Router,
@@ -188,37 +187,30 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   console.log('App: Inicializando', { 
     React: typeof React, 
-    Router: typeof Router,
-    isReactAvailable: !!React,
-    reactVersion: React?.version 
+    version: React.version,
+    Router: typeof Router 
   });
   
-  // Se React não estiver disponível, não renderizar nada que use hooks
-  if (!React) {
-    console.error('ERRO CRÍTICO: React não está disponível');
-    return <div>Erro: React não disponível</div>;
+  // Verificar React Context globalmente
+  if (typeof window !== 'undefined' && !(window as any).React) {
+    (window as any).React = React;
   }
-
-  try {
-    return (
-      <Router>
-        <QueryClientProvider client={queryClient}>
-          <SupabaseAuthProvider>
-            <AdminProvider>
-              <UserProvider>
-                <AudioPlaybackProvider>
-                  <AppContent />
-                </AudioPlaybackProvider>
-              </UserProvider>
-            </AdminProvider>
-          </SupabaseAuthProvider>
-        </QueryClientProvider>
-      </Router>
-    );
-  } catch (error) {
-    console.error('App: Erro durante renderização:', error);
-    return <div>Erro durante inicialização: {error instanceof Error ? error.message : 'Erro desconhecido'}</div>;
-  }
+  
+  return (
+    <Router>
+      <QueryClientProvider client={queryClient}>
+        <SupabaseAuthProvider>
+          <AdminProvider>
+            <UserProvider>
+              <AudioPlaybackProvider>
+                <AppContent />
+              </AudioPlaybackProvider>
+            </UserProvider>
+          </AdminProvider>
+        </SupabaseAuthProvider>
+      </QueryClientProvider>
+    </Router>
+  );
 };
 
 export default App;
