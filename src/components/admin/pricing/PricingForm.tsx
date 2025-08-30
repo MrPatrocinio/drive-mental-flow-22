@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { X, Plus, Percent, Calendar } from 'lucide-react';
+import { X, Plus, Percent, Calendar, Trash2 } from 'lucide-react';
 import { PricingInsert } from '@/services/supabase/pricingService';
 import { PromotionService } from '@/services/promotionService';
 import { formatPrice } from '@/utils/pricingUtils';
@@ -235,7 +235,7 @@ export const PricingForm: React.FC<PricingFormProps> = ({
                       onClick={() => removeBenefit(index)}
                       className="shrink-0"
                     >
-                      <X className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>

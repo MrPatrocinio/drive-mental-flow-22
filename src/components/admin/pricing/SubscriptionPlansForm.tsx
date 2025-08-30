@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Trash2 } from 'lucide-react';
 import { SubscriptionPlansInsert, SubscriptionPlan } from '@/services/supabase/subscriptionPlansService';
 import { SubscriptionPlanForm } from './SubscriptionPlanForm';
 
@@ -197,7 +197,7 @@ export const SubscriptionPlansForm: React.FC<SubscriptionPlansFormProps> = ({
                         onClick={() => removeBenefit(index)}
                         className="shrink-0"
                       >
-                        <X className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
