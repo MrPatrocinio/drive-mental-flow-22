@@ -31,6 +31,7 @@ import AdminFieldsPageNew from '@/pages/admin/AdminFieldsPageNew';
 import AdminAudiosPageNew from '@/pages/admin/AdminAudiosPageNew';
 import { AdminStatsPage } from '@/pages/admin/AdminStatsPage';
 import { AdminValidationPage } from '@/pages/admin/AdminValidationPage';
+import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { UserProvider } from '@/contexts/UserContext';
@@ -111,6 +112,12 @@ const AppContent: React.FC = () => {
       <Route path="/admin" element={
         <AdminProtectedRoute>
           <AdminDashboard />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/users" element={
+        <AdminProtectedRoute>
+          <AdminUsersPage />
         </AdminProtectedRoute>
       } />
       

@@ -9,6 +9,11 @@ const navigationItems = [
     icon: Home,
   },
   {
+    label: "Usuários",
+    href: "/admin/users",
+    icon: Users,
+  },
+  {
     label: "Conteúdo da Landing",
     href: "/admin/landing",
     icon: FileText,
