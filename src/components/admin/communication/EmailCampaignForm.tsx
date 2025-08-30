@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,13 @@ export interface EmailCampaignFormProps {
  * Responsabilidade: Interface para campanhas de email marketing
  */
 export const EmailCampaignForm = ({ onCampaignSent }: EmailCampaignFormProps) => {
+  console.log('EmailCampaignForm: Renderizando componente', { React: typeof React, useState: typeof useState });
+  
+  // Debug: verificar se React e hooks estão disponíveis
+  if (!React || !useState) {
+    console.error('EmailCampaignForm: React ou useState não estão disponíveis', { React, useState });
+    return <div>Erro: React hooks não disponíveis</div>;
+  }
   const [subject, setSubject] = useState("");
   const [content, setContent] = useState("");
   const [audience, setAudience] = useState<'all' | 'subscribers' | 'non_subscribers'>('subscribers');

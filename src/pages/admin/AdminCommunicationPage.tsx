@@ -1,3 +1,4 @@
+import React from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +11,13 @@ import { Mail, Bell, MessageSquare } from "lucide-react";
  * Responsabilidade: Coordenação da interface de comunicação com usuários
  */
 export default function AdminCommunicationPage() {
+  console.log('AdminCommunicationPage: Renderizando', { React: typeof React });
+  
+  // Debug: verificar se React está disponível
+  if (!React) {
+    console.error('AdminCommunicationPage: React não está disponível', { React });
+    return <div>Erro: React não disponível</div>;
+  }
   const handleCampaignSent = () => {
     // Callback quando campanha for enviada
     console.log("Campanha enviada com sucesso");

@@ -186,7 +186,13 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  console.log('App: Componente principal inicializando');
+  console.log('App: Componente principal inicializando', { React: typeof React });
+  
+  // Debug: verificar se React está disponível
+  if (!React) {
+    console.error('App: React não está disponível');
+    return <div>Erro crítico: React não disponível</div>;
+  }
   
   return (
     <Router>
