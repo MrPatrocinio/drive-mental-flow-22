@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { X, Plus } from 'lucide-react';
+import { Trash2, Plus } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useToast } from '@/hooks/use-toast';
 import type { LandingPageContent } from '@/services/landingContentService';
@@ -183,7 +183,7 @@ export const LandingContentForm = () => {
                             size="sm"
                             onClick={() => removeFeature(index)}
                           >
-                            <X className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
