@@ -19,6 +19,11 @@ const navigationItems = [
     icon: Mail,
   },
   {
+    label: "Financeiro",
+    href: "/admin/financial",
+    icon: DollarSign,
+  },
+  {
     label: "Conteúdo da Landing",
     href: "/admin/landing",
     icon: FileText,
