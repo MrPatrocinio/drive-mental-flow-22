@@ -1,7 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { Home, FileText, Music, Users, DollarSign, BarChart3, Shield, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/Logo";
 
 const navigationItems = [
   {
@@ -54,12 +53,7 @@ const navigationItems = [
 export const AdminSidebar = () => {
   return (
     <aside className="w-64 border-r border-border/50 bg-card/30 backdrop-blur-sm">
-      <div className="p-6">
-        <div className="mb-6">
-          <Logo size="md" />
-          <p className="text-sm text-muted-foreground mt-1">Admin Panel</p>
-        </div>
-        
+      <div className="p-4">
         <nav className="space-y-2">
           {navigationItems.map((item) => (
             <NavLink
