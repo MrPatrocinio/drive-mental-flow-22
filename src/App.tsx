@@ -13,6 +13,9 @@ import UserLoginPage from '@/pages/UserLoginPage';
 import Dashboard from '@/pages/Dashboard';
 import FieldPage from '@/pages/FieldPage';
 import AudioPlayerPage from '@/pages/AudioPlayerPage';
+import LgpdPage from '@/pages/LgpdPage';
+import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
+import TermsOfServicePage from '@/pages/TermsOfServicePage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
 import PaymentPage from '@/pages/PaymentPage';
 import PaymentSuccessPage from '@/pages/PaymentSuccessPage';
@@ -61,6 +64,11 @@ const AppContent: React.FC = () => {
       <Route path="/pagamento" element={<PaymentPage />} />
       <Route path="/pagamento/sucesso" element={<PaymentSuccessPage />} />
       <Route path="/pagamento/cancelado" element={<PaymentCancelPage />} />
+      
+      {/* Páginas Legais */}
+      <Route path="/lgpd" element={<LgpdPage />} />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsOfServicePage />} />
 
       {/* Rota de Login de Usuários */}
       <Route path="/login" element={<UserLoginPage />} />
