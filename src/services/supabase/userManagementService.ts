@@ -10,6 +10,7 @@ export interface UserWithSubscription {
   subscription_tier: string | null;
   subscription_end: string | null;
   stripe_customer_id: string | null;
+  email?: string; // Email do subscriber
 }
 
 export interface UserStats {
@@ -48,7 +49,7 @@ export class UserManagementService {
       // Buscar dados de assinatura separadamente
       const { data: subscribersData } = await supabase
         .from('subscribers')
-        .select('user_id, subscribed, subscription_tier, subscription_end, stripe_customer_id');
+        .select('user_id, email, subscribed, subscription_tier, subscription_end, stripe_customer_id');
 
       // Combinar dados
       const transformedData: UserWithSubscription[] = data?.map(user => {
@@ -63,6 +64,7 @@ export class UserManagementService {
           subscription_tier: subscription?.subscription_tier || null,
           subscription_end: subscription?.subscription_end || null,
           stripe_customer_id: subscription?.stripe_customer_id || null,
+          email: subscription?.email || null,
         };
       }) || [];
 
@@ -161,7 +163,7 @@ export class UserManagementService {
       // Buscar dados de assinatura
       const { data: subscriptionData } = await supabase
         .from('subscribers')
-        .select('subscribed, subscription_tier, subscription_end, stripe_customer_id')
+        .select('email, subscribed, subscription_tier, subscription_end, stripe_customer_id')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -175,6 +177,7 @@ export class UserManagementService {
         subscription_tier: subscriptionData?.subscription_tier || null,
         subscription_end: subscriptionData?.subscription_end || null,
         stripe_customer_id: subscriptionData?.stripe_customer_id || null,
+        email: subscriptionData?.email || null,
       };
 
       return { data: transformedData, error: null };

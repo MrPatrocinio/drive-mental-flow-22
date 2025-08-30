@@ -121,6 +121,12 @@ const AppContent: React.FC = () => {
         </AdminProtectedRoute>
       } />
       
+      <Route path="/admin/communication" element={
+        <AdminProtectedRoute>
+          {React.createElement(React.lazy(() => import("@/pages/admin/AdminCommunicationPage")))}
+        </AdminProtectedRoute>
+      } />
+      
       <Route path="/admin/landing" element={
         <AdminProtectedRoute>
           <AdminLandingPage />
