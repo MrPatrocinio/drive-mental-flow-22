@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { AutomationService, AutomationRule, AutomationStats } from "@/services/automationService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -171,7 +171,9 @@ export const useAutomations = () => {
   };
 
   useEffect(() => {
-    refreshAllData();
+    startTransition(() => {
+      refreshAllData();
+    });
   }, []);
 
   return {

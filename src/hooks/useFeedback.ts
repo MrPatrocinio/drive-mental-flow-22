@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { FeedbackService, FeedbackEntry, NPSMetrics, FeedbackStats } from "@/services/feedbackService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -154,7 +154,9 @@ export const useFeedback = () => {
   };
 
   useEffect(() => {
-    refreshAllData();
+    startTransition(() => {
+      refreshAllData();
+    });
   }, []);
 
   return {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { 
   AdvancedAnalyticsService, 
   ConversionFunnelStep, 
@@ -95,7 +95,9 @@ export const useAdvancedAnalytics = () => {
   };
 
   useEffect(() => {
-    refreshAllData();
+    startTransition(() => {
+      refreshAllData();
+    });
   }, []);
 
   return {
