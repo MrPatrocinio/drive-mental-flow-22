@@ -14,7 +14,7 @@ interface EmailRequest {
   subject: string;
   html?: string;
   text?: string;
-  template?: 'welcome' | 'payment_success' | 'subscription_reminder' | 'newsletter';
+  template?: 'welcome' | 'payment_success' | 'subscription_reminder' | 'newsletter' | 'retention' | 'winback' | 'trial_reminder';
   data?: Record<string, any>;
 }
 
@@ -69,6 +69,66 @@ const getEmailTemplate = (template: string, data: Record<string, any> = {}): { s
             </div>
             <p>Se você tem alguma dúvida sobre sua assinatura, entre em contato conosco.</p>
             <a href="${data.manageUrl || ''}" style="background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 16px 0;">Gerenciar Assinatura</a>
+            <p>Equipe Drive Mental</p>
+          </div>
+        `
+      };
+    case 'retention':
+      return {
+        subject: 'Sentimos sua falta! Volte ao Drive Mental 💙',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #2563eb;">Olá ${data.name || 'usuário'}!</h1>
+            <p>Notamos que você não acessa a plataforma há ${data.lastAccess || 'alguns dias'}.</p>
+            <p>Que tal retomar sua jornada de desenvolvimento mental? Temos conteúdos novos esperando por você:</p>
+            <div style="background-color: #f0f9ff; padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <h3>Áudios Recomendados:</h3>
+              ${(data.recommendedAudios || []).map((audio: string) => `<p>• ${audio}</p>`).join('')}
+            </div>
+            <a href="${data.loginUrl || ''}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 16px 0;">Voltar à Plataforma</a>
+            <p>Estamos aqui para apoiar seu crescimento!</p>
+            <p>Equipe Drive Mental</p>
+          </div>
+        `
+      };
+    case 'winback':
+      return {
+        subject: 'Oferta Especial: ${data.discount || "50%"} de Desconto - Volte ao Drive Mental! 🎯',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #ef4444;">Oferta Especial para Você!</h1>
+            <p>Olá ${data.name || 'usuário'},</p>
+            <p>Queremos muito ter você de volta! Por isso, preparamos uma oferta especial:</p>
+            <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 16px 0; text-align: center; border: 2px solid #ef4444;">
+              <h2 style="color: #ef4444; margin: 0;">${data.discount || "50%"} DE DESCONTO</h2>
+              <p style="margin: 8px 0;">Na sua nova assinatura</p>
+              <p style="font-size: 14px; color: #666;">Válido até ${data.validUntil || 'data'}</p>
+            </div>
+            <p>Reative sua assinatura e volte a desfrutar de todos os nossos áudios premium!</p>
+            <a href="${data.renewUrl || ''}" style="background-color: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 16px 0; font-weight: bold;">REATIVAR COM DESCONTO</a>
+            <p style="font-size: 12px; color: #666;">Oferta por tempo limitado. Não perca!</p>
+            <p>Equipe Drive Mental</p>
+          </div>
+        `
+      };
+    case 'trial_reminder':
+      return {
+        subject: 'Seu trial expira em ${data.daysLeft || "2"} dias - Drive Mental ⏰',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #f59e0b;">Trial Expirando em Breve!</h1>
+            <p>Olá ${data.name || 'usuário'},</p>
+            <p>Seu período de teste gratuito expira em <strong>${data.daysLeft || '2'} dias</strong>.</p>
+            <p>Para continuar aproveitando todos os benefícios do Drive Mental, faça upgrade para o plano premium:</p>
+            <div style="background-color: #fef3c7; padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <h3>Benefícios do Plano Premium:</h3>
+              <p>✅ Acesso ilimitado a todos os áudios</p>
+              <p>✅ Downloads para uso offline</p>
+              <p>✅ Playlists personalizadas</p>
+              <p>✅ Novos conteúdos semanais</p>
+            </div>
+            <a href="${data.upgradeUrl || ''}" style="background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 16px 0;">Fazer Upgrade Agora</a>
+            <p>Não perca o acesso aos seus áudios favoritos!</p>
             <p>Equipe Drive Mental</p>
           </div>
         `

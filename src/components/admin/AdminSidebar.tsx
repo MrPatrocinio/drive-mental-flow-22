@@ -24,6 +24,11 @@ const navigationItems = [
     icon: DollarSign,
   },
   {
+    label: "Analytics Avançado",
+    href: "/admin/analytics-advanced",
+    icon: TrendingUp,
+  },
+  {
     label: "Conteúdo da Landing",
     href: "/admin/landing",
     icon: FileText,

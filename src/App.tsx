@@ -33,6 +33,7 @@ import { AdminValidationPage } from '@/pages/admin/AdminValidationPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import AdminCommunicationPage from '@/pages/admin/AdminCommunicationPage';
 import AdminFinancialPage from '@/pages/admin/AdminFinancialPage';
+import AdminAnalyticsAdvancedPage from '@/pages/admin/AdminAnalyticsAdvancedPage';
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { UserProvider } from '@/contexts/UserContext';
@@ -131,6 +132,12 @@ const AppContent: React.FC = () => {
       <Route path="/admin/financial" element={
         <AdminProtectedRoute>
           <AdminFinancialPage />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/analytics-advanced" element={
+        <AdminProtectedRoute>
+          <AdminAnalyticsAdvancedPage />
         </AdminProtectedRoute>
       } />
       

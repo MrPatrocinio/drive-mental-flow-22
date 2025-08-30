@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface EmailTemplate {
-  template: 'welcome' | 'payment_success' | 'subscription_reminder' | 'newsletter';
+  template: 'welcome' | 'payment_success' | 'subscription_reminder' | 'newsletter' | 'retention' | 'winback' | 'trial_reminder';
   data?: Record<string, any>;
 }
 
