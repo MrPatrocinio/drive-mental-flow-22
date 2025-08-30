@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useUserAuthentication } from "@/hooks/useUserAuthentication";
 import type { LoginCredentials } from "@/services/supabase/authService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 /**
  * Componente focado apenas na UI do formulário
@@ -27,6 +28,7 @@ export const UserLoginForm: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoading, error, login, clearError } = useUserAuthentication();
+  const { trackEvent } = useAnalytics();
 
   const from = location.state?.from?.pathname || "/dashboard";
 
@@ -34,11 +36,19 @@ export const UserLoginForm: React.FC = () => {
     e.preventDefault();
     clearError();
 
+    // Tracking analytics: tentativa de login
+    trackEvent('login_attempt', { email });
+
     const credentials: LoginCredentials = { email, password };
     const { success } = await login(credentials);
     
     if (success) {
+      // Tracking analytics: login bem-sucedido
+      trackEvent('login_success', { email });
       navigate(from, { replace: true });
+    } else {
+      // Tracking analytics: falha no login
+      trackEvent('login_failure', { email });
     }
   };
 

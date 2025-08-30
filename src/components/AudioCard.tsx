@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Play, Clock } from 'lucide-react';
 import { FavoriteButton } from './FavoriteButton';
 import { OfflineDownloadButton } from './OfflineDownloadButton';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 export interface Audio {
   id: string;
@@ -31,9 +32,13 @@ interface AudioCardProps {
 }
 
 const AudioCardComponent = ({ audio, onPlay, showTags = true }: AudioCardProps) => {
+  const { trackAudioPlay } = useAnalytics();
+
   const handlePlay = useCallback(() => {
+    // Tracking analytics: reprodução de áudio
+    trackAudioPlay(audio.id, audio.field_id || '');
     onPlay(audio);
-  }, [audio, onPlay]);
+  }, [audio, onPlay, trackAudioPlay]);
 
   return (
     <Card className="group hover-scale transition-all duration-200 hover:shadow-lg">

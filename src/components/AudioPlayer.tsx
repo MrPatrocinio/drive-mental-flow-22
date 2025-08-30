@@ -13,6 +13,7 @@ import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator"
 import { AudioDiagnosticsPanel } from "@/components/audio/AudioDiagnosticsPanel";
 import { useToast } from "@/hooks/use-toast";
 import { BackgroundMusicToggle } from "@/components/BackgroundMusicToggle";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -26,6 +27,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const { toast } = useToast();
+  const { trackEvent } = useAnalytics();
 
   // Debug Hook
   const { logPlayerState, logPlayAttempt, runDiagnostics } = useAudioPlayerDebug();
@@ -150,6 +152,14 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     try {
       console.log('▶️ Executando togglePlay...');
       await togglePlay();
+      
+      // Tracking analytics: play/pause do player
+      trackEvent('audio_player_toggle', { 
+        action: playerState.isPlaying ? 'pause' : 'play', 
+        title,
+        audioUrl 
+      });
+      
       console.log('✅ Toggle play executado com sucesso');
     } catch (error) {
       console.error('❌ Erro no play:', error);

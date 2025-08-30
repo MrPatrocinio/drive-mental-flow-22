@@ -37,6 +37,7 @@ import { UserProvider } from '@/contexts/UserContext';
 import { AudioPlaybackProvider } from '@/contexts/AudioPlaybackContext';
 import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { UserProtectedRoute } from '@/components/UserProtectedRoute';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 // Create a single client instance outside of the component
 const queryClient = new QueryClient({
@@ -50,6 +51,9 @@ const queryClient = new QueryClient({
 
 // Separate component for routes to ensure proper context nesting
 const AppContent: React.FC = () => {
+  // Inicializar analytics para rastrear navegação automática
+  useAnalytics();
+
   React.useEffect(() => {
     console.log('App: Inicializando serviço de sincronização');
     dataSyncService.initialize();
