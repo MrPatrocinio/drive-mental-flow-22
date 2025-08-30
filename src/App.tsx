@@ -32,6 +32,7 @@ import AdminAudiosPageNew from '@/pages/admin/AdminAudiosPageNew';
 import { AdminStatsPage } from '@/pages/admin/AdminStatsPage';
 import { AdminValidationPage } from '@/pages/admin/AdminValidationPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
+import AdminCommunicationPage from '@/pages/admin/AdminCommunicationPage';
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { UserProvider } from '@/contexts/UserContext';
@@ -123,7 +124,7 @@ const AppContent: React.FC = () => {
       
       <Route path="/admin/communication" element={
         <AdminProtectedRoute>
-          {React.createElement(React.lazy(() => import("@/pages/admin/AdminCommunicationPage")))}
+          <AdminCommunicationPage />
         </AdminProtectedRoute>
       } />
       
