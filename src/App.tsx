@@ -32,6 +32,7 @@ import { AdminStatsPage } from '@/pages/admin/AdminStatsPage';
 import { AdminValidationPage } from '@/pages/admin/AdminValidationPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import AdminCommunicationPage from '@/pages/admin/AdminCommunicationPage';
+import AdminFinancialPage from '@/pages/admin/AdminFinancialPage';
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { UserProvider } from '@/contexts/UserContext';
@@ -129,7 +130,7 @@ const AppContent: React.FC = () => {
       
       <Route path="/admin/financial" element={
         <AdminProtectedRoute>
-          {React.createElement(React.lazy(() => import("@/pages/admin/AdminFinancialPage")))}
+          <AdminFinancialPage />
         </AdminProtectedRoute>
       } />
       
