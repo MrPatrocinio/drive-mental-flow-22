@@ -186,29 +186,39 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  console.log('App: Componente principal inicializando', { React: typeof React });
+  console.log('App: Inicializando', { 
+    React: typeof React, 
+    Router: typeof Router,
+    isReactAvailable: !!React,
+    reactVersion: React?.version 
+  });
   
-  // Debug: verificar se React está disponível
+  // Se React não estiver disponível, não renderizar nada que use hooks
   if (!React) {
-    console.error('App: React não está disponível');
-    return <div>Erro crítico: React não disponível</div>;
+    console.error('ERRO CRÍTICO: React não está disponível');
+    return <div>Erro: React não disponível</div>;
   }
-  
-  return (
-    <Router>
-      <QueryClientProvider client={queryClient}>
-        <SupabaseAuthProvider>
-          <AdminProvider>
-            <UserProvider>
-              <AudioPlaybackProvider>
-                <AppContent />
-              </AudioPlaybackProvider>
-            </UserProvider>
-          </AdminProvider>
-        </SupabaseAuthProvider>
-      </QueryClientProvider>
-    </Router>
-  );
+
+  try {
+    return (
+      <Router>
+        <QueryClientProvider client={queryClient}>
+          <SupabaseAuthProvider>
+            <AdminProvider>
+              <UserProvider>
+                <AudioPlaybackProvider>
+                  <AppContent />
+                </AudioPlaybackProvider>
+              </UserProvider>
+            </AdminProvider>
+          </SupabaseAuthProvider>
+        </QueryClientProvider>
+      </Router>
+    );
+  } catch (error) {
+    console.error('App: Erro durante renderização:', error);
+    return <div>Erro durante inicialização: {error instanceof Error ? error.message : 'Erro desconhecido'}</div>;
+  }
 };
 
 export default App;

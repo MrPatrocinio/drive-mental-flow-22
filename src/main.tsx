@@ -1,14 +1,14 @@
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
+import SimpleApp from './SimpleApp.tsx';
 import './index.css';
-import { OfflineAudioService } from './services/offlineAudioService';
-import { PWAService } from './services/pwaService';
 
-// Inicializa serviços
-OfflineAudioService.initialize();
-PWAService.initialize();
+// Debug: verificar React no main.tsx
+console.log('main.tsx: Verificando React', { 
+  React: typeof React, 
+  version: React?.version,
+  isAvailable: !!React 
+});
 
 const container = document.getElementById("root");
 if (!container) {
@@ -16,8 +16,7 @@ if (!container) {
 }
 
 const root = createRoot(container);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+
+// Usar SimpleApp primeiro para testar React básico
+console.log('main.tsx: Renderizando SimpleApp');
+root.render(<SimpleApp />);
