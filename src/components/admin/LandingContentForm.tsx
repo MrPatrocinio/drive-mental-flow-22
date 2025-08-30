@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { X, Plus } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useToast } from '@/hooks/use-toast';
-import type { LandingPageContent } from '@/services/supabase/contentService';
+import type { LandingPageContent } from '@/services/landingContentService';
 
 export const LandingContentForm = () => {
   const { landingContent, updateLandingContent } = useAdmin();

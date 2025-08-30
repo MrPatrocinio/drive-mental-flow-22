@@ -62,8 +62,8 @@ class LandingContentServiceClass {
       const { data, error } = await supabase
         .from('landing_content')
         .select('content')
-        .eq('id', 'landing_page')
-        .single();
+        .eq('section', 'landing_page')
+        .maybeSingle();
 
       if (error) {
         syncDiagnostics.log('supabase_error', 'error', error);
@@ -101,10 +101,11 @@ class LandingContentServiceClass {
       const { error } = await supabase
         .from('landing_content')
         .upsert({
-          id: 'landing_page',
           section: 'landing_page',
           content: content as any,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'section'
         });
 
       if (error) {
