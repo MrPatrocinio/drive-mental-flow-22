@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, Music } from "lucide-react";
 import { Field } from "@/services/supabase/fieldService";
-import * as Icons from "lucide-react";
+import { IconService } from "@/services/iconService";
 
 interface FieldListProps {
   fields: Field[];
@@ -21,8 +21,7 @@ interface FieldListProps {
 
 export function FieldListNew({ fields, onEdit, onDelete }: FieldListProps) {
   const getIcon = (iconName: string) => {
-    const IconComponent = (Icons as any)[iconName];
-    return IconComponent || Icons.Circle;
+    return IconService.getIconComponent(iconName);
   };
 
   if (fields.length === 0) {

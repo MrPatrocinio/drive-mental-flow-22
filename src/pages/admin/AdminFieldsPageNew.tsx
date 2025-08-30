@@ -1,15 +1,31 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { FieldListNew } from '@/components/admin/FieldListNew';
+import { FieldEditModal } from '@/components/admin/FieldEditModal';
 import { useAdmin } from '@/contexts/AdminContext';
+import { Field } from '@/services/supabase/fieldService';
 
 export const AdminFieldsPageNew: React.FC = () => {
   const { fields, updateField, deleteField } = useAdmin();
+  
+  // Estado do modal (seguindo SRP - gerenciar apenas o estado da UI)
+  const [editingField, setEditingField] = useState<Field | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleEdit = (field: any) => {
-    // TODO: Implementar modal de edição
-    console.log('Edit field:', field);
+  const handleEdit = (field: Field) => {
+    setEditingField(field);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingField(null);
+  };
+
+  const handleSaveField = async (updatedField: Field) => {
+    await updateField(updatedField);
+    handleCloseModal();
   };
 
   const handleDelete = async (fieldId: string) => {
@@ -34,6 +50,14 @@ export const AdminFieldsPageNew: React.FC = () => {
           fields={fields}
           onEdit={handleEdit}
           onDelete={handleDelete}
+        />
+        
+        {/* Modal de Edição */}
+        <FieldEditModal
+          field={editingField}
+          open={isModalOpen}
+          onClose={handleCloseModal}
+          onSave={handleSaveField}
         />
       </div>
     </AdminLayout>
