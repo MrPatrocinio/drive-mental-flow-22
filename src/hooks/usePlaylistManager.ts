@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Playlist, PlaylistService } from "@/services/playlistService";
 
 export function usePlaylistManager() {
@@ -45,6 +45,18 @@ export function usePlaylistManager() {
       refreshPlaylists();
     }
     return success;
+  }, [refreshPlaylists]);
+
+  // Listener para mudanças no localStorage
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'drive_mental_playlists') {
+        refreshPlaylists();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [refreshPlaylists]);
 
   return {

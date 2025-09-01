@@ -4,13 +4,11 @@
  * Responsabilidade: Estado e lógica de favoritos
  * Princípio SRP: Apenas gerenciamento de favoritos
  * Princípio SSOT: Fonte única da verdade para favoritos
- * OTIMIZADO: Debounce para operações performáticas
+ * SIMPLIFICADO: Depende apenas do estado reativo
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { usePlaylistManager } from './usePlaylistManager';
-import { PlaylistService } from '@/services/playlistService';
-import { DebounceService } from '@/services/debounceService';
 
 export interface FavoriteStatus {
   isFavorite: boolean;
@@ -19,59 +17,16 @@ export interface FavoriteStatus {
 }
 
 export function useFavorites(audioId: string) {
-  const { playlists } = usePlaylistManager();
+  const { playlists, refreshPlaylists } = usePlaylistManager();
   const [favoriteStatus, setFavoriteStatus] = useState<FavoriteStatus>({
     isFavorite: false,
     playlistId: null,
     playlistName: null
   });
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
-   * Verifica se o áudio está em alguma playlist diretamente do localStorage
-   * Responsabilidade: Verificação síncrona e imediata
-   * OTIMIZADO: Operação performática
-   */
-  const checkFavoriteStatusFromStorage = useCallback(() => {
-    const storedPlaylists = PlaylistService.getPlaylists();
-    
-    for (const playlist of storedPlaylists) {
-      const audioExists = playlist.audios.some(audio => audio.id === audioId);
-      if (audioExists) {
-        const newStatus = {
-          isFavorite: true,
-          playlistId: playlist.id,
-          playlistName: playlist.name
-        };
-        setFavoriteStatus(newStatus);
-        return newStatus;
-      }
-    }
-    
-    const newStatus = {
-      isFavorite: false,
-      playlistId: null,
-      playlistName: null
-    };
-    setFavoriteStatus(newStatus);
-    return newStatus;
-  }, [audioId]);
-
-  /**
-   * Versão com debounce para verificação otimizada
-   */
-  const debouncedCheckFromStorage = useCallback(
-    DebounceService.debounce(
-      `checkFavorite_${audioId}`,
-      checkFavoriteStatusFromStorage,
-      50
-    ),
-    [checkFavoriteStatusFromStorage, audioId]
-  );
-
-  /**
-   * Verifica se o áudio está em alguma playlist (é favorito)
-   * Responsabilidade: Verificação baseada no estado reativo
+   * Verifica se o áudio está em alguma playlist
+   * Responsabilidade: Única verificação baseada no estado reativo
    */
   const checkFavoriteStatus = useCallback(() => {
     for (const playlist of playlists) {
@@ -95,21 +50,12 @@ export function useFavorites(audioId: string) {
   }, [playlists, audioId]);
 
   /**
-   * Força refresh imediato e com fallback otimizado
+   * Força refresh imediato
    * Responsabilidade: Garantir sincronização imediata após operações
    */
   const forceRefresh = useCallback(() => {
-    // Limpa timeout anterior se existir
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Primeira verificação imediata
-    checkFavoriteStatusFromStorage();
-    
-    // Fallback com debounce para evitar operações excessivas
-    debouncedCheckFromStorage();
-  }, [checkFavoriteStatusFromStorage, debouncedCheckFromStorage]);
+    refreshPlaylists();
+  }, [refreshPlaylists]);
 
   /**
    * Verifica se o áudio está numa playlist específica
@@ -133,16 +79,6 @@ export function useFavorites(audioId: string) {
   useEffect(() => {
     checkFavoriteStatus();
   }, [checkFavoriteStatus]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      DebounceService.cancel(`checkFavorite_${audioId}`);
-    };
-  }, [audioId]);
 
   return {
     favoriteStatus,
