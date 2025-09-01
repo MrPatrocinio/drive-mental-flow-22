@@ -32,6 +32,16 @@ export const AdminUsersPage = () => {
     console.log("Contatar usuário:", user);
   };
 
+  const handleEditUser = (user: UserWithSubscription) => {
+    // TODO: Implementar modal de edição do usuário
+    console.log("Editar usuário:", user);
+  };
+
+  const handleDeleteUser = (user: UserWithSubscription) => {
+    // TODO: Implementar confirmação de exclusão
+    console.log("Deletar usuário:", user);
+  };
+
   return (
     <AdminLayout title="Usuários">
       <div className="space-y-6">
@@ -71,6 +81,8 @@ export const AdminUsersPage = () => {
               loading={loading}
               onViewUser={handleViewUser}
               onContactUser={handleContactUser}
+              onEditUser={handleEditUser}
+              onDeleteUser={handleDeleteUser}
             />
           </CardContent>
         </Card>

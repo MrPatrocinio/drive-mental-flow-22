@@ -11,20 +11,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserWithSubscription } from "@/services/supabase/userManagementService";
-import { Eye, Mail } from "lucide-react";
+import { Eye, Mail, Edit, Trash2 } from "lucide-react";
 
 interface UserTableProps {
   users: UserWithSubscription[];
   loading: boolean;
   onViewUser?: (user: UserWithSubscription) => void;
   onContactUser?: (user: UserWithSubscription) => void;
+  onEditUser?: (user: UserWithSubscription) => void;
+  onDeleteUser?: (user: UserWithSubscription) => void;
 }
 
 /**
  * Tabela de usuários com informações de assinatura
  * Responsabilidade: Apresentação tabular dos dados de usuários
  */
-export const UserTable = ({ users, loading, onViewUser, onContactUser }: UserTableProps) => {
+export const UserTable = ({ users, loading, onViewUser, onContactUser, onEditUser, onDeleteUser }: UserTableProps) => {
   const getSubscriptionBadge = (subscribed: boolean | null, tier: string | null) => {
     if (!subscribed) {
       return <Badge variant="secondary">Gratuito</Badge>;
@@ -126,11 +128,12 @@ export const UserTable = ({ users, loading, onViewUser, onContactUser }: UserTab
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => onViewUser?.(user)}
+                    title="Visualizar usuário"
                   >
                     <Eye className="h-3 w-3" />
                   </Button>
@@ -138,8 +141,26 @@ export const UserTable = ({ users, loading, onViewUser, onContactUser }: UserTab
                     variant="outline"
                     size="sm"
                     onClick={() => onContactUser?.(user)}
+                    title="Contatar usuário"
                   >
                     <Mail className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEditUser?.(user)}
+                    title="Editar usuário"
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDeleteUser?.(user)}
+                    title="Deletar usuário"
+                    className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </TableCell>
