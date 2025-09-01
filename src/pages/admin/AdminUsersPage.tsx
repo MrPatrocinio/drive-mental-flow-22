@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useUserManagement } from "@/hooks/useUserManagement";
 import { UserStatsCards } from "@/components/admin/users/UserStatsCards";
 import { UserTable } from "@/components/admin/users/UserTable";
+import { UserEditModal } from "@/components/admin/users/UserEditModal";
+import { UserDeleteDialog } from "@/components/admin/users/UserDeleteDialog";
 import { UserWithSubscription } from "@/services/supabase/userManagementService";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { RefreshCw, Search } from "lucide-react";
@@ -14,8 +16,11 @@ import { RefreshCw, Search } from "lucide-react";
  * Responsabilidade: Coordenação da interface de usuários
  */
 export const AdminUsersPage = () => {
-  const { users, stats, loading, refreshData } = useUserManagement();
+  const { users, stats, loading, refreshData, updateUser, deleteUser } = useUserManagement();
   const [searchTerm, setSearchTerm] = useState("");
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithSubscription | null>(null);
 
   const filteredUsers = users.filter(user => 
     user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,13 +38,21 @@ export const AdminUsersPage = () => {
   };
 
   const handleEditUser = (user: UserWithSubscription) => {
-    // TODO: Implementar modal de edição do usuário
-    console.log("Editar usuário:", user);
+    setSelectedUser(user);
+    setEditModalOpen(true);
   };
 
   const handleDeleteUser = (user: UserWithSubscription) => {
-    // TODO: Implementar confirmação de exclusão
-    console.log("Deletar usuário:", user);
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSaveUser = async (userId: string, updates: { display_name?: string; role?: string }) => {
+    await updateUser(userId, updates);
+  };
+
+  const handleConfirmDelete = async (userId: string) => {
+    await deleteUser(userId);
   };
 
   return (
@@ -86,6 +99,20 @@ export const AdminUsersPage = () => {
             />
           </CardContent>
         </Card>
+
+        <UserEditModal
+          user={selectedUser}
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          onSave={handleSaveUser}
+        />
+
+        <UserDeleteDialog
+          user={selectedUser}
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={handleConfirmDelete}
+        />
       </div>
     </AdminLayout>
   );

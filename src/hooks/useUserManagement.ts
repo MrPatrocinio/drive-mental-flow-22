@@ -47,6 +47,46 @@ export const useUserManagement = () => {
     }
   };
 
+  const updateUser = async (userId: string, updates: { display_name?: string; role?: string }) => {
+    const { success, error } = await UserManagementService.updateUser(userId, updates);
+    
+    if (error) {
+      toast({
+        title: "Erro ao atualizar usuário",
+        description: error,
+        variant: "destructive",
+      });
+      throw new Error(error);
+    } else {
+      toast({
+        title: "Usuário atualizado",
+        description: "Usuário atualizado com sucesso",
+      });
+      // Recarregar dados para refletir mudanças
+      await loadUsers();
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    const { success, error } = await UserManagementService.deleteUser(userId);
+    
+    if (error) {
+      toast({
+        title: "Erro ao desativar usuário",
+        description: error,
+        variant: "destructive",
+      });
+      throw new Error(error);
+    } else {
+      toast({
+        title: "Usuário desativado",
+        description: "Usuário desativado com sucesso",
+      });
+      // Recarregar dados para refletir mudanças
+      await loadUsers();
+    }
+  };
+
   const refreshData = async () => {
     await Promise.all([loadUsers(), loadStats()]);
   };
@@ -63,5 +103,7 @@ export const useUserManagement = () => {
     refreshData,
     loadUsers,
     loadStats,
+    updateUser,
+    deleteUser,
   };
 };

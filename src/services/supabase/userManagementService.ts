@@ -136,6 +136,56 @@ export class UserManagementService {
   }
 
   /**
+   * Atualiza dados do usuário
+   */
+  static async updateUser(userId: string, updates: {
+    display_name?: string;
+    role?: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('user_id', userId);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: "Erro interno ao atualizar usuário" };
+    }
+  }
+
+  /**
+   * Remove usuário (soft delete - desativa)
+   */
+  static async deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Primeiro, desativar assinatura se existir
+      await supabase
+        .from('subscribers')
+        .update({ subscribed: false, subscription_end: new Date().toISOString() })
+        .eq('user_id', userId);
+
+      // Atualizar role para inativo
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: 'inactive' })
+        .eq('user_id', userId);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: "Erro interno ao deletar usuário" };
+    }
+  }
+
+  /**
    * Busca usuário por ID
    */
   static async getUserById(userId: string): Promise<{ data: UserWithSubscription | null; error: string | null }> {
