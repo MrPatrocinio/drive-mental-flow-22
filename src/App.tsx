@@ -41,6 +41,7 @@ import { AudioPlaybackProvider } from '@/contexts/AudioPlaybackContext';
 import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { UserProtectedRoute } from '@/components/UserProtectedRoute';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import NotFound from '@/pages/NotFound';
 
 // Create a single client instance outside of the component
 const queryClient = new QueryClient({
@@ -194,6 +195,9 @@ const AppContent: React.FC = () => {
           <AdminValidationPage />
         </AdminProtectedRoute>
       } />
+      
+      {/* Rota Catch-All para 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
