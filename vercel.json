@@ -9,12 +9,6 @@
       "destination": "/index.html"
     }
   ],
-  "routes": [
-    {
-      "src": "/(admin|inscricao|obrigado|dashboard|field|audio-player|login|lgpd|privacy|terms|payment|subscription|offline).*",
-      "dest": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/sw.js",
