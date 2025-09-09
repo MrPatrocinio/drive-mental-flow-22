@@ -43,6 +43,7 @@ import { UserProtectedRoute } from '@/components/UserProtectedRoute';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import NotFound from '@/pages/NotFound';
 import { InscricaoPage } from '@/pages/InscricaoPage';
+import { ObrigadoPage } from '@/pages/ObrigadoPage';
 
 // Create a single client instance outside of the component
 const queryClient = new QueryClient({
@@ -81,6 +82,9 @@ const AppContent: React.FC = () => {
       
       {/* Página de Inscrição */}
       <Route path="/inscricao" element={<InscricaoPage />} />
+      
+      {/* Página de Obrigado */}
+      <Route path="/obrigado" element={<ObrigadoPage />} />
 
       {/* Rota de Login de Usuários */}
       <Route path="/login" element={<UserLoginPage />} />
