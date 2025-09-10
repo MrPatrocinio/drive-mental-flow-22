@@ -5,10 +5,12 @@
   "installCommand": "npm install",
   "rewrites": [
     {
-      "source": "/((?!api).*)",
+      "source": "/((?!api|_next/static|_next/image|favicon.ico|sw.js|robots.txt|manifest.json|browserconfig.xml|.*\\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico|webp)).*)",
       "destination": "/index.html"
     }
   ],
+  "trailingSlash": false,
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/sw.js",
