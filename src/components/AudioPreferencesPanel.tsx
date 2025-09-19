@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Settings, Volume2, Repeat, Play, RotateCcw, Music } from "lucide-react";
 import { AudioPreferences, audioPreferencesService } from "@/services/audioPreferencesService";
+import { BackgroundMusicControls } from "@/components/BackgroundMusicControls";
 
 interface AudioPreferencesPanelProps {
   isOpen: boolean;
@@ -118,15 +119,41 @@ export const AudioPreferencesPanel = ({
           </div>
 
           {/* Background Music */}
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2">
-              <Music className="h-4 w-4" />
-              Música de Fundo
-            </Label>
-            <Switch
-              checked={preferences.backgroundMusicEnabled}
-              onCheckedChange={(checked) => handlePreferenceChange({ backgroundMusicEnabled: checked })}
-            />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Music className="h-4 w-4" />
+                Música de Fundo
+              </Label>
+              <Switch
+                checked={preferences.backgroundMusicEnabled}
+                onCheckedChange={(checked) => handlePreferenceChange({ backgroundMusicEnabled: checked })}
+              />
+            </div>
+            
+            {/* Background Music Mix with Main Audio */}
+            {preferences.backgroundMusicEnabled && (
+              <div className="flex items-center justify-between pl-6">
+                <Label className="text-sm text-muted-foreground">
+                  Tocar junto com áudio principal
+                </Label>
+                <Switch
+                  checked={preferences.backgroundMixWithMain}
+                  onCheckedChange={(checked) => handlePreferenceChange({ backgroundMixWithMain: checked })}
+                />
+              </div>
+            )}
+
+            {/* Background Music Controls */}
+            {preferences.backgroundMusicEnabled && (
+              <div className="pl-6 pt-2 border-l-2 border-muted">
+                <BackgroundMusicControls 
+                  showTitle={false} 
+                  size="sm"
+                  className="space-y-2"
+                />
+              </div>
+            )}
           </div>
 
           {/* Actions */}
