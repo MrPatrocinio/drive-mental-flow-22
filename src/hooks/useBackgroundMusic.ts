@@ -31,10 +31,10 @@ export const useBackgroundMusic = () => {
     const unsubscribe = backgroundMusicPlayer.onStateChange(setState);
     
     // Inicializa o player se ainda não foi inicializado
-    backgroundMusicPlayer.initialize().then(() => {
-      console.log('useBackgroundMusic: Player inicializado com sucesso');
+    backgroundMusicPlayer.refresh().then(() => {
+      console.log('useBackgroundMusic: Player refresh concluído com sucesso');
     }).catch(error => {
-      console.error('useBackgroundMusic: Erro ao inicializar player:', error);
+      console.error('useBackgroundMusic: Erro ao dar refresh no player:', error);
     });
     
     return unsubscribe;

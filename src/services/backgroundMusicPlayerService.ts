@@ -40,41 +40,45 @@ export class BackgroundMusicPlayerService {
     return BackgroundMusicPlayerService.instance;
   }
 
-  async initialize(): Promise<void> {
-    if (this.isInitialized) {
-      console.log('BackgroundMusicPlayer: Já inicializado');
+  async initialize(force: boolean = false): Promise<void> {
+    if (this.isInitialized && !force) {
+      console.log('BackgroundMusicPlayer: Já inicializado (skip).');
       return;
     }
-    
+
     if (this.isInitializing) {
       console.log('BackgroundMusicPlayer: Inicialização em andamento');
       return;
     }
 
     this.isInitializing = true;
-    
+
     try {
-      console.log('BackgroundMusicPlayer: Inicializando sistema...');
+      console.log('BackgroundMusicPlayer: Inicializando sistema...', { force });
       this.updateState({ isLoading: true, hasError: false });
-      
+
       // Carrega músicas ativas e configurações
       const [musicList, volumePercentage] = await Promise.all([
         BackgroundMusicService.getActive(),
         BackgroundMusicSettingsService.getVolumePercentage()
       ]);
 
-      this.activeMusic = musicList;
+      this.activeMusic = musicList || [];
       this.state.volume = volumePercentage / 100;
-      
-      console.log('BackgroundMusicPlayer: Músicas ativas encontradas:', musicList.length);
+
+      console.log('BackgroundMusicPlayer: Músicas ativas encontradas:', this.activeMusic.length);
       console.log('BackgroundMusicPlayer: Volume configurado para:', volumePercentage + '%');
 
       if (this.activeMusic.length > 0) {
-        this.currentMusicIndex = Math.floor(Math.random() * this.activeMusic.length);
+        if (this.currentMusicIndex < 0 || this.currentMusicIndex >= this.activeMusic.length) {
+          this.currentMusicIndex = Math.floor(Math.random() * this.activeMusic.length);
+        }
         await this.loadCurrentMusic();
         console.log('BackgroundMusicPlayer: Primeira música carregada');
       } else {
         console.warn('BackgroundMusicPlayer: Nenhuma música ativa encontrada');
+        // Garante que currentMusic fique nulo se não houver músicas
+        this.updateState({ currentMusic: null, isPlaying: false });
       }
 
       this.updateState({ isLoading: false });
@@ -125,10 +129,15 @@ export class BackgroundMusicPlayerService {
 
   async play(): Promise<void> {
     console.log('BackgroundMusicPlayer: Tentando reproduzir música');
-    
-    if (!this.audioElement || this.activeMusic.length === 0) {
-      console.log('BackgroundMusicPlayer: Inicializando...');
+
+    if (!this.isInitialized || !this.audioElement || this.activeMusic.length === 0) {
+      console.log('BackgroundMusicPlayer: Inicializando antes de tocar...');
       await this.initialize();
+    }
+
+    if (this.activeMusic.length === 0) {
+      console.warn('BackgroundMusicPlayer: Nenhuma música ativa após inicializar - forçando refresh');
+      await this.refresh();
     }
 
     // Se ainda não temos música após inicializar, seleciona uma
@@ -144,7 +153,7 @@ export class BackgroundMusicPlayerService {
         this.updateState({ isPlaying: true, hasError: false });
       } catch (error) {
         console.error('BackgroundMusicPlayer: Erro ao reproduzir:', error);
-        this.updateState({ hasError: true });
+        this.updateState({ hasError: true, isPlaying: false });
       }
     } else {
       console.warn('BackgroundMusicPlayer: Não foi possível reproduzir - sem áudio/música');
@@ -212,7 +221,17 @@ export class BackgroundMusicPlayerService {
   }
 
   async refresh(): Promise<void> {
-    await this.initialize();
+    console.log('BackgroundMusicPlayer: Refresh solicitado - reinicializando estado');
+    // Limpa listeners e áudio atual
+    this.cleanup();
+    // Reseta caches e flags
+    this.activeMusic = [];
+    this.currentMusicIndex = 0;
+    this.isInitialized = false;
+    // Reseta estado exposto
+    this.updateState({ currentMusic: null, isPlaying: false, hasError: false, isLoading: false });
+    // Recarrega com força para buscar músicas e configurações novamente
+    await this.initialize(true);
   }
 
   cleanup(): void {
