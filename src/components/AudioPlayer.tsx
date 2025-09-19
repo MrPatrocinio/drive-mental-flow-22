@@ -27,7 +27,6 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
   const [preferences, setPreferences] = useState<AudioPreferences>(audioPreferencesService.getPreferences());
   const [showPreferences, setShowPreferences] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const { toast } = useToast();
   const { trackEvent } = useAnalytics();
 
@@ -63,7 +62,6 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     togglePlay,
     reset,
     seek,
-    setMuted: setPlayerMuted,
     validateAudioUrl,
     retryInitialization
   } = useAudioPlayer(audioUrl, preferences, onRepeatComplete, handleError);
@@ -91,11 +89,6 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     setPreferences(newPreferences);
   };
 
-  const handleMuteToggle = () => {
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-    setPlayerMuted(newMuted);
-  };
 
   const formatTime = (time: number) => {
     if (!time || isNaN(time) || !isFinite(time) || time < 0) {
@@ -290,18 +283,6 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
           )}
         </Button>
 
-        <Button
-          variant="audio"
-          size="audio"
-          onClick={handleMuteToggle}
-          disabled={!playerState.canPlay || showLoadingState}
-        >
-          {isMuted ? (
-            <VolumeX className="h-5 w-5" />
-          ) : (
-            <Volume2 className="h-5 w-5" />
-          )}
-        </Button>
 
         <Button
           variant="audio"
@@ -324,27 +305,6 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         <BackgroundMusicToggle />
       </div>
 
-      {/* Volume Control */}
-      {playerState.canPlay && !showLoadingState && (
-        <div className="flex items-center gap-3">
-          <Volume2 className="h-4 w-4 text-muted-foreground" />
-          <Slider
-            value={[preferences.volume]}
-            max={100}
-            step={1}
-            onValueChange={(value) => {
-              const newVolume = Math.max(1, value[0]);
-              const newPreferences = { ...preferences, volume: newVolume };
-              setPreferences(newPreferences);
-              audioPreferencesService.updatePreferences({ volume: newVolume });
-            }}
-            className="flex-1"
-          />
-          <span className="text-xs text-muted-foreground min-w-[3ch]">
-            {preferences.volume}%
-          </span>
-        </div>
-      )}
 
       {/* Background Music Mute Control */}
       {backgroundMusicEnabled && (
