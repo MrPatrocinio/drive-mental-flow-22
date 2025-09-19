@@ -14,7 +14,6 @@ export const BackgroundMusicDebug = () => {
   const {
     state,
     isEnabled,
-    toggleEnabled,
     refresh
   } = useBackgroundMusic();
 
@@ -59,14 +58,8 @@ export const BackgroundMusicDebug = () => {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => toggleEnabled(!isEnabled)}
-          >
-            {isEnabled ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
             onClick={refresh}
+            title="Refresh Background Music"
           >
             <RefreshCw className="h-3 w-3" />
           </Button>

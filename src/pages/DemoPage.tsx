@@ -313,8 +313,8 @@ export default function DemoPage() {
         </div>
       </div>
       
-      {/* Componente de Debug Temporário */}
-      <BackgroundMusicDebug />
+      {/* Componente de Debug Temporário - apenas em desenvolvimento */}
+      {process.env.NODE_ENV === 'development' && <BackgroundMusicDebug />}
     </div>
   );
 }

@@ -7,7 +7,6 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Settings, Volume2, Repeat, Play, RotateCcw, Music } from "lucide-react";
 import { AudioPreferences, audioPreferencesService } from "@/services/audioPreferencesService";
-import { BackgroundMusicMuteButton } from "@/components/BackgroundMusicMuteButton";
 
 interface AudioPreferencesPanelProps {
   isOpen: boolean;
@@ -141,20 +140,6 @@ export const AudioPreferencesPanel = ({
                   checked={preferences.backgroundMixWithMain}
                   onCheckedChange={(checked) => handlePreferenceChange({ backgroundMixWithMain: checked })}
                 />
-              </div>
-            )}
-
-            {/* Background Music Controls */}
-            {preferences.backgroundMusicEnabled && (
-              <div className="pl-6 pt-2 border-l-2 border-muted">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Controle de Som</span>
-                  <BackgroundMusicMuteButton 
-                    size="sm"
-                    showStatus={true}
-                    variant="outline"
-                  />
-                </div>
               </div>
             )}
           </div>

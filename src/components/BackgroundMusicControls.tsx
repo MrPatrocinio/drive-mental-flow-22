@@ -25,7 +25,6 @@ export const BackgroundMusicControls = ({
   const {
     state,
     isEnabled,
-    toggleEnabled,
     setVolume,
     setMuted
   } = useBackgroundMusic();

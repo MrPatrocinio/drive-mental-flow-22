@@ -12,22 +12,17 @@ import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
 export const useBackgroundMusic = () => {
   const [state, setState] = React.useState<BackgroundMusicState>(backgroundMusicPlayer.getState());
-  const [isEnabled, setIsEnabled] = React.useState(false);
+  // Música de fundo sempre habilitada - sem controle do usuário final
+  const [isEnabled] = React.useState(true);
   
   // Obtém contexto com fallback seguro
   const audioPlaybackContext = useAudioPlaybackSafe();
   const userIntentionPlaying = audioPlaybackContext?.userIntentionPlaying || false;
 
-  // Carrega preferências do usuário
+  // Garante que as preferências sempre tenham backgroundMusicEnabled = true
   React.useEffect(() => {
     const preferences = audioPreferencesService.getPreferences();
-    console.log('useBackgroundMusic: Preferências carregadas:', preferences);
-    // Por padrão, música de fundo deve estar habilitada (se não foi definido explicitamente)
-    const defaultEnabled = preferences.backgroundMusicEnabled ?? true;
-    setIsEnabled(defaultEnabled);
-    
-    // Se foi definido como padrão, salvar preferência
-    if (preferences.backgroundMusicEnabled === undefined) {
+    if (preferences.backgroundMusicEnabled !== true) {
       audioPreferencesService.updatePreferences({
         ...preferences,
         backgroundMusicEnabled: true
@@ -71,24 +66,7 @@ export const useBackgroundMusic = () => {
     }
   }, [userIntentionPlaying, isEnabled]);
 
-  const toggleEnabled = React.useCallback((enabled: boolean) => {
-    console.log('useBackgroundMusic: Toggle ativado:', enabled);
-    setIsEnabled(enabled);
-    
-    // Atualiza preferências do usuário
-    const currentPreferences = audioPreferencesService.getPreferences();
-    audioPreferencesService.updatePreferences({
-      ...currentPreferences,
-      backgroundMusicEnabled: enabled
-    });
-
-    // Se desabilitando, para imediatamente
-    if (!enabled && state.isPlaying) {
-      console.log('useBackgroundMusic: Parando música por desabilitação');
-      backgroundMusicPlayer.pause();
-    }
-  }, [state.isPlaying]);
-
+  // Funções simplificadas - sem toggle para o usuário final
   const setVolume = React.useCallback((volume: number) => {
     console.log('useBackgroundMusic: Definindo volume:', volume);
     backgroundMusicPlayer.setVolume(volume / 100);
@@ -106,8 +84,7 @@ export const useBackgroundMusic = () => {
 
   return {
     state,
-    isEnabled,
-    toggleEnabled,
+    isEnabled, // Sempre true
     setVolume,
     setMuted,
     refresh

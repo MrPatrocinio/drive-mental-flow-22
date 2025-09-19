@@ -12,8 +12,6 @@ import { AudioErrorDisplay } from "@/components/audio/AudioErrorDisplay";
 import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator";
 import { AudioDiagnosticsPanel } from "@/components/audio/AudioDiagnosticsPanel";
 import { useToast } from "@/hooks/use-toast";
-import { BackgroundMusicToggle } from "@/components/BackgroundMusicToggle";
-import { BackgroundMusicMuteButton } from "@/components/BackgroundMusicMuteButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { backgroundMusicPlayer } from "@/services/backgroundMusicPlayerService";
 import { useAudioPlayback } from "@/contexts/AudioPlaybackContext";
@@ -38,7 +36,6 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
   const {
     state: backgroundMusicState,
     isEnabled: backgroundMusicEnabled,
-    toggleEnabled: toggleBackgroundMusic,
     setVolume: setBackgroundVolume,
     setMuted: setBackgroundMuted
   } = useBackgroundMusic();
@@ -175,11 +172,15 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         // Executar tudo simultaneamente
         const results = await Promise.allSettled(tasks);
         
-        // Log dos resultados
+        // Log dos resultados e graceful degradation
         results.forEach((result, index) => {
           const name = index === 0 ? 'voz' : 'música de fundo';
           if (result.status === 'rejected') {
             console.warn(`⚠️ Erro ao iniciar ${name}:`, result.reason);
+            // Se a música de fundo falhou, continuar apenas com a voz (graceful degradation)
+            if (index === 1) {
+              console.log('🎵 Graceful degradation: Continuando apenas com áudio da voz');
+            }
           } else {
             console.log(`✅ ${name} iniciada com sucesso`);
           }
@@ -334,20 +335,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         >
           <Bug className="h-5 w-5" />
         </Button>
-
-        <BackgroundMusicToggle />
       </div>
 
-
-      {/* Background Music Mute Control */}
-      {backgroundMusicEnabled && (
-        <div className="bg-muted/50 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Música de Fundo</span>
-            <BackgroundMusicMuteButton size="sm" showStatus={true} />
-          </div>
-        </div>
-      )}
 
       {/* Repeat Count Display */}
       {playerState.canPlay && !showLoadingState && (
