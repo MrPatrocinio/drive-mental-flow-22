@@ -1,8 +1,7 @@
-
 /**
  * useBackgroundMusic Hook
  * Responsabilidade: Interface React para o player de música de fundo
- * Princípio SRP: Apenas lógica de hook para background music
+ * Princípio SRP: Apenas lógica de hook para background music (sempre habilitada pelo admin)
  */
 
 import React from 'react';
@@ -12,22 +11,19 @@ import { useAudioPlaybackSafe } from '@/contexts/AudioPlaybackContext';
 
 export const useBackgroundMusic = () => {
   const [state, setState] = React.useState<BackgroundMusicState>(backgroundMusicPlayer.getState());
-  // Música de fundo sempre habilitada - sem controle do usuário final
-  const [isEnabled] = React.useState(true);
+  
+  // Hook simplificado - música de fundo sempre habilitada pelo admin
+  const [isEnabled] = React.useState(true); // Sempre true, controlado pelo admin
   
   // Obtém contexto com fallback seguro
   const audioPlaybackContext = useAudioPlaybackSafe();
   const userIntentionPlaying = audioPlaybackContext?.userIntentionPlaying || false;
 
-  // Garante que as preferências sempre tenham backgroundMusicEnabled = true
+  // Limpeza de preferências antigas ao inicializar
   React.useEffect(() => {
-    const preferences = audioPreferencesService.getPreferences();
-    if (preferences.backgroundMusicEnabled !== true) {
-      audioPreferencesService.updatePreferences({
-        ...preferences,
-        backgroundMusicEnabled: true
-      });
-    }
+    // Apenas força a limpeza/reset das preferências antigas se necessário
+    audioPreferencesService.resetToDefaults();
+    console.log('useBackgroundMusic: Sistema simplificado - música de fundo controlada apenas pelo admin');
   }, []);
 
   // Monitora mudanças no estado do player

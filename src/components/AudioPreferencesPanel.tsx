@@ -117,31 +117,12 @@ export const AudioPreferencesPanel = ({
             />
           </div>
 
-          {/* Background Music */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-2">
-                <Music className="h-4 w-4" />
-                Música de Fundo
-              </Label>
-              <Switch
-                checked={preferences.backgroundMusicEnabled}
-                onCheckedChange={(checked) => handlePreferenceChange({ backgroundMusicEnabled: checked })}
-              />
+          {/* Informação sobre música de fundo */}
+          <div className="bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Music className="h-4 w-4" />
+              <span>Música de fundo configurada automaticamente</span>
             </div>
-            
-            {/* Background Music Mix with Main Audio */}
-            {preferences.backgroundMusicEnabled && (
-              <div className="flex items-center justify-between pl-6">
-                <Label className="text-sm text-muted-foreground">
-                  Tocar junto com áudio principal
-                </Label>
-                <Switch
-                  checked={preferences.backgroundMixWithMain}
-                  onCheckedChange={(checked) => handlePreferenceChange({ backgroundMixWithMain: checked })}
-                />
-              </div>
-            )}
           </div>
 
           {/* Actions */}

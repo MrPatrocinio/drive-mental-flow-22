@@ -3,8 +3,7 @@ export interface AudioPreferences {
   repeatCount: number; // 0 = infinite, >0 = specific number
   autoPlay: boolean;
   showProgress: boolean;
-  backgroundMusicEnabled: boolean;
-  backgroundMixWithMain: boolean; // Se true, toca música de fundo junto com áudio principal
+  // backgroundMusicEnabled e backgroundMixWithMain removidos - controlados apenas pelo admin
 }
 
 export interface AudioPreferencesService {
@@ -18,8 +17,7 @@ const DEFAULT_PREFERENCES: AudioPreferences = {
   repeatCount: 0, // infinite by default
   autoPlay: false,
   showProgress: true,
-  backgroundMusicEnabled: true, // Ativado por padrão
-  backgroundMixWithMain: true, // Toca música de fundo junto com áudio principal por padrão
+  // backgroundMusicEnabled e backgroundMixWithMain removidos - controlados apenas pelo admin
 };
 
 const STORAGE_KEY = 'audio-preferences';
@@ -36,7 +34,19 @@ class AudioPreferencesServiceImpl implements AudioPreferencesService {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        return { ...DEFAULT_PREFERENCES, ...parsed };
+        
+        // Migração e limpeza: remover propriedades antigas de música de fundo
+        const cleanedPrefs = { ...parsed };
+        delete cleanedPrefs.backgroundMusicEnabled;
+        delete cleanedPrefs.backgroundMixWithMain;
+        
+        // Salvar versão limpa
+        if ('backgroundMusicEnabled' in parsed || 'backgroundMixWithMain' in parsed) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedPrefs));
+          console.log('AudioPreferences: Limpeza de preferências antigas de música de fundo realizada');
+        }
+        
+        return { ...DEFAULT_PREFERENCES, ...cleanedPrefs };
       }
     } catch (error) {
       console.warn('Failed to load audio preferences:', error);
