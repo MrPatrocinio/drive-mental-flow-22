@@ -157,8 +157,14 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       // Se está iniciando reprodução, garante que música de fundo também inicia (modo mix)
       if (!playerState.isPlaying) {
         const preferences = audioPreferencesService.getPreferences();
+        console.log('🎵 AudioPlayer: Verificando início de música de fundo', {
+          backgroundMixWithMain: preferences.backgroundMixWithMain,
+          backgroundMusicEnabled: preferences.backgroundMusicEnabled,
+          shouldStartBackground: preferences.backgroundMixWithMain && preferences.backgroundMusicEnabled
+        });
+        
         if (preferences.backgroundMixWithMain && preferences.backgroundMusicEnabled) {
-          console.log('🎵 Iniciando música de fundo junto com áudio principal');
+          console.log('🎵 Iniciando música de fundo junto com áudio principal (start garantido)');
           backgroundMusicPlayer.play().catch(error => {
             console.warn('Falha ao iniciar música de fundo:', error);
           });

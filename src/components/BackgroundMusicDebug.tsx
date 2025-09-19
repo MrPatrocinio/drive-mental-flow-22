@@ -45,6 +45,9 @@ export const BackgroundMusicDebug = () => {
         </div>
         <div>
           <strong>Current Music:</strong> {state.currentMusic?.title || 'None'}
+          {state.currentMusic?.id === 'fallback' && (
+            <span className="text-orange-600 ml-1">(Fallback)</span>
+          )}
         </div>
         {state.currentMusic && (
           <div className="text-xs text-muted-foreground break-all">

@@ -59,7 +59,7 @@ export class BackgroundMusicPlayerService {
 
       // Carrega músicas ativas e configurações
       const [musicList, volumePercentage] = await Promise.all([
-        BackgroundMusicService.getActive(),
+        this.loadActiveMusic(),
         BackgroundMusicSettingsService.getVolumePercentage()
       ]);
 
@@ -76,19 +76,54 @@ export class BackgroundMusicPlayerService {
         await this.loadCurrentMusic();
         console.log('BackgroundMusicPlayer: Primeira música carregada');
       } else {
-        console.warn('BackgroundMusicPlayer: Nenhuma música ativa encontrada');
-        // Garante que currentMusic fique nulo se não houver músicas
-        this.updateState({ currentMusic: null, isPlaying: false });
+        console.warn('BackgroundMusicPlayer: Nenhuma música ativa encontrada - usando fallback');
+        this.loadFallbackMusic();
       }
 
       this.updateState({ isLoading: false });
       this.isInitialized = true;
     } catch (error) {
       console.error('BackgroundMusicPlayer: Erro ao inicializar:', error);
-      this.updateState({ isLoading: false, hasError: true });
+      console.log('BackgroundMusicPlayer: Usando fallback devido ao erro');
+      this.loadFallbackMusic();
+      this.updateState({ isLoading: false, hasError: false }); // Não marca como erro se tem fallback
+      this.isInitialized = true;
     } finally {
       this.isInitializing = false;
     }
+  }
+
+  private async loadActiveMusic(): Promise<BackgroundMusic[]> {
+    try {
+      return await BackgroundMusicService.getActive();
+    } catch (error) {
+      console.warn('BackgroundMusicPlayer: Erro ao carregar músicas do Supabase (possível RLS):', error);
+      return [];
+    }
+  }
+
+  private loadFallbackMusic(): void {
+    console.log('BackgroundMusicPlayer: Carregando música fallback local');
+    
+    const fallbackMusic: BackgroundMusic = {
+      id: 'fallback',
+      title: 'Música de Fundo',
+      file_url: '/background.mp3',
+      is_active: true,
+      tags: ['fallback'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    this.activeMusic = [fallbackMusic];
+    this.currentMusicIndex = 0;
+    this.updateState({ currentMusic: fallbackMusic });
+    
+    // Carregar o elemento de áudio para o fallback
+    this.loadCurrentMusic().catch(error => {
+      console.error('BackgroundMusicPlayer: Erro ao carregar música fallback:', error);
+      this.updateState({ hasError: true });
+    });
   }
 
   private async loadCurrentMusic(): Promise<void> {
@@ -130,14 +165,14 @@ export class BackgroundMusicPlayerService {
   async play(): Promise<void> {
     console.log('BackgroundMusicPlayer: Tentando reproduzir música');
 
-    if (!this.isInitialized || !this.audioElement || this.activeMusic.length === 0) {
+    if (!this.isInitialized) {
       console.log('BackgroundMusicPlayer: Inicializando antes de tocar...');
       await this.initialize();
     }
 
     if (this.activeMusic.length === 0) {
-      console.warn('BackgroundMusicPlayer: Nenhuma música ativa após inicializar - forçando refresh');
-      await this.refresh();
+      console.warn('BackgroundMusicPlayer: Nenhuma música ativa após inicializar - usando fallback');
+      this.loadFallbackMusic();
     }
 
     // Se ainda não temos música após inicializar, seleciona uma
@@ -148,7 +183,11 @@ export class BackgroundMusicPlayerService {
 
     if (this.audioElement && !this.state.hasError && this.state.currentMusic) {
       try {
-        console.log('BackgroundMusicPlayer: Reproduzindo:', this.state.currentMusic.title);
+        const musicInfo = this.state.currentMusic.id === 'fallback' 
+          ? `${this.state.currentMusic.title} (fallback)`
+          : this.state.currentMusic.title;
+        console.log('BackgroundMusicPlayer: Reproduzindo:', musicInfo);
+        
         await this.audioElement.play();
         this.updateState({ isPlaying: true, hasError: false });
       } catch (error) {
