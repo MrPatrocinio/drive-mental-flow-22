@@ -32,11 +32,22 @@ const FavoriteButtonComponent = ({
   const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { playlists, createPlaylist, addAudioToPlaylist, removeAudioFromPlaylist } = usePlaylistManager();
-  const { favoriteStatus, forceRefresh } = useFavorites(audioId);
+  const { 
+    favoriteStatus, 
+    forceRefresh,
+    setOptimisticFavoriteStatus,
+    clearOptimisticStatus
+  } = useFavorites(audioId);
   const { toast } = useToast();
 
   const handleToggleFavorite = useCallback(async () => {
+    if (isLoading) return;
+    
     setIsLoading(true);
+    
+    // UI OTIMISTA: Atualiza imediatamente antes da operação
+    const willBeFavorite = !favoriteStatus.isFavorite;
+    setOptimisticFavoriteStatus(willBeFavorite);
     
     try {
       // Se já é favorito, remove da playlist atual
@@ -47,8 +58,16 @@ const FavoriteButtonComponent = ({
             title: "Removido da playlist",
             description: `"${audioTitle}" foi removido da playlist "${favoriteStatus.playlistName}"`,
           });
-          forceRefresh();
+        } else {
+          // Reverte otimismo se falhou
+          setOptimisticFavoriteStatus(!willBeFavorite);
+          toast({
+            title: "Erro",
+            description: "Não foi possível remover da playlist",
+            variant: "destructive",
+          });
         }
+        forceRefresh();
         return;
       }
 
@@ -70,8 +89,16 @@ const FavoriteButtonComponent = ({
             title: "Adicionado à playlist Favoritos",
             description: `"${audioTitle}" foi adicionado à sua playlist Favoritos`,
           });
-          forceRefresh();
+        } else {
+          // Reverte otimismo se falhou
+          setOptimisticFavoriteStatus(!willBeFavorite);
+          toast({
+            title: "Erro",
+            description: "Não foi possível adicionar à playlist",
+            variant: "destructive",
+          });
         }
+        forceRefresh();
       } 
       // Se tem apenas uma playlist, adiciona diretamente
       else if (playlists.length === 1) {
@@ -89,20 +116,25 @@ const FavoriteButtonComponent = ({
             title: "Adicionado à playlist",
             description: `"${audioTitle}" foi adicionado à playlist "${playlists[0].name}"`,
           });
-          forceRefresh();
         } else {
+          // Reverte otimismo se falhou
+          setOptimisticFavoriteStatus(!willBeFavorite);
           toast({
             title: "Áudio já está na playlist",
             description: `"${audioTitle}" já está na playlist "${playlists[0].name}"`,
             variant: "destructive",
           });
         }
+        forceRefresh();
       }
       // Se tem múltiplas playlists, mostra o diálogo de seleção
       else {
+        clearOptimisticStatus(); // Remove otimismo pois vai mostrar diálogo
         setShowPlaylistDialog(true);
       }
     } catch (error) {
+      // Reverte otimismo em caso de erro
+      setOptimisticFavoriteStatus(!willBeFavorite);
       toast({
         title: "Erro",
         description: "Erro ao adicionar à playlist",
@@ -112,10 +144,13 @@ const FavoriteButtonComponent = ({
       setIsLoading(false);
     }
   }, [
+    isLoading,
     favoriteStatus.isFavorite,
     favoriteStatus.playlistId,
     favoriteStatus.playlistName,
     playlists.length,
+    setOptimisticFavoriteStatus,
+    clearOptimisticStatus,
     removeAudioFromPlaylist,
     audioId,
     toast,
@@ -142,7 +177,11 @@ const FavoriteButtonComponent = ({
         size={size}
         onClick={handleToggleFavorite}
         disabled={isLoading}
-        className="hover-scale transition-all duration-200"
+        aria-pressed={favoriteStatus.isFavorite}
+        className={cn(
+          "hover-scale transition-all duration-200",
+          isLoading && "opacity-60 cursor-not-allowed"
+        )}
         title={favoriteStatus.isFavorite 
           ? `Remover da playlist "${favoriteStatus.playlistName}"` 
           : "Adicionar à playlist"

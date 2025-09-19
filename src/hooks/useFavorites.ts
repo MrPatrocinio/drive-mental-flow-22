@@ -16,6 +16,11 @@ export interface FavoriteStatus {
   playlistName: string | null;
 }
 
+interface OptimisticStatus {
+  isFavorite: boolean;
+  timestamp: number;
+}
+
 export function useFavorites(audioId: string) {
   const { playlists, refreshPlaylists } = usePlaylistManager();
   const [favoriteStatus, setFavoriteStatus] = useState<FavoriteStatus>({
@@ -23,6 +28,7 @@ export function useFavorites(audioId: string) {
     playlistId: null,
     playlistName: null
   });
+  const [optimisticStatus, setOptimisticStatus] = useState<OptimisticStatus | null>(null);
 
   /**
    * Verifica se o áudio está em alguma playlist
@@ -50,12 +56,35 @@ export function useFavorites(audioId: string) {
   }, [playlists, audioId]);
 
   /**
+   * Define status otimista para feedback imediato
+   */
+  const setOptimisticFavoriteStatus = useCallback((isFavorite: boolean) => {
+    setOptimisticStatus({
+      isFavorite,
+      timestamp: Date.now()
+    });
+    
+    // Limpa automaticamente após 3 segundos (fallback de segurança)
+    setTimeout(() => {
+      setOptimisticStatus(null);
+    }, 3000);
+  }, []);
+
+  /**
+   * Limpa status otimista
+   */
+  const clearOptimisticStatus = useCallback(() => {
+    setOptimisticStatus(null);
+  }, []);
+
+  /**
    * Força refresh imediato
    * Responsabilidade: Garantir sincronização imediata após operações
    */
   const forceRefresh = useCallback(() => {
+    clearOptimisticStatus();
     refreshPlaylists();
-  }, [refreshPlaylists]);
+  }, [refreshPlaylists, clearOptimisticStatus]);
 
   /**
    * Verifica se o áudio está numa playlist específica
@@ -80,11 +109,18 @@ export function useFavorites(audioId: string) {
     checkFavoriteStatus();
   }, [checkFavoriteStatus]);
 
+  // Status final com prioridade para otimista
+  const finalStatus: FavoriteStatus = optimisticStatus 
+    ? { ...favoriteStatus, isFavorite: optimisticStatus.isFavorite }
+    : favoriteStatus;
+
   return {
-    favoriteStatus,
+    favoriteStatus: finalStatus,
     isInPlaylist,
     getPlaylistsContainingAudio,
     refreshFavoriteStatus: checkFavoriteStatus,
-    forceRefresh
+    forceRefresh,
+    setOptimisticFavoriteStatus,
+    clearOptimisticStatus
   };
 }
