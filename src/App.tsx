@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  BrowserRouter as Router,
+  BrowserRouter,
   Route,
   Routes,
 } from 'react-router-dom';
@@ -214,16 +214,19 @@ const App: React.FC = () => {
   console.log('App: Inicializando', { 
     React: typeof React, 
     version: React.version,
-    Router: typeof Router 
+    BrowserRouter: typeof BrowserRouter 
   });
   
-  // Verificar React Context globalmente
-  if (typeof window !== 'undefined' && !(window as any).React) {
-    (window as any).React = React;
-  }
+  // Verificar React Context globalmente antes de renderizar
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && !(window as any).React) {
+      (window as any).React = React;
+      console.log('App: React definido globalmente');
+    }
+  }, []);
   
   return (
-    <Router>
+    <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <SupabaseAuthProvider>
           <AdminProvider>
@@ -235,7 +238,7 @@ const App: React.FC = () => {
           </AdminProvider>
         </SupabaseAuthProvider>
       </QueryClientProvider>
-    </Router>
+    </BrowserRouter>
   );
 };
 
