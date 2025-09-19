@@ -161,31 +161,36 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       });
       
       if (willPlay) {
-        // PLAY: Definir intenção ANTES e iniciar ambos no mesmo gesto
-        console.log('▶️ PLAY: Iniciando voz + música de fundo juntos');
+        // PLAY: Definir intenção ANTES e iniciar ambos no MESMO gesto
+        console.log('▶️ PLAY: Iniciando voz + música no mesmo gesto (Promise.allSettled)');
         audioPlaybackContext.setUserIntentionPlaying(true);
         
-        // Iniciar voz
-        await togglePlay();
-        
-        // Iniciar música de fundo se habilitada (dentro do mesmo gesto do usuário)
+        // Iniciar voz e música juntos no mesmo gesto de usuário
+        const tasks: Promise<any>[] = [togglePlay()];
         if (backgroundMusicEnabled) {
-          console.log('🎵 Iniciando música de fundo no mesmo gesto');
-          try {
-            await backgroundMusicPlayer.play();
-          } catch (error) {
-            console.warn('⚠️ Erro ao iniciar música de fundo:', error);
-          }
+          console.log('🎵 Adicionando música de fundo ao mesmo gesto');
+          tasks.push(backgroundMusicPlayer.play());
         }
+        
+        // Executar tudo simultaneamente
+        const results = await Promise.allSettled(tasks);
+        
+        // Log dos resultados
+        results.forEach((result, index) => {
+          const name = index === 0 ? 'voz' : 'música de fundo';
+          if (result.status === 'rejected') {
+            console.warn(`⚠️ Erro ao iniciar ${name}:`, result.reason);
+          } else {
+            console.log(`✅ ${name} iniciada com sucesso`);
+          }
+        });
       } else {
         // PAUSE: Pausar ambos
         console.log('⏸️ PAUSE: Pausando voz + música de fundo');
         audioPlaybackContext.setUserIntentionPlaying(false);
         
-        // Pausar voz
+        // Pausar ambos imediatamente
         await togglePlay();
-        
-        // Pausar música de fundo imediatamente
         backgroundMusicPlayer.pause();
       }
       

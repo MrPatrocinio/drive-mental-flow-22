@@ -50,25 +50,24 @@ export const useBackgroundMusic = () => {
     return unsubscribe;
   }, []);
 
-  // Controle automático de reprodução baseado no SSOT
+  // Coordenação de estado baseado no SSOT (apenas PAUSE, não PLAY)
   React.useEffect(() => {
-    // SSOT: Música de fundo só toca se usuário quer que voz toque E música está habilitada
+    // SSOT: Música de fundo só deve tocar se usuário quer que voz toque E música está habilitada
     const shouldPlay = userIntentionPlaying && isEnabled;
     
-    console.log('useBackgroundMusic: Avaliando SSOT:', {
+    console.log('useBackgroundMusic: Coordenação SSOT:', {
       userIntentionPlaying,
       isEnabled,
       shouldPlay
     });
 
-    if (shouldPlay) {
-      console.log('useBackgroundMusic: SSOT permite - tocando background music');
-      backgroundMusicPlayer.play().catch(error => {
-        console.error('useBackgroundMusic: Erro ao tentar tocar:', error);
-      });
-    } else {
+    // Apenas pausar quando condições não são atendidas
+    // O PLAY inicial é feito no AudioPlayer dentro do mesmo gesto de usuário
+    if (!shouldPlay) {
       console.log('useBackgroundMusic: SSOT não permite - pausando background music');
       backgroundMusicPlayer.pause();
+    } else {
+      console.log('useBackgroundMusic: SSOT permite - música pode tocar (controle via gesto de usuário)');
     }
   }, [userIntentionPlaying, isEnabled]);
 
