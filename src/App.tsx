@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   BrowserRouter,
   Route,
@@ -43,6 +43,7 @@ import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { UserProtectedRoute } from '@/components/UserProtectedRoute';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { PWAPreferencesService } from '@/services/pwaPreferencesService';
+import { usePWABoot } from '@/hooks/usePWABoot';
 import NotFound from '@/pages/NotFound';
 import { InscricaoPage } from '@/pages/InscricaoPage';
 import { ObrigadoPage } from '@/pages/ObrigadoPage';
@@ -60,35 +61,33 @@ const queryClient = new QueryClient({
 // Separate component for routes to ensure proper context nesting
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
+  const { isChecking, shouldShowContent } = usePWABoot();
   
   // Inicializar analytics para rastrear navegação automática
   useAnalytics();
 
-  // Track route changes for PWA
-  React.useEffect(() => {
-    const currentPath = location.pathname;
-    PWAPreferencesService.setLastRoute(currentPath);
-  }, [location.pathname]);
-
-  // PWA first-open redirection
-  React.useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                        (window.navigator as any).standalone === true;
-    
-    if (isStandalone && (location.pathname === '/' || location.pathname === '/landing')) {
-      const lastRoute = PWAPreferencesService.getLastRoute();
-      const targetRoute = lastRoute || '/dashboard';
-      
-      console.log('PWA first-open: redirecting to', targetRoute);
-      navigate(targetRoute, { replace: true });
-    }
-  }, [location.pathname, navigate]);
-
+  // Inicializar serviço de sincronização
   React.useEffect(() => {
     console.log('App: Inicializando serviço de sincronização');
     dataSyncService.initialize();
   }, []);
+
+  // Mostrar loading durante verificação PWA/Auth
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Só renderizar conteúdo após verificações
+  if (!shouldShowContent) {
+    return null;
+  }
 
   return (
     <Routes>

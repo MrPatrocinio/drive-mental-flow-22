@@ -1,7 +1,7 @@
 
-const CACHE_NAME = 'drive-mental-v1';
-const STATIC_CACHE = 'drive-mental-static-v1';
-const RUNTIME_CACHE = 'drive-mental-runtime-v1';
+const CACHE_NAME = 'drive-mental-v3';
+const STATIC_CACHE = 'drive-mental-static-v3';
+const RUNTIME_CACHE = 'drive-mental-runtime-v3';
 
 // Recursos essenciais para cache
 const STATIC_RESOURCES = [

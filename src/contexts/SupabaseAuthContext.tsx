@@ -43,44 +43,60 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
   useEffect(() => {
     let isMounted = true;
 
-    // Configurar listener de mudanças de auth PRIMEIRO
-    const { data: { subscription } } = SupabaseAuthService.onAuthStateChange(
-      async (event, session) => {
+    const initializeAuth = async () => {
+      try {
+        // Primeiro, verificar sessão existente
+        const { session, user } = await SupabaseAuthService.getSession();
+        
         if (!isMounted) return;
-
-        console.log('Auth state changed:', event, session?.user?.id);
+        
+        console.log('Initial session check:', session?.user?.id);
         setSession(session);
+        setUser(user);
         
-        if (session?.user) {
-          // Buscar dados do perfil para completar informações do usuário
-          const profile = await SupabaseAuthService.getUserProfile?.(session.user.id);
-          const authUser: AuthUser = {
-            id: session.user.id,
-            email: session.user.email!,
-            display_name: profile?.display_name || session.user.email!,
-            role: profile?.role || 'user'
-          };
-          setUser(authUser);
-        } else {
-          setUser(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
+        // Configurar listener APÓS verificação inicial
+        const { data: { subscription } } = SupabaseAuthService.onAuthStateChange(
+          async (event, session) => {
+            if (!isMounted) return;
 
-    // DEPOIS verificar sessão existente
-    SupabaseAuthService.getSession().then(({ session, user }) => {
-      if (!isMounted) return;
-      
-      setSession(session);
-      setUser(user);
-      setIsLoading(false);
-    });
+            console.log('Auth state changed:', event, session?.user?.id);
+            setSession(session);
+            
+            if (session?.user) {
+              // Buscar dados do perfil para completar informações do usuário
+              const profile = await SupabaseAuthService.getUserProfile?.(session.user.id);
+              const authUser: AuthUser = {
+                id: session.user.id,
+                email: session.user.email!,
+                display_name: profile?.display_name || session.user.email!,
+                role: profile?.role || 'user'
+              };
+              setUser(authUser);
+            } else {
+              setUser(null);
+            }
+          }
+        );
+
+        // Cleanup subscription when component unmounts
+        return () => {
+          subscription.unsubscribe();
+        };
+        
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    const cleanup = initializeAuth();
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      cleanup?.then?.(cleanupFn => cleanupFn?.());
     };
   }, []);
 
