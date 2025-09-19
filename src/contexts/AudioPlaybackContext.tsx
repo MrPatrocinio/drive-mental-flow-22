@@ -45,22 +45,22 @@ export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode 
 
     if (playing) {
       // Se está tocando, atualiza imediatamente
-      console.log('AudioPlaybackContext: Áudio principal iniciou - música de fundo deve tocar imediatamente');
+      console.log('AudioPlaybackContext: Áudio principal iniciou - música de fundo deve pausar imediatamente');
       setDebouncedMainAudioPlaying(true);
     } else {
-      // Se parou, aguarda um delay antes de pausar música de fundo
+      // Se parou, aguarda um delay antes de retomar música de fundo
       // Isso evita interrupções durante loops rápidos
-      console.log('AudioPlaybackContext: Áudio principal parou - aguardando 200ms antes de pausar música de fundo');
+      console.log('AudioPlaybackContext: Áudio principal parou - aguardando 200ms antes de retomar música de fundo');
       debounceTimeoutRef.current = setTimeout(() => {
-        console.log('AudioPlaybackContext: Timeout concluído - pausando música de fundo');
+        console.log('AudioPlaybackContext: Timeout concluído - retomando música de fundo');
         setDebouncedMainAudioPlaying(false);
         debounceTimeoutRef.current = null;
       }, 200);
     }
   }, []);
 
-  // Música de fundo deve tocar baseado no estado com debounce
-  const shouldPlayBackgroundMusic = debouncedMainAudioPlaying;
+  // Música de fundo deve tocar quando NÃO há áudio principal tocando
+  const shouldPlayBackgroundMusic = !debouncedMainAudioPlaying;
 
   const value: AudioPlaybackContextType = {
     isMainAudioPlaying,
