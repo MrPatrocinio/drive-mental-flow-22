@@ -14,6 +14,7 @@ import { AudioDiagnosticsPanel } from "@/components/audio/AudioDiagnosticsPanel"
 import { useToast } from "@/hooks/use-toast";
 import { BackgroundMusicToggle } from "@/components/BackgroundMusicToggle";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { backgroundMusicPlayer } from "@/services/backgroundMusicPlayerService";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -152,6 +153,17 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     try {
       console.log('▶️ Executando togglePlay...');
       await togglePlay();
+      
+      // Se está iniciando reprodução, garante que música de fundo também inicia (modo mix)
+      if (!playerState.isPlaying) {
+        const preferences = audioPreferencesService.getPreferences();
+        if (preferences.backgroundMixWithMain && preferences.backgroundMusicEnabled) {
+          console.log('🎵 Iniciando música de fundo junto com áudio principal');
+          backgroundMusicPlayer.play().catch(error => {
+            console.warn('Falha ao iniciar música de fundo:', error);
+          });
+        }
+      }
       
       // Tracking analytics: play/pause do player
       trackEvent('audio_player_toggle', { 

@@ -4,6 +4,7 @@ export interface AudioPreferences {
   autoPlay: boolean;
   showProgress: boolean;
   backgroundMusicEnabled: boolean;
+  backgroundMixWithMain: boolean; // Se true, toca música de fundo junto com áudio principal
 }
 
 export interface AudioPreferencesService {
@@ -18,6 +19,7 @@ const DEFAULT_PREFERENCES: AudioPreferences = {
   autoPlay: false,
   showProgress: true,
   backgroundMusicEnabled: true, // Ativado por padrão
+  backgroundMixWithMain: true, // Toca música de fundo junto com áudio principal por padrão
 };
 
 const STORAGE_KEY = 'audio-preferences';

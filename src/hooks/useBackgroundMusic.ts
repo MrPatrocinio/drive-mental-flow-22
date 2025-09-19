@@ -40,33 +40,31 @@ export const useBackgroundMusic = () => {
     return unsubscribe;
   }, []);
 
-  // Controla reprodução baseado no contexto de áudio principal (com lógica otimizada)
+  // Controle automático de reprodução baseado no contexto de áudio
   React.useEffect(() => {
-    console.log('useBackgroundMusic: Verificando estado para reprodução', {
-      isEnabled,
-      shouldPlayBackgroundMusic,
-      isPlaying: state.isPlaying,
-      isLoading: state.isLoading,
-      hasError: state.hasError,
-      currentMusic: state.currentMusic?.title
-    });
-    
-    if (isEnabled && shouldPlayBackgroundMusic) {
-      // Deve tocar música de fundo
-      if (!state.isPlaying && !state.isLoading && !state.hasError) {
-        console.log('useBackgroundMusic: Iniciando reprodução (áudio principal ativo)');
-        backgroundMusicPlayer.play().catch(error => {
-          console.error('useBackgroundMusic: Erro ao iniciar reprodução:', error);
-        });
-      }
-    } else {
-      // Deve pausar música de fundo
-      if (state.isPlaying) {
-        console.log('useBackgroundMusic: Pausando reprodução (áudio principal inativo ou música desabilitada)');
-        backgroundMusicPlayer.pause();
-      }
+    if (!isEnabled) {
+      console.log('useBackgroundMusic: Background music desabilitado - pausando');
+      backgroundMusicPlayer.pause();
+      return;
     }
-  }, [isEnabled, shouldPlayBackgroundMusic, state.isPlaying, state.isLoading, state.hasError]);
+
+    // Busca preferências para verificar se deve mixar com áudio principal
+    const preferences = audioPreferencesService.getPreferences();
+    const shouldMix = preferences.backgroundMixWithMain;
+
+    if (shouldMix || shouldPlayBackgroundMusic) {
+      console.log('useBackgroundMusic: Contexto permite ou mix ativado - tentando tocar background music', {
+        shouldMix,
+        shouldPlayBackgroundMusic
+      });
+      backgroundMusicPlayer.play().catch(error => {
+        console.error('useBackgroundMusic: Erro ao tentar tocar:', error);
+      });
+    } else {
+      console.log('useBackgroundMusic: Contexto não permite e mix desativado - pausando background music');
+      backgroundMusicPlayer.pause();
+    }
+  }, [isEnabled, shouldPlayBackgroundMusic]);
 
   const toggleEnabled = React.useCallback((enabled: boolean) => {
     console.log('useBackgroundMusic: Toggle ativado:', enabled);
