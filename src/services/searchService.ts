@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { DebounceService } from "./debounceService";
+import { FieldService } from "./supabase/fieldService";
+import { AudioService } from "./supabase/audioService";
 
 /**
  * Search Service - Serviço para busca unificada
@@ -18,7 +20,7 @@ export interface SearchResult {
 
 export class SearchService {
   /**
-   * Busca unificada com Full-Text Search
+   * Busca unificada com busca textual simples
    */
   static async searchUnified(query: string): Promise<SearchResult[]> {
     if (!query || query.trim().length < 2) {
@@ -26,17 +28,52 @@ export class SearchService {
     }
 
     try {
-      // Usar query SQL raw porque a view não está nos tipos gerados
-      const { data, error } = await supabase.rpc('search_unified_content', {
-        search_query: query
+      const searchTerm = query.toLowerCase().trim();
+      const results: SearchResult[] = [];
+
+      // Buscar campos
+      const fields = await FieldService.getAll();
+      const matchingFields = fields.filter(field => 
+        field.title.toLowerCase().includes(searchTerm) ||
+        (field.description && field.description.toLowerCase().includes(searchTerm))
+      );
+
+      matchingFields.forEach(field => {
+        results.push({
+          type: 'field',
+          id: field.id,
+          title: field.title,
+          description: field.description,
+        });
       });
 
-      if (error) {
-        console.error('Erro na busca unificada:', error);
-        return [];
-      }
+      // Buscar áudios
+      const audios = await AudioService.getAll();
+      const matchingAudios = audios.filter(audio => 
+        audio.title.toLowerCase().includes(searchTerm) ||
+        (audio.tags && audio.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
+      );
 
-      return data || [];
+      matchingAudios.forEach(audio => {
+        results.push({
+          type: 'audio',
+          id: audio.id,
+          title: audio.title,
+          field_id: audio.field_id,
+        });
+      });
+
+      // Ordenar por relevância (título exato primeiro, depois parcial)
+      return results.sort((a, b) => {
+        const aExactMatch = a.title.toLowerCase() === searchTerm;
+        const bExactMatch = b.title.toLowerCase() === searchTerm;
+        
+        if (aExactMatch && !bExactMatch) return -1;
+        if (!aExactMatch && bExactMatch) return 1;
+        
+        return a.title.localeCompare(b.title);
+      }).slice(0, 20);
+
     } catch (error) {
       console.error('Erro na busca unificada:', error);
       return [];

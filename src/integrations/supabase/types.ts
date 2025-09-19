@@ -493,6 +493,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      search_unified_content: {
+        Args: { search_query: string }
+        Returns: {
+          description: string
+          field_id: string
+          id: string
+          title: string
+          type: string
+        }[]
+      }
       validate_subscriber_access: {
         Args: { target_email: string; target_user_id: string }
         Returns: boolean
