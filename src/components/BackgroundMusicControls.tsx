@@ -30,13 +30,7 @@ export const BackgroundMusicControls = ({
     setMuted
   } = useBackgroundMusic();
 
-  const [localVolume, setLocalVolume] = React.useState(state.volume * 100);
   const [isMuted, setIsMutedState] = React.useState(false);
-
-  // Sincroniza volume local com estado do player
-  React.useEffect(() => {
-    setLocalVolume(state.volume * 100);
-  }, [state.volume]);
 
   const handlePlayPause = async () => {
     if (state.isPlaying) {
@@ -46,11 +40,6 @@ export const BackgroundMusicControls = ({
     }
   };
 
-  const handleVolumeChange = (value: number[]) => {
-    const newVolume = value[0];
-    setLocalVolume(newVolume);
-    setVolume(newVolume / 100);
-  };
 
   const handleMuteToggle = () => {
     const newMuted = !isMuted;
@@ -124,21 +113,6 @@ export const BackgroundMusicControls = ({
         )}
       </div>
 
-      {/* Volume Slider */}
-      <div className="flex items-center gap-3">
-        <Volume2 className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-        <Slider
-          value={[localVolume]}
-          max={100}
-          step={1}
-          onValueChange={handleVolumeChange}
-          className="flex-1"
-          disabled={!state.currentMusic || isMuted}
-        />
-        <span className="text-xs text-muted-foreground min-w-[3ch]">
-          {Math.round(localVolume)}%
-        </span>
-      </div>
 
       {/* Status/Error Display */}
       {state.hasError && (

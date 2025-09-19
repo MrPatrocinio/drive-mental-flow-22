@@ -13,7 +13,7 @@ import { AudioLoadingIndicator } from "@/components/audio/AudioLoadingIndicator"
 import { AudioDiagnosticsPanel } from "@/components/audio/AudioDiagnosticsPanel";
 import { useToast } from "@/hooks/use-toast";
 import { BackgroundMusicToggle } from "@/components/BackgroundMusicToggle";
-import { BackgroundMusicControls } from "@/components/BackgroundMusicControls";
+import { BackgroundMusicMuteButton } from "@/components/BackgroundMusicMuteButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { backgroundMusicPlayer } from "@/services/backgroundMusicPlayerService";
 
@@ -346,10 +346,13 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
         </div>
       )}
 
-      {/* Background Music Controls */}
+      {/* Background Music Mute Control */}
       {backgroundMusicEnabled && (
         <div className="bg-muted/50 rounded-lg p-3">
-          <BackgroundMusicControls size="sm" />
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Música de Fundo</span>
+            <BackgroundMusicMuteButton size="sm" showStatus={true} />
+          </div>
         </div>
       )}
 
