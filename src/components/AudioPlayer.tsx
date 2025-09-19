@@ -118,7 +118,8 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       isPlaying: playerState.isPlaying,
       retryCount,
       isValidatingUrl,
-      audioUrl
+      audioUrl,
+      backgroundMusicEnabled
     });
     
     // Log detalhado da tentativa
@@ -154,14 +155,39 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       
       console.log('🎵 SSOT: Controle unificado:', {
         willPlay,
-        currentPlaying: playerState.isPlaying
+        currentPlaying: playerState.isPlaying,
+        backgroundMusicEnabled,
+        backgroundMusicState: backgroundMusicState
       });
       
-      // Define intenção do usuário ANTES de controlar o áudio
-      audioPlaybackContext.setUserIntentionPlaying(willPlay);
-      
-      console.log('▶️ Executando togglePlay...');
-      await togglePlay();
+      if (willPlay) {
+        // PLAY: Definir intenção ANTES e iniciar ambos no mesmo gesto
+        console.log('▶️ PLAY: Iniciando voz + música de fundo juntos');
+        audioPlaybackContext.setUserIntentionPlaying(true);
+        
+        // Iniciar voz
+        await togglePlay();
+        
+        // Iniciar música de fundo se habilitada (dentro do mesmo gesto do usuário)
+        if (backgroundMusicEnabled) {
+          console.log('🎵 Iniciando música de fundo no mesmo gesto');
+          try {
+            await backgroundMusicPlayer.play();
+          } catch (error) {
+            console.warn('⚠️ Erro ao iniciar música de fundo:', error);
+          }
+        }
+      } else {
+        // PAUSE: Pausar ambos
+        console.log('⏸️ PAUSE: Pausando voz + música de fundo');
+        audioPlaybackContext.setUserIntentionPlaying(false);
+        
+        // Pausar voz
+        await togglePlay();
+        
+        // Pausar música de fundo imediatamente
+        backgroundMusicPlayer.pause();
+      }
       
       // Tracking analytics
       trackEvent('audio_player_toggle', { 
@@ -176,6 +202,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
       
       // Se der erro, resetar intenção
       audioPlaybackContext.setUserIntentionPlaying(false);
+      backgroundMusicPlayer.pause();
       
       // Tratamento específico para erros de autoplay
       if (error instanceof DOMException && error.name === 'NotAllowedError') {

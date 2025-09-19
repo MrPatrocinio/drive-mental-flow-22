@@ -22,7 +22,17 @@ export const useBackgroundMusic = () => {
   React.useEffect(() => {
     const preferences = audioPreferencesService.getPreferences();
     console.log('useBackgroundMusic: Preferências carregadas:', preferences);
-    setIsEnabled(preferences.backgroundMusicEnabled);
+    // Por padrão, música de fundo deve estar habilitada (se não foi definido explicitamente)
+    const defaultEnabled = preferences.backgroundMusicEnabled ?? true;
+    setIsEnabled(defaultEnabled);
+    
+    // Se foi definido como padrão, salvar preferência
+    if (preferences.backgroundMusicEnabled === undefined) {
+      audioPreferencesService.updatePreferences({
+        ...preferences,
+        backgroundMusicEnabled: true
+      });
+    }
   }, []);
 
   // Monitora mudanças no estado do player

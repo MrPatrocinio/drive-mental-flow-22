@@ -273,10 +273,8 @@ export const useAudioPlayer = (
         }));
         // Notificar contextos que áudio principal está tocando
         setMainAudioPlaying?.(true);
-        // Manter intenção do usuário se não foi definida ainda
-        if (!audioPlaybackContext?.userIntentionPlaying) {
-          setUserIntentionPlaying?.(true);
-        }
+        // Durante eventos onPlay automáticos, manter a intenção do usuário
+        // (a intenção já foi definida no botão Play)
       },
       
       onPause: () => {
@@ -285,8 +283,8 @@ export const useAudioPlayer = (
           setPlayerState(prev => ({ ...prev, isPlaying: false }));
           // Notificar contextos que áudio principal pausou
           setMainAudioPlaying?.(false);
-          // Resetar intenção do usuário apenas se foi pausa externa
-          setUserIntentionPlaying?.(false);
+          // Durante eventos onPause, não alterar intenção do usuário 
+          // (a intenção é controlada apenas pelo botão Play/Pause)
         }
       },
       
