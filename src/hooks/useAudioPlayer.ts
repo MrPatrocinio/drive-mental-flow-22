@@ -40,6 +40,7 @@ export const useAudioPlayer = (
   // Integração com contexto de música de fundo
   const audioPlaybackContext = useAudioPlaybackSafe();
   const setMainAudioPlaying = audioPlaybackContext?.setMainAudioPlaying;
+  const setUserIntentionPlaying = audioPlaybackContext?.setUserIntentionPlaying;
 
   // Estado interno usando o serviço
   const [loadingState, setLoadingState] = React.useState<AudioLoadingState>(
@@ -262,7 +263,7 @@ export const useAudioPlayer = (
       },
       
       onPlay: () => {
-        console.log('useAudioPlayer: Audio iniciou - notificando contexto de música de fundo');
+        console.log('useAudioPlayer: Audio iniciou - notificando contexto');
         setPlayerState(prev => ({ 
           ...prev,
           isPlaying: true, 
@@ -270,26 +271,36 @@ export const useAudioPlayer = (
           isInternalPause: false,
           autoplayBlocked: false
         }));
-        // Notificar contexto que áudio principal está tocando
+        // Notificar contextos que áudio principal está tocando
         setMainAudioPlaying?.(true);
+        // Manter intenção do usuário se não foi definida ainda
+        if (!audioPlaybackContext?.userIntentionPlaying) {
+          setUserIntentionPlaying?.(true);
+        }
       },
       
       onPause: () => {
         if (!playerState.isInternalPause && !playerState.isTransitioning) {
-          console.log('useAudioPlayer: Audio pausou - notificando contexto de música de fundo');
+          console.log('useAudioPlayer: Audio pausou externamente - notificando contextos');
           setPlayerState(prev => ({ ...prev, isPlaying: false }));
-          // Notificar contexto que áudio principal pausou
+          // Notificar contextos que áudio principal pausou
           setMainAudioPlaying?.(false);
+          // Resetar intenção do usuário apenas se foi pausa externa
+          setUserIntentionPlaying?.(false);
         }
       },
       
       onEnded: () => {
-        console.log('useAudioPlayer: Audio terminou - notificando contexto de música de fundo');
+        console.log('useAudioPlayer: Audio terminou - mantendo intenção durante repeats');
         const pauseTime = (preferences as any).pauseBetweenRepeats || 0;
         
         if (preferences.repeatCount === 0 || repeatCount < preferences.repeatCount) {
           setRepeatCount(prev => prev + 1);
           setPauseBetweenRepeats(pauseTime);
+          
+          // Durante repeats, MANTER userIntentionPlaying = true
+          // Só notificar que áudio principal terminou para evitar interferência
+          setMainAudioPlaying?.(false);
           
           if (pauseTime > 0) {
             setPlayerState(prev => ({ 
@@ -327,9 +338,11 @@ export const useAudioPlayer = (
           
           onRepeatComplete?.();
         } else {
+          console.log('useAudioPlayer: Audio terminou completamente - resetando intenções');
           setPlayerState(prev => ({ ...prev, isPlaying: false, currentTime: 0 }));
-          // Notificar contexto que áudio principal terminou completamente
+          // Notificar contextos que áudio terminou completamente
           setMainAudioPlaying?.(false);
+          setUserIntentionPlaying?.(false);
         }
       }
     };
@@ -348,7 +361,7 @@ export const useAudioPlayer = (
       AudioLoadingTimeoutService.clearTimeout(audioUrl);
       AudioEventManagerService.removeEventListeners(audioUrl);
     };
-  }, [audioUrl, setMainAudioPlaying]); // Adicionado setMainAudioPlaying às dependências
+  }, [audioUrl, setMainAudioPlaying, setUserIntentionPlaying]); // Adicionado setUserIntentionPlaying às dependências
 
   // Verificação de timeout periódica
   React.useEffect(() => {

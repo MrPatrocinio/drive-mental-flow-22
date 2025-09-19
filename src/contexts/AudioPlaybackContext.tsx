@@ -11,6 +11,9 @@ interface AudioPlaybackContextType {
   isMainAudioPlaying: boolean;
   setMainAudioPlaying: (playing: boolean) => void;
   shouldPlayBackgroundMusic: boolean;
+  // SSOT para intenção do usuário
+  userIntentionPlaying: boolean;
+  setUserIntentionPlaying: (playing: boolean) => void;
 }
 
 const AudioPlaybackContext = createContext<AudioPlaybackContextType | null>(null);
@@ -31,6 +34,7 @@ export const useAudioPlaybackSafe = () => {
 
 export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode }) => {
   const [isMainAudioPlaying, setIsMainAudioPlaying] = useState(false);
+  const [userIntentionPlaying, setUserIntentionPlaying] = useState(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [debouncedMainAudioPlaying, setDebouncedMainAudioPlaying] = useState(false);
 
@@ -65,7 +69,9 @@ export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode 
   const value: AudioPlaybackContextType = {
     isMainAudioPlaying,
     setMainAudioPlaying,
-    shouldPlayBackgroundMusic
+    shouldPlayBackgroundMusic,
+    userIntentionPlaying,
+    setUserIntentionPlaying
   };
 
   return (

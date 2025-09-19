@@ -16,6 +16,7 @@ import { BackgroundMusicToggle } from "@/components/BackgroundMusicToggle";
 import { BackgroundMusicMuteButton } from "@/components/BackgroundMusicMuteButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { backgroundMusicPlayer } from "@/services/backgroundMusicPlayerService";
+import { useAudioPlayback } from "@/contexts/AudioPlaybackContext";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -52,7 +53,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     });
   };
 
-  const {
+  const { 
     audioRef,
     playerState,
     repeatCount,
@@ -65,6 +66,9 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     validateAudioUrl,
     retryInitialization
   } = useAudioPlayer(audioUrl, preferences, onRepeatComplete, handleError);
+  
+  // Contexto para controle unificado
+  const audioPlaybackContext = useAudioPlayback();
 
   // Log state changes
   React.useEffect(() => {
@@ -105,7 +109,7 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
   };
 
   const handlePlayClick = async () => {
-    console.group('🎵 PLAY BUTTON CLICKED');
+    console.group('🎵 CONTROLE UNIFICADO - PLAY BUTTON');
     console.log('Estado antes do click:', {
       isReady: playerState.isReady,
       canPlay: playerState.canPlay,
@@ -145,36 +149,33 @@ export const AudioPlayer = ({ audioUrl, title, onRepeatComplete }: AudioPlayerPr
     }
     
     try {
+      // SSOT: Controla voz + música de fundo juntos
+      const willPlay = !playerState.isPlaying;
+      
+      console.log('🎵 SSOT: Controle unificado:', {
+        willPlay,
+        currentPlaying: playerState.isPlaying
+      });
+      
+      // Define intenção do usuário ANTES de controlar o áudio
+      audioPlaybackContext.setUserIntentionPlaying(willPlay);
+      
       console.log('▶️ Executando togglePlay...');
       await togglePlay();
       
-      // Se está iniciando reprodução, garante que música de fundo também inicia (modo mix)
-      if (!playerState.isPlaying) {
-        const preferences = audioPreferencesService.getPreferences();
-        console.log('🎵 AudioPlayer: Verificando início de música de fundo', {
-          backgroundMixWithMain: preferences.backgroundMixWithMain,
-          backgroundMusicEnabled: preferences.backgroundMusicEnabled,
-          shouldStartBackground: preferences.backgroundMixWithMain && preferences.backgroundMusicEnabled
-        });
-        
-        if (preferences.backgroundMixWithMain && preferences.backgroundMusicEnabled) {
-          console.log('🎵 Iniciando música de fundo junto com áudio principal (start garantido)');
-          backgroundMusicPlayer.play().catch(error => {
-            console.warn('Falha ao iniciar música de fundo:', error);
-          });
-        }
-      }
-      
-      // Tracking analytics: play/pause do player
+      // Tracking analytics
       trackEvent('audio_player_toggle', { 
-        action: playerState.isPlaying ? 'pause' : 'play', 
+        action: willPlay ? 'play' : 'pause', 
         title,
         audioUrl 
       });
       
-      console.log('✅ Toggle play executado com sucesso');
+      console.log('✅ Controle unificado executado com sucesso');
     } catch (error) {
-      console.error('❌ Erro no play:', error);
+      console.error('❌ Erro no controle unificado:', error);
+      
+      // Se der erro, resetar intenção
+      audioPlaybackContext.setUserIntentionPlaying(false);
       
       // Tratamento específico para erros de autoplay
       if (error instanceof DOMException && error.name === 'NotAllowedError') {

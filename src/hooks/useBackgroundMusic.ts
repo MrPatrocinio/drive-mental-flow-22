@@ -16,7 +16,7 @@ export const useBackgroundMusic = () => {
   
   // Obtém contexto com fallback seguro
   const audioPlaybackContext = useAudioPlaybackSafe();
-  const shouldPlayBackgroundMusic = audioPlaybackContext?.shouldPlayBackgroundMusic || false;
+  const userIntentionPlaying = audioPlaybackContext?.userIntentionPlaying || false;
 
   // Carrega preferências do usuário
   React.useEffect(() => {
@@ -40,31 +40,27 @@ export const useBackgroundMusic = () => {
     return unsubscribe;
   }, []);
 
-  // Controle automático de reprodução baseado no contexto de áudio
+  // Controle automático de reprodução baseado no SSOT
   React.useEffect(() => {
-    if (!isEnabled) {
-      console.log('useBackgroundMusic: Background music desabilitado - pausando');
-      backgroundMusicPlayer.pause();
-      return;
-    }
+    // SSOT: Música de fundo só toca se usuário quer que voz toque E música está habilitada
+    const shouldPlay = userIntentionPlaying && isEnabled;
+    
+    console.log('useBackgroundMusic: Avaliando SSOT:', {
+      userIntentionPlaying,
+      isEnabled,
+      shouldPlay
+    });
 
-    // Busca preferências para verificar se deve mixar com áudio principal
-    const preferences = audioPreferencesService.getPreferences();
-    const shouldMix = preferences.backgroundMixWithMain;
-
-    if (shouldMix || shouldPlayBackgroundMusic) {
-      console.log('useBackgroundMusic: Contexto permite ou mix ativado - tentando tocar background music', {
-        shouldMix,
-        shouldPlayBackgroundMusic
-      });
+    if (shouldPlay) {
+      console.log('useBackgroundMusic: SSOT permite - tocando background music');
       backgroundMusicPlayer.play().catch(error => {
         console.error('useBackgroundMusic: Erro ao tentar tocar:', error);
       });
     } else {
-      console.log('useBackgroundMusic: Contexto não permite e mix desativado - pausando background music');
+      console.log('useBackgroundMusic: SSOT não permite - pausando background music');
       backgroundMusicPlayer.pause();
     }
-  }, [isEnabled, shouldPlayBackgroundMusic]);
+  }, [userIntentionPlaying, isEnabled]);
 
   const toggleEnabled = React.useCallback((enabled: boolean) => {
     console.log('useBackgroundMusic: Toggle ativado:', enabled);
