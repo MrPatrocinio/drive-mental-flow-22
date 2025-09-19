@@ -3,6 +3,7 @@ import { FieldCard } from "@/components/FieldCard";
 import { FieldService } from "@/services/supabase/fieldService";
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/RefreshButton";
+import { PWAInstallButton } from "@/components/PWAInstallButton";
 import { Search, User, Play, FolderOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -128,7 +129,10 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold">Dashboard</h1>
               <p className="text-muted-foreground">Continue sua jornada de desenvolvimento</p>
             </div>
-            <RefreshButton variant="ghost" size="sm" className="mt-2" />
+            <div className="flex items-center gap-2 mt-2">
+              <RefreshButton variant="ghost" size="sm" />
+              <PWAInstallButton variant="ghost" size="sm" />
+            </div>
           </div>
         </div>
 

@@ -42,6 +42,7 @@ export function usePWA() {
     installApp,
     updateApp,
     clearCache,
-    iosInstructions: PWAService.getIOSInstallInstructions()
+    iosInstructions: PWAService.getIOSInstallInstructions(),
+    updateDismissStatus: PWAService.updateDismissStatus
   };
 }

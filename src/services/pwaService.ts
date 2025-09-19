@@ -4,6 +4,8 @@
  * Segue o princípio SRP: apenas funcionalidades PWA
  */
 
+import { PWAPreferencesService } from './pwaPreferencesService';
+
 export interface PWAInstallPrompt {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -15,6 +17,7 @@ export interface PWACapabilities {
   isStandalone: boolean;
   supportsInstall: boolean;
   platform: 'ios' | 'android' | 'desktop' | 'unknown';
+  isDismissedByUser: boolean;
 }
 
 export type PWAEventListener = (capabilities: PWACapabilities) => void;
@@ -27,7 +30,8 @@ export class PWAService {
     isInstalled: false,
     isStandalone: false,
     supportsInstall: false,
-    platform: 'unknown'
+    platform: 'unknown',
+    isDismissedByUser: false
   };
 
   /**
@@ -44,6 +48,8 @@ export class PWAService {
    * Detecta capacidades do dispositivo
    */
   private static detectCapabilities(): void {
+    // Verifica se usuário descartou instalação
+    this.capabilities.isDismissedByUser = PWAPreferencesService.isDismissed();
     const userAgent = navigator.userAgent.toLowerCase();
     
     // Detecta plataforma
@@ -136,6 +142,14 @@ export class PWAService {
       this.capabilities.isInstallable = true;
       this.notifyListeners();
     }
+  }
+
+  /**
+   * Atualiza informação de dismiss
+   */
+  static updateDismissStatus(): void {
+    this.capabilities.isDismissedByUser = PWAPreferencesService.isDismissed();
+    this.notifyListeners();
   }
 
   /**

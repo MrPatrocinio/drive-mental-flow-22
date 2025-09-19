@@ -3,7 +3,7 @@
   "name": "Drive Mental - Transforme Sua Mente",
   "short_name": "Drive Mental",
   "description": "SaaS de desenvolvimento pessoal através de repetição auditiva. Transforme sua vida com áudios especializados em 6 campos de desenvolvimento.",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#E6B800",

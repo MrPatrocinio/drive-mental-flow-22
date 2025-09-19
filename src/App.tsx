@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BrowserRouter,
   Route,
@@ -41,6 +42,7 @@ import { AudioPlaybackProvider } from '@/contexts/AudioPlaybackContext';
 import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { UserProtectedRoute } from '@/components/UserProtectedRoute';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { PWAPreferencesService } from '@/services/pwaPreferencesService';
 import NotFound from '@/pages/NotFound';
 import { InscricaoPage } from '@/pages/InscricaoPage';
 import { ObrigadoPage } from '@/pages/ObrigadoPage';
@@ -57,8 +59,31 @@ const queryClient = new QueryClient({
 
 // Separate component for routes to ensure proper context nesting
 const AppContent: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   // Inicializar analytics para rastrear navegação automática
   useAnalytics();
+
+  // Track route changes for PWA
+  React.useEffect(() => {
+    const currentPath = location.pathname;
+    PWAPreferencesService.setLastRoute(currentPath);
+  }, [location.pathname]);
+
+  // PWA first-open redirection
+  React.useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                        (window.navigator as any).standalone === true;
+    
+    if (isStandalone && (location.pathname === '/' || location.pathname === '/landing')) {
+      const lastRoute = PWAPreferencesService.getLastRoute();
+      const targetRoute = lastRoute || '/dashboard';
+      
+      console.log('PWA first-open: redirecting to', targetRoute);
+      navigate(targetRoute, { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   React.useEffect(() => {
     console.log('App: Inicializando serviço de sincronização');
