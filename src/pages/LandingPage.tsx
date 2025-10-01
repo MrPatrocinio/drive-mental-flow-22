@@ -477,7 +477,7 @@ export default function LandingPage() {
               }}
               className="group w-full sm:w-auto text-sm sm:text-base"
             >
-              Quero investir menos e transformar mais
+              EU QUERO!!!
               <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
