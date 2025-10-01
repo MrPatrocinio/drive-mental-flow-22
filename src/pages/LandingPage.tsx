@@ -461,7 +461,7 @@ export default function LandingPage() {
           <div className="mt-12 text-center max-w-3xl mx-auto">
             <p className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground leading-relaxed px-2">
               Pelo preço de apenas <span className="text-premium">1 sessão de terapia</span>, você tem{" "}
-              <span className="text-premium">12 meses inteiros</span> de reprogramação mental diária com o Drive Mental.
+              <span className="text-premium">12 meses inteiros</span> de reprogramação mental diária e ILIMITADA com o Drive Mental.
             </p>
           </div>
 
