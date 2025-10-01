@@ -358,11 +358,11 @@ export default function LandingPage() {
                       <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
                         <Users className="h-5 w-5 text-muted-foreground" />
                       </div>
-                      <span>Psicólogo (R$ 150/sessão)</span>
+                      <span>Psicólogo Iniciante (R$ 150/sessão)</span>
                     </div>
                   </td>
                   <td className="p-4 text-center text-muted-foreground">1x por semana</td>
-                  <td className="p-4 text-right font-semibold">R$ 7.200,00/ano</td>
+                  <td className="p-4 text-right font-semibold text-red-600 text-lg">R$ 7.200,00/ano</td>
                 </tr>
                 <tr className="border-b border-border/50 bg-card/30 hover:bg-card/50 smooth-transition">
                   <td className="p-4">
@@ -370,11 +370,11 @@ export default function LandingPage() {
                       <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
                         <Users className="h-5 w-5 text-muted-foreground" />
                       </div>
-                      <span>Psicólogo (R$ 250/sessão)</span>
+                      <span>Psicólogo Especialista (R$ 250/sessão)</span>
                     </div>
                   </td>
                   <td className="p-4 text-center text-muted-foreground">1x por semana</td>
-                  <td className="p-4 text-right font-semibold">R$ 12.000,00/ano</td>
+                  <td className="p-4 text-right font-semibold text-red-600 text-lg">R$ 12.000,00/ano</td>
                 </tr>
                 <tr className="border-b border-border/50 bg-card/30 hover:bg-card/50 smooth-transition">
                   <td className="p-4">
@@ -386,7 +386,7 @@ export default function LandingPage() {
                     </div>
                   </td>
                   <td className="p-4 text-center text-muted-foreground">1x por semana</td>
-                  <td className="p-4 text-right font-semibold">R$ 14.400,00/ano</td>
+                  <td className="p-4 text-right font-semibold text-red-600 text-lg">R$ 14.400,00/ano</td>
                 </tr>
                 <tr className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-2 border-primary/30">
                   <td className="p-4">
@@ -403,7 +403,7 @@ export default function LandingPage() {
                     </div>
                   </td>
                   <td className="p-4 text-center font-semibold text-primary">Acesso diário e ilimitado</td>
-                  <td className="p-4 text-right font-bold text-xl text-primary">R$ 358,80/ano</td>
+                  <td className="p-4 text-right font-bold text-2xl text-green-600">R$ 358,80/ano</td>
                 </tr>
               </tbody>
             </table>
@@ -412,8 +412,8 @@ export default function LandingPage() {
           {/* Mobile Cards */}
           <div className="lg:hidden space-y-4 max-w-2xl mx-auto">
             {[
-              { icon: Users, title: "Psicólogo (R$ 150/sessão)", freq: "1x por semana", price: "R$ 7.200,00/ano", isHighlight: false },
-              { icon: Users, title: "Psicólogo (R$ 250/sessão)", freq: "1x por semana", price: "R$ 12.000,00/ano", isHighlight: false },
+              { icon: Users, title: "Psicólogo Iniciante (R$ 150/sessão)", freq: "1x por semana", price: "R$ 7.200,00/ano", isHighlight: false },
+              { icon: Users, title: "Psicólogo Especialista (R$ 250/sessão)", freq: "1x por semana", price: "R$ 12.000,00/ano", isHighlight: false },
               { icon: Award, title: "Psicanalista/Terapeuta (R$ 300/sessão)", freq: "1x por semana", price: "R$ 14.400,00/ano", isHighlight: false },
               { icon: Sparkles, title: "🚀 Drive Mental", freq: "Acesso diário e ilimitado", price: "R$ 358,80/ano", isHighlight: true, badge: "Plano Anual" }
             ].map((item, index) => (
@@ -449,7 +449,7 @@ export default function LandingPage() {
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-border/50">
                     <span className="text-sm text-muted-foreground">Custo Anual:</span>
-                    <span className={`font-bold ${item.isHighlight ? 'text-xl text-primary' : 'text-lg'}`}>{item.price}</span>
+                    <span className={`font-bold ${item.isHighlight ? 'text-2xl text-green-600' : 'text-lg text-red-600'}`}>{item.price}</span>
                   </div>
                 </div>
               </div>
