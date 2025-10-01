@@ -465,7 +465,7 @@ export default function LandingPage() {
           </div>
 
           {/* CTA Button */}
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center px-4">
             <Button 
               variant="premium" 
               size="lg"
@@ -475,10 +475,10 @@ export default function LandingPage() {
                   pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
               }}
-              className="group"
+              className="group w-full sm:w-auto text-sm sm:text-base"
             >
               Quero investir menos e transformar mais
-              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
         </div>
