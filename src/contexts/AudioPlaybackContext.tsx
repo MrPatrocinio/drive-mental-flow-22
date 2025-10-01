@@ -5,7 +5,7 @@
  * Princípio SRP: Apenas gerenciamento de estado de reprodução
  */
 
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import * as React from "react";
 
 interface AudioPlaybackContextType {
   isMainAudioPlaying: boolean;
@@ -16,10 +16,10 @@ interface AudioPlaybackContextType {
   setUserIntentionPlaying: (playing: boolean) => void;
 }
 
-const AudioPlaybackContext = createContext<AudioPlaybackContextType | null>(null);
+const AudioPlaybackContext = React.createContext<AudioPlaybackContextType | null>(null);
 
 export const useAudioPlayback = () => {
-  const context = useContext(AudioPlaybackContext);
+  const context = React.useContext(AudioPlaybackContext);
   if (!context) {
     throw new Error('useAudioPlayback must be used within AudioPlaybackProvider');
   }
@@ -28,17 +28,17 @@ export const useAudioPlayback = () => {
 
 // Hook seguro que pode ser usado fora do contexto
 export const useAudioPlaybackSafe = () => {
-  const context = useContext(AudioPlaybackContext);
+  const context = React.useContext(AudioPlaybackContext);
   return context; // Retorna null se não estiver no contexto
 };
 
 export const AudioPlaybackProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isMainAudioPlaying, setIsMainAudioPlaying] = useState(false);
-  const [userIntentionPlaying, setUserIntentionPlaying] = useState(false);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [debouncedMainAudioPlaying, setDebouncedMainAudioPlaying] = useState(false);
+  const [isMainAudioPlaying, setIsMainAudioPlaying] = React.useState(false);
+  const [userIntentionPlaying, setUserIntentionPlaying] = React.useState(false);
+  const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [debouncedMainAudioPlaying, setDebouncedMainAudioPlaying] = React.useState(false);
 
-  const setMainAudioPlaying = useCallback((playing: boolean) => {
+  const setMainAudioPlaying = React.useCallback((playing: boolean) => {
     console.log('AudioPlaybackContext: Main audio playing state:', playing);
     setIsMainAudioPlaying(playing);
 
