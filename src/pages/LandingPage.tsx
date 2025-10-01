@@ -244,11 +244,9 @@ export default function LandingPage() {
                       />
                     )}
                   </div>
-                  {activeVideo.description && (
-                    <p className="text-center text-muted-foreground mt-4 max-w-2xl mx-auto text-sm md:text-base px-2">
-                      {activeVideo.description}
-                    </p>
-                  )}
+                  <p className="text-center text-muted-foreground mt-4 max-w-2xl mx-auto text-sm md:text-base px-2">
+                    Pablo Marçal - Palestra sobre Prosperidade!
+                  </p>
                 </div>
               </div>
             )}
