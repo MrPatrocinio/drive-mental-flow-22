@@ -253,22 +253,23 @@ export default function LandingPage() {
             <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed px-2">
               {content.hero.subtitle}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center px-2">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
               <Button 
                 variant="premium" 
                 size="lg" 
                 onClick={() => navigate('/assinatura')}
-                className="group"
+                className="group w-full sm:w-auto text-sm sm:text-base"
               >
                 {content.hero.ctaText}
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button 
                 variant="outline" 
                 size="lg"
                 onClick={() => navigate('/demo')}
+                className="w-full sm:w-auto text-sm sm:text-base"
               >
-                <Play className="mr-2 h-5 w-5" />
+                <Play className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                 {content.hero.demoText}
               </Button>
             </div>
