@@ -7,7 +7,7 @@
  * OTIMIZADO: Evita re-renders desnecessários
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import * as React from "react";
 import { dataSyncService, DataChangeEvent } from '@/services/dataSync';
 
 interface DataSyncCallbacks {
@@ -19,14 +19,14 @@ interface DataSyncCallbacks {
 
 export const useDataSync = (callbacks?: DataSyncCallbacks) => {
   // Usar ref para manter referência estável das callbacks
-  const callbacksRef = useRef(callbacks);
+  const callbacksRef = React.useRef(callbacks);
   
   // Atualizar ref quando callbacks mudarem
-  useEffect(() => {
+  React.useEffect(() => {
     callbacksRef.current = callbacks;
   }, [callbacks]);
 
-  const handleDataChange = useCallback((event: DataChangeEvent, payload?: any) => {
+  const handleDataChange = React.useCallback((event: DataChangeEvent, payload?: any) => {
     console.log('Data sync event received:', event, payload);
     
     // Executar callbacks específicos se fornecidos
@@ -49,7 +49,7 @@ export const useDataSync = (callbacks?: DataSyncCallbacks) => {
     }
   }, []); // Dependências vazias pois usamos ref
 
-  useEffect(() => {
+  React.useEffect(() => {
     const unsubscribe = dataSyncService.subscribe(handleDataChange);
     
     return () => {

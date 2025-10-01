@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import * as React from "react";
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { Field as EditableField, FieldService } from '@/services/supabase/fieldService';
 import { Audio as EditableAudio, AudioService } from '@/services/supabase/audioService';
@@ -32,17 +31,17 @@ interface AdminContextType {
   refreshData: () => Promise<void>;
 }
 
-export const AdminContext = createContext<AdminContextType | undefined>(undefined);
+export const AdminContext = React.createContext<AdminContextType | undefined>(undefined);
 
 interface AdminProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const { user, isAuthenticated, isLoading, signOut } = useSupabaseAuth();
   
   // Content state - usar o serviço unificado
-  const [landingContent, setLandingContent] = useState<LandingPageContent>(() => {
+  const [landingContent, setLandingContent] = React.useState<LandingPageContent>(() => {
     return {
       hero: {
         title: "Transforme sua mente e conquiste",
@@ -68,9 +67,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       }
     };
   });
-  const [fields, setFields] = useState<EditableField[]>([]);
-  const [audios, setAudios] = useState<EditableAudio[]>([]);
-  const [pricing, setPricing] = useState<PricingInfo | null>(null);
+  const [fields, setFields] = React.useState<EditableField[]>([]);
+  const [audios, setAudios] = React.useState<EditableAudio[]>([]);
+  const [pricing, setPricing] = React.useState<PricingInfo | null>(null);
 
   // Setup data sync
   useDataSync({
@@ -248,7 +247,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   };
 
   // Initial data load
-  useEffect(() => {
+  React.useEffect(() => {
     if (user?.role === 'admin') {
       refreshData();
     }
@@ -280,7 +279,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 };
 
 export const useAdmin = (): AdminContextType => {
-  const context = useContext(AdminContext);
+  const context = React.useContext(AdminContext);
   if (context === undefined) {
     throw new Error('useAdmin must be used within an AdminProvider');
   }
