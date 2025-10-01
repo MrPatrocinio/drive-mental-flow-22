@@ -514,7 +514,7 @@ export default function LandingPage() {
               onClick={() => navigate('/assinatura')}
               className="animate-pulse-glow"
             >
-              {content.hero.ctaText}
+              EU QUERO!!!
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
