@@ -27,6 +27,7 @@ import { AdminAnalyticsPage } from '@/pages/admin/AdminAnalyticsPage';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminLoginPage from '@/pages/admin/AdminLoginPage';
 import AdminLandingPage from '@/pages/admin/AdminLandingPage';
+import AdminLandingVideosPage from '@/pages/admin/AdminLandingVideosPage';
 import AdminFieldsPageNew from '@/pages/admin/AdminFieldsPageNew';
 import AdminAudiosPageNew from '@/pages/admin/AdminAudiosPageNew';
 import { AdminStatsPage } from '@/pages/admin/AdminStatsPage';
@@ -177,6 +178,12 @@ const AppContent: React.FC = () => {
       <Route path="/admin/landing" element={
         <AdminProtectedRoute>
           <AdminLandingPage />
+        </AdminProtectedRoute>
+      } />
+      
+      <Route path="/admin/landing-videos" element={
+        <AdminProtectedRoute>
+          <AdminLandingVideosPage />
         </AdminProtectedRoute>
       } />
       

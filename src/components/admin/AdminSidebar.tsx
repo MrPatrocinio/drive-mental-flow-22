@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, FileText, Music, Users, DollarSign, BarChart3, Shield, TrendingUp, Mail } from "lucide-react";
+import { Home, FileText, Music, Users, DollarSign, BarChart3, Shield, TrendingUp, Mail, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigationItems = [
@@ -32,6 +32,11 @@ const navigationItems = [
     label: "Conteúdo da Landing",
     href: "/admin/landing",
     icon: FileText,
+  },
+  {
+    label: "LP Vídeos",
+    href: "/admin/landing-videos",
+    icon: Film,
   },
   {
     label: "Preços",
