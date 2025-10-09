@@ -102,7 +102,7 @@ export class OfflineAudioService {
       }
 
       // Reconstrói o blob
-      const audioBlob = new Blob(chunks, { type: response.headers.get('content-type') || 'audio/mpeg' });
+      const audioBlob = new Blob(chunks as BlobPart[], { type: response.headers.get('content-type') || 'audio/mpeg' });
       
       // Armazena no cache
       await OfflineCacheService.downloadAudio(audioId, audioUrl, {

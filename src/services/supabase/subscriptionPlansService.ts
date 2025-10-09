@@ -153,34 +153,34 @@ export class SubscriptionPlansService {
         {
           id: 'semiannual',
           name: 'Semestral',
-          price: 159.90,
+          price: 179.40,
           original_price: 179.40,
           currency: 'R$',
           interval: 'month',
           interval_count: 6,
           description: 'Renovação automática a cada 6 meses - Mais Popular',
-          savings: 'Economize R$ 20,40',
+          savings: 'Economize R$ 0,00',
           popular: true,
-          has_promotion: true,
-          discount_percentage: 11,
-          promotion_end_date: '2025-01-31T23:59:59',
-          promotion_label: 'OFERTA ESPECIAL'
+          has_promotion: false,
+          discount_percentage: 0,
+          promotion_end_date: null,
+          promotion_label: ''
         },
         {
           id: 'annual',
           name: 'Anual',
-          price: 299.90,
+          price: 358.80,
           original_price: 358.80,
           currency: 'R$',
           interval: 'year',
           interval_count: 1,
           description: 'Renovação automática a cada 12 meses',
-          savings: 'Economize R$ 59,80',
+          savings: 'Economize R$ 0,00',
           popular: false,
-          has_promotion: true,
-          discount_percentage: 17,
-          promotion_end_date: '2025-01-31T23:59:59',
-          promotion_label: 'MELHOR OFERTA'
+          has_promotion: false,
+          discount_percentage: 0,
+          promotion_end_date: null,
+          promotion_label: ''
         }
       ],
       global_benefits: [

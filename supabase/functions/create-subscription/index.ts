@@ -70,14 +70,14 @@ serve(async (req) => {
         description: "Assinatura trimestral (renovação a cada 3 meses)"
       },
       semiannual: { 
-        amount: 15990, // R$ 159,90
+        amount: 17940, // R$ 179,40
         interval: "month", 
         interval_count: 6,
         name: "Drive Mental - Semestral",
         description: "Assinatura semestral (renovação a cada 6 meses)"
       },
       annual: { 
-        amount: 29990, // R$ 299,90
+        amount: 35880, // R$ 358,80
         interval: "year",
         interval_count: 1,
         name: "Drive Mental - Anual",
