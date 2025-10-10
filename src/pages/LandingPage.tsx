@@ -277,6 +277,52 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Seção "O que é o Drive Mental" */}
+      {content.whatIsDriveMental?.enabled && (
+        <section className="py-16 px-4 bg-background">
+          <div className="container mx-auto max-w-5xl">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">
+              {content.whatIsDriveMental.title}
+            </h2>
+            
+            <div 
+              className="text-lg text-muted-foreground leading-relaxed mb-8 text-center max-w-3xl mx-auto"
+              dangerouslySetInnerHTML={{ __html: content.whatIsDriveMental.subtitle }}
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {content.whatIsDriveMental.benefits.map((benefit, index) => {
+                const IconComponent = getIconComponent(benefit.icon);
+                return (
+                  <div 
+                    key={benefit.id}
+                    className="flex items-start gap-4 p-4 rounded-lg hover:bg-accent/50 transition-all duration-200"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <IconComponent className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1">
+                        {benefit.title}
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        {benefit.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div 
+              className="text-center text-foreground/90 leading-relaxed max-w-2xl mx-auto"
+              dangerouslySetInnerHTML={{ __html: content.whatIsDriveMental.scientificNote }}
+            />
+          </div>
+        </section>
+      )}
+
       {/* Features */}
       <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto">

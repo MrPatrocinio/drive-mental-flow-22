@@ -50,6 +50,20 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         ctaText: "Começar Agora",
         demoText: "Ver Demo"
       },
+      whatIsDriveMental: {
+        enabled: true,
+        title: "🧬 O que é o Drive Mental",
+        subtitle: "O **Drive Mental** é um **aplicativo web de reprogramação mental**...",
+        benefits: [
+          {
+            id: "benefit-1",
+            icon: "RefreshCw",
+            title: "Quebrar ciclos de autossabotagem",
+            description: "Identifique e elimine padrões mentais que impedem seu crescimento"
+          }
+        ],
+        scientificNote: "🧠 <em>Tudo com base em estudos reais...</em>"
+      },
       features: [
         {
           id: "feature-1",

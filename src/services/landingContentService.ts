@@ -17,6 +17,18 @@ export interface LandingPageContent {
     ctaText: string;
     demoText: string;
   };
+  whatIsDriveMental: {
+    enabled: boolean;
+    title: string;
+    subtitle: string;
+    benefits: Array<{
+      id: string;
+      icon: string;
+      title: string;
+      description: string;
+    }>;
+    scientificNote: string;
+  };
   features: Array<{
     id: string;
     icon: string;
@@ -133,10 +145,14 @@ class LandingContentServiceClass {
   private isValidContent(content: any): content is LandingPageContent {
     return (
       content &&
+      typeof content === 'object' &&
       content.hero &&
-      content.features &&
+      typeof content.hero === 'object' &&
+      content.whatIsDriveMental &&
+      typeof content.whatIsDriveMental === 'object' &&
       Array.isArray(content.features) &&
-      content.footer
+      content.footer &&
+      typeof content.footer === 'object'
     );
   }
 
@@ -149,6 +165,38 @@ class LandingContentServiceClass {
         subtitle: "Desbloqueie todo o seu potencial com áudios de programação mental cientificamente desenvolvidos. Alcance o sucesso, a abundância e a realização pessoal que você sempre desejou.",
         ctaText: "Começar Agora",
         demoText: "Ver Demo"
+      },
+      whatIsDriveMental: {
+        enabled: true,
+        title: "🧬 O que é o Drive Mental",
+        subtitle: "O **Drive Mental** é um **aplicativo web de reprogramação mental** que usa **áudios curtos e guiados**, aliados a **rotinas mentais práticas**, para ajudar você a:",
+        benefits: [
+          {
+            id: "benefit-1",
+            icon: "RefreshCw",
+            title: "Quebrar ciclos de autossabotagem",
+            description: "Identifique e elimine padrões mentais que impedem seu crescimento"
+          },
+          {
+            id: "benefit-2",
+            icon: "Target",
+            title: "Aumentar o foco e a autoconfiança",
+            description: "Desenvolva concentração inabalável e confiança genuína"
+          },
+          {
+            id: "benefit-3",
+            icon: "TrendingUp",
+            title: "Desenvolver um mindset de prosperidade",
+            description: "Cultive mentalidade de crescimento e abundância"
+          },
+          {
+            id: "benefit-4",
+            icon: "Zap",
+            title: "Transformar hábitos limitantes",
+            description: "Substitua comportamentos negativos por novos padrões positivos"
+          }
+        ],
+        scientificNote: "🧠 <em>Tudo com base em estudos reais de neuroplasticidade e psicologia cognitiva.</em> Nada de promessas mágicas — apenas <strong>repetição, consistência e ciência aplicada.</strong>"
       },
       features: [
         {

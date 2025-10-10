@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { Trash2, Plus } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useToast } from '@/hooks/use-toast';
@@ -66,6 +67,45 @@ export const LandingContentForm = () => {
   const removeFeature = (index: number) => {
     const newFeatures = formData.features.filter((_, i) => i !== index);
     setFormData({ ...formData, features: newFeatures });
+  };
+
+  const updateBenefit = (index: number, field: string, value: string) => {
+    const newBenefits = [...formData.whatIsDriveMental.benefits];
+    newBenefits[index] = { ...newBenefits[index], [field]: value };
+    setFormData({
+      ...formData,
+      whatIsDriveMental: {
+        ...formData.whatIsDriveMental,
+        benefits: newBenefits
+      }
+    });
+  };
+
+  const addBenefit = () => {
+    const newBenefit = {
+      id: `benefit-${Date.now()}`,
+      icon: 'Brain',
+      title: '',
+      description: ''
+    };
+    setFormData({
+      ...formData,
+      whatIsDriveMental: {
+        ...formData.whatIsDriveMental,
+        benefits: [...formData.whatIsDriveMental.benefits, newBenefit]
+      }
+    });
+  };
+
+  const removeBenefit = (index: number) => {
+    const newBenefits = formData.whatIsDriveMental.benefits.filter((_, i) => i !== index);
+    setFormData({
+      ...formData,
+      whatIsDriveMental: {
+        ...formData.whatIsDriveMental,
+        benefits: newBenefits
+      }
+    });
   };
 
   return (
@@ -149,6 +189,121 @@ export const LandingContentForm = () => {
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Seção "O que é o Drive Mental" */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Seção 2 — O que é o Drive Mental</h3>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="whatIsDriveMental-enabled" className="text-sm">Ativar Seção</Label>
+                  <Switch
+                    id="whatIsDriveMental-enabled"
+                    checked={formData.whatIsDriveMental.enabled}
+                    onCheckedChange={(checked) => setFormData({
+                      ...formData,
+                      whatIsDriveMental: { ...formData.whatIsDriveMental, enabled: checked }
+                    })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="whatIsDriveMental-title">Título da Seção</Label>
+                <Input
+                  id="whatIsDriveMental-title"
+                  value={formData.whatIsDriveMental.title}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    whatIsDriveMental: { ...formData.whatIsDriveMental, title: e.target.value }
+                  })}
+                  placeholder="Ex: 🧬 O que é o Drive Mental"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="whatIsDriveMental-subtitle">Texto Introdutório (aceita HTML com ** para negrito)</Label>
+                <Textarea
+                  id="whatIsDriveMental-subtitle"
+                  rows={4}
+                  value={formData.whatIsDriveMental.subtitle}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    whatIsDriveMental: { ...formData.whatIsDriveMental, subtitle: e.target.value }
+                  })}
+                  placeholder="O **Drive Mental** é um **aplicativo web de reprogramação mental**..."
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Benefícios</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addBenefit}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Adicionar Benefício
+                  </Button>
+                </div>
+
+                {formData.whatIsDriveMental.benefits.map((benefit, index) => (
+                  <Card key={benefit.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Benefício {index + 1}</Label>
+                        {formData.whatIsDriveMental.benefits.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeBenefit(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <Input
+                          value={benefit.icon}
+                          onChange={(e) => updateBenefit(index, 'icon', e.target.value)}
+                          placeholder="Ícone (ex: RefreshCw)"
+                        />
+                        <Input
+                          value={benefit.title}
+                          onChange={(e) => updateBenefit(index, 'title', e.target.value)}
+                          placeholder="Título do benefício"
+                        />
+                        <Input
+                          value={benefit.description}
+                          onChange={(e) => updateBenefit(index, 'description', e.target.value)}
+                          placeholder="Descrição"
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="whatIsDriveMental-scientificNote">Nota Científica Final (aceita HTML)</Label>
+                <Textarea
+                  id="whatIsDriveMental-scientificNote"
+                  rows={3}
+                  value={formData.whatIsDriveMental.scientificNote}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    whatIsDriveMental: { ...formData.whatIsDriveMental, scientificNote: e.target.value }
+                  })}
+                  placeholder="🧠 <em>Tudo com base em estudos...</em>"
+                />
               </div>
             </div>
 
