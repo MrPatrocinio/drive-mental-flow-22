@@ -417,6 +417,277 @@ export const LandingContentForm = () => {
 
             <Separator />
 
+            {/* Seção 7 — Ancoragem de Valor */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Seção 7 — Ancoragem de Valor (Comparação de Preços)</h3>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="priceComparison-enabled" className="text-sm">Ativar Seção</Label>
+                  <Switch 
+                    id="priceComparison-enabled" 
+                    checked={formData.priceComparison?.enabled ?? true}
+                    onCheckedChange={(checked) => setFormData({
+                      ...formData,
+                      priceComparison: {
+                        ...formData.priceComparison,
+                        enabled: checked
+                      }
+                    })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="priceComparison-title">Título da Seção</Label>
+                <Input 
+                  id="priceComparison-title" 
+                  value={formData.priceComparison?.title ?? ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    priceComparison: {
+                      ...formData.priceComparison,
+                      title: e.target.value
+                    }
+                  })}
+                  placeholder="Ex: O valor de uma mente saudável não precisa custar tão caro"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="priceComparison-subtitle">Subtítulo</Label>
+                <Textarea 
+                  id="priceComparison-subtitle" 
+                  rows={2}
+                  value={formData.priceComparison?.subtitle ?? ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    priceComparison: {
+                      ...formData.priceComparison,
+                      subtitle: e.target.value
+                    }
+                  })}
+                  placeholder="Veja a comparação real entre os valores..."
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Opções de Comparação</Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      const newOption = {
+                        id: `option-${Date.now()}`,
+                        icon: 'Users',
+                        title: '',
+                        frequency: '',
+                        pricePerYear: '',
+                        isHighlight: false
+                      };
+                      setFormData({
+                        ...formData,
+                        priceComparison: {
+                          ...formData.priceComparison,
+                          options: [...(formData.priceComparison?.options ?? []), newOption]
+                        }
+                      });
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Adicionar Opção
+                  </Button>
+                </div>
+
+                {(formData.priceComparison?.options ?? []).map((option, index) => (
+                  <Card key={option.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Opção {index + 1}</Label>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor={`option-highlight-${index}`} className="text-xs">Destacar?</Label>
+                            <Switch 
+                              id={`option-highlight-${index}`}
+                              checked={option.isHighlight}
+                              onCheckedChange={(checked) => {
+                                const newOptions = [...(formData.priceComparison?.options ?? [])];
+                                newOptions[index] = { ...newOptions[index], isHighlight: checked };
+                                setFormData({
+                                  ...formData,
+                                  priceComparison: {
+                                    ...formData.priceComparison,
+                                    options: newOptions
+                                  }
+                                });
+                              }}
+                            />
+                          </div>
+                          {(formData.priceComparison?.options ?? []).length > 1 && (
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                const newOptions = (formData.priceComparison?.options ?? []).filter((_, i) => i !== index);
+                                setFormData({
+                                  ...formData,
+                                  priceComparison: {
+                                    ...formData.priceComparison,
+                                    options: newOptions
+                                  }
+                                });
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <Input 
+                          value={option.icon}
+                          onChange={(e) => {
+                            const newOptions = [...(formData.priceComparison?.options ?? [])];
+                            newOptions[index] = { ...newOptions[index], icon: e.target.value };
+                            setFormData({
+                              ...formData,
+                              priceComparison: {
+                                ...formData.priceComparison,
+                                options: newOptions
+                              }
+                            });
+                          }}
+                          placeholder="Ícone (ex: Users, Award, Sparkles)"
+                        />
+                        <Input 
+                          value={option.title}
+                          onChange={(e) => {
+                            const newOptions = [...(formData.priceComparison?.options ?? [])];
+                            newOptions[index] = { ...newOptions[index], title: e.target.value };
+                            setFormData({
+                              ...formData,
+                              priceComparison: {
+                                ...formData.priceComparison,
+                                options: newOptions
+                              }
+                            });
+                          }}
+                          placeholder="Título (ex: Psicólogo Iniciante)"
+                        />
+                        <Input 
+                          value={option.frequency}
+                          onChange={(e) => {
+                            const newOptions = [...(formData.priceComparison?.options ?? [])];
+                            newOptions[index] = { ...newOptions[index], frequency: e.target.value };
+                            setFormData({
+                              ...formData,
+                              priceComparison: {
+                                ...formData.priceComparison,
+                                options: newOptions
+                              }
+                            });
+                          }}
+                          placeholder="Frequência (ex: 1x por semana)"
+                        />
+                        <Input 
+                          value={option.pricePerYear}
+                          onChange={(e) => {
+                            const newOptions = [...(formData.priceComparison?.options ?? [])];
+                            newOptions[index] = { ...newOptions[index], pricePerYear: e.target.value };
+                            setFormData({
+                              ...formData,
+                              priceComparison: {
+                                ...formData.priceComparison,
+                                options: newOptions
+                              }
+                            });
+                          }}
+                          placeholder="Preço Anual (ex: R$ 7.200,00/ano)"
+                        />
+                        <Input 
+                          value={option.badge ?? ''}
+                          onChange={(e) => {
+                            const newOptions = [...(formData.priceComparison?.options ?? [])];
+                            newOptions[index] = { ...newOptions[index], badge: e.target.value || undefined };
+                            setFormData({
+                              ...formData,
+                              priceComparison: {
+                                ...formData.priceComparison,
+                                options: newOptions
+                              }
+                            });
+                          }}
+                          placeholder="Badge (opcional, ex: Plano Anual)"
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="priceComparison-impactText">Texto de Impacto (aceita HTML)</Label>
+                <Textarea 
+                  id="priceComparison-impactText" 
+                  rows={3}
+                  value={formData.priceComparison?.impactText ?? ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    priceComparison: {
+                      ...formData.priceComparison,
+                      impactText: e.target.value
+                    }
+                  })}
+                  placeholder='Pelo preço de apenas <span class="text-premium">1 sessão...</span>'
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="priceComparison-ctaText">Texto do Botão CTA</Label>
+                  <Input 
+                    id="priceComparison-ctaText" 
+                    value={formData.priceComparison?.ctaButton?.text ?? ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      priceComparison: {
+                        ...formData.priceComparison,
+                        ctaButton: {
+                          ...formData.priceComparison?.ctaButton,
+                          text: e.target.value
+                        }
+                      }
+                    })}
+                    placeholder="Ex: EU QUERO!!!"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="priceComparison-scrollTarget">ID da Seção de Destino (scroll)</Label>
+                  <Input 
+                    id="priceComparison-scrollTarget" 
+                    value={formData.priceComparison?.ctaButton?.scrollToSection ?? ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      priceComparison: {
+                        ...formData.priceComparison,
+                        ctaButton: {
+                          ...formData.priceComparison?.ctaButton,
+                          scrollToSection: e.target.value
+                        }
+                      }
+                    })}
+                    placeholder="Ex: subscription-plans"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Footer */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Rodapé</h3>

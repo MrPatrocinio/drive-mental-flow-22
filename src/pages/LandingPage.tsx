@@ -428,158 +428,146 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Price Comparison Section */}
-      <section className="py-12 md:py-20 px-4 bg-muted/20">
-        <div className="container mx-auto">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 px-2">
-            O valor de uma mente saudável não precisa custar tão <span className="text-premium">caro</span>
-          </h2>
-          <p className="text-center text-muted-foreground mb-8 md:mb-12 text-base md:text-lg px-2 max-w-3xl mx-auto">
-            Veja a comparação real entre os valores de sessões tradicionais e o Drive Mental
-          </p>
-          
-          {/* Desktop Table */}
-          <div className="hidden lg:block max-w-5xl mx-auto overflow-hidden rounded-xl border border-border">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-card/50 border-b border-border">
-                  <th className="text-left p-4 font-semibold">Opção</th>
-                  <th className="text-center p-4 font-semibold">Frequência</th>
-                  <th className="text-right p-4 font-semibold">Custo Anual Médio</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-border/50 bg-card/30 hover:bg-card/50 smooth-transition">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <span>Psicólogo Iniciante (R$ 150/sessão)</span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-center text-muted-foreground">1x por semana</td>
-                  <td className="p-4 text-right font-semibold text-red-600 text-lg">R$ 7.200,00/ano</td>
-                </tr>
-                <tr className="border-b border-border/50 bg-card/30 hover:bg-card/50 smooth-transition">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <span>Psicólogo Especialista (R$ 250/sessão)</span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-center text-muted-foreground">1x por semana</td>
-                  <td className="p-4 text-right font-semibold text-red-600 text-lg">R$ 12.000,00/ano</td>
-                </tr>
-                <tr className="border-b border-border/50 bg-card/30 hover:bg-card/50 smooth-transition">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
-                        <Award className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <span>Psicanalista/Terapeuta (R$ 300/sessão)</span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-center text-muted-foreground">1x por semana</td>
-                  <td className="p-4 text-right font-semibold text-red-600 text-lg">R$ 14.400,00/ano</td>
-                </tr>
-                <tr className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-2 border-primary/30">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                        <Sparkles className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-primary">🚀 Drive Mental</span>
-                        <span className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary font-semibold">
-                          Plano Anual
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 text-center font-semibold text-primary">Acesso diário e ilimitado</td>
-                  <td className="p-4 text-right font-bold text-2xl text-green-600">R$ 358,80/ano</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="lg:hidden space-y-4 max-w-2xl mx-auto">
-            {[
-              { icon: Users, title: "Psicólogo Iniciante (R$ 150/sessão)", freq: "1x por semana", price: "R$ 7.200,00/ano", isHighlight: false },
-              { icon: Users, title: "Psicólogo Especialista (R$ 250/sessão)", freq: "1x por semana", price: "R$ 12.000,00/ano", isHighlight: false },
-              { icon: Award, title: "Psicanalista/Terapeuta (R$ 300/sessão)", freq: "1x por semana", price: "R$ 14.400,00/ano", isHighlight: false },
-              { icon: Sparkles, title: "🚀 Drive Mental", freq: "Acesso diário e ilimitado", price: "R$ 358,80/ano", isHighlight: true, badge: "Plano Anual" }
-            ].map((item, index) => (
-              <div 
-                key={index}
-                className={`
-                  rounded-xl p-5 smooth-transition
-                  ${item.isHighlight 
-                    ? 'bg-gradient-to-br from-primary/10 via-primary/5 to-primary/10 border-2 border-primary/30 shadow-lg' 
-                    : 'bg-card/50 border border-border hover:bg-card/70'
-                  }
-                `}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.isHighlight ? 'bg-primary/20' : 'bg-muted/50'}`}>
-                      <item.icon className={`h-5 w-5 ${item.isHighlight ? 'text-primary' : 'text-muted-foreground'}`} />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className={`font-semibold ${item.isHighlight ? 'text-primary' : ''}`}>{item.title}</h3>
-                      {item.badge && (
-                        <span className="inline-block mt-1 text-xs px-2 py-1 rounded-full bg-primary/20 text-primary font-semibold">
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Frequência:</span>
-                    <span className={`text-sm font-medium ${item.isHighlight ? 'text-primary' : ''}`}>{item.freq}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                    <span className="text-sm text-muted-foreground">Custo Anual:</span>
-                    <span className={`font-bold ${item.isHighlight ? 'text-2xl text-green-600' : 'text-lg text-red-600'}`}>{item.price}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Impact Text */}
-          <div className="mt-12 text-center max-w-3xl mx-auto">
-            <p className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground leading-relaxed px-2">
-              Pelo preço de apenas <span className="text-premium">1 sessão de terapia</span>, você tem{" "}
-              <span className="text-premium">12 meses inteiros</span> de reprogramação mental diária e ILIMITADA com o Drive Mental.
+      {/* Price Comparison Section - Seção 7: Ancoragem de Valor */}
+      {content.priceComparison?.enabled && (
+        <section className="py-12 md:py-20 px-4 bg-muted/20">
+          <div className="container mx-auto">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 px-2">
+              {content.priceComparison.title.split('caro').map((part, i) => 
+                i === 0 ? (
+                  <React.Fragment key={i}>{part}<span className="text-premium">caro</span></React.Fragment>
+                ) : (
+                  <span key={i}>{part}</span>
+                )
+              )}
+            </h2>
+            <p className="text-center text-muted-foreground mb-8 md:mb-12 text-base md:text-lg px-2 max-w-3xl mx-auto">
+              {content.priceComparison.subtitle}
             </p>
-          </div>
+            
+            {/* Desktop Table */}
+            <div className="hidden lg:block max-w-5xl mx-auto overflow-hidden rounded-xl border border-border">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-card/50 border-b border-border">
+                    <th className="text-left p-4 font-semibold">Opção</th>
+                    <th className="text-center p-4 font-semibold">Frequência</th>
+                    <th className="text-right p-4 font-semibold">Custo Anual Médio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {content.priceComparison.options.map((option) => {
+                    const IconComponent = getIconComponent(option.icon);
+                    return (
+                      <tr 
+                        key={option.id}
+                        className={
+                          option.isHighlight
+                            ? 'bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-2 border-primary/30'
+                            : 'border-b border-border/50 bg-card/30 hover:bg-card/50 smooth-transition'
+                        }
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${option.isHighlight ? 'bg-primary/20' : 'bg-muted/50'}`}>
+                              <IconComponent className={`h-5 w-5 ${option.isHighlight ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={option.isHighlight ? 'font-bold text-primary' : ''}>{option.title}</span>
+                              {option.badge && (
+                                <span className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary font-semibold">
+                                  {option.badge}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className={`p-4 text-center ${option.isHighlight ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
+                          {option.frequency}
+                        </td>
+                        <td className={`p-4 text-right font-${option.isHighlight ? 'bold text-2xl text-green-600' : 'semibold text-lg text-red-600'}`}>
+                          {option.pricePerYear}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-          {/* CTA Button */}
-          <div className="mt-8 text-center px-4">
-            <Button 
-              variant="premium" 
-              size="lg"
-              onClick={() => {
-                const pricingSection = document.querySelector('section:has(.subscription-plans)');
-                if (pricingSection) {
-                  pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }}
-              className="group w-full sm:w-auto text-sm sm:text-base"
-            >
-              EU QUERO!!!
-              <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-4 max-w-2xl mx-auto">
+              {content.priceComparison.options.map((option) => {
+                const IconComponent = getIconComponent(option.icon);
+                return (
+                  <div 
+                    key={option.id}
+                    className={`
+                      rounded-xl p-5 smooth-transition
+                      ${option.isHighlight 
+                        ? 'bg-gradient-to-br from-primary/10 via-primary/5 to-primary/10 border-2 border-primary/30 shadow-lg' 
+                        : 'bg-card/50 border border-border hover:bg-card/70'
+                      }
+                    `}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${option.isHighlight ? 'bg-primary/20' : 'bg-muted/50'}`}>
+                          <IconComponent className={`h-5 w-5 ${option.isHighlight ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className={`font-semibold ${option.isHighlight ? 'text-primary' : ''}`}>{option.title}</h3>
+                          {option.badge && (
+                            <span className="inline-block mt-1 text-xs px-2 py-1 rounded-full bg-primary/20 text-primary font-semibold">
+                              {option.badge}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Frequência:</span>
+                        <span className={`text-sm font-medium ${option.isHighlight ? 'text-primary' : ''}`}>{option.frequency}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                        <span className="text-sm text-muted-foreground">Custo Anual:</span>
+                        <span className={`font-bold ${option.isHighlight ? 'text-2xl text-green-600' : 'text-lg text-red-600'}`}>{option.pricePerYear}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Impact Text */}
+            <div className="mt-12 text-center max-w-3xl mx-auto">
+              <p 
+                className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground leading-relaxed px-2"
+                dangerouslySetInnerHTML={{ __html: content.priceComparison.impactText }}
+              />
+            </div>
+
+            {/* CTA Button */}
+            <div className="mt-8 text-center px-4">
+              <Button 
+                variant="premium" 
+                size="lg"
+                onClick={() => {
+                  const pricingSection = document.querySelector(`section:has(.${content.priceComparison.ctaButton.scrollToSection})`);
+                  if (pricingSection) {
+                    pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className="group w-full sm:w-auto text-sm sm:text-base"
+              >
+                {content.priceComparison.ctaButton.text}
+                <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Subscription Plans Section */}
       <section className="py-12 md:py-20 px-4 subscription-plans">

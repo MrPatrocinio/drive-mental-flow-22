@@ -47,6 +47,25 @@ export interface LandingPageContent {
     title: string;
     description: string;
   }>;
+  priceComparison: {
+    enabled: boolean;
+    title: string;
+    subtitle: string;
+    options: Array<{
+      id: string;
+      icon: string;
+      title: string;
+      frequency: string;
+      pricePerYear: string;
+      isHighlight: boolean;
+      badge?: string;
+    }>;
+    impactText: string;
+    ctaButton: {
+      text: string;
+      scrollToSection: string;
+    };
+  };
   footer: {
     copyright: string;
     lgpdText: string;
@@ -165,6 +184,9 @@ class LandingContentServiceClass {
       content.comoFunciona &&
       typeof content.comoFunciona === 'object' &&
       Array.isArray(content.features) &&
+      content.priceComparison &&
+      typeof content.priceComparison === 'object' &&
+      Array.isArray(content.priceComparison.options) &&
       content.footer &&
       typeof content.footer === 'object'
     );
@@ -270,6 +292,51 @@ class LandingContentServiceClass {
           description: "Técnicas naturais sem efeitos colaterais, baseadas em neurociência"
         }
       ],
+      priceComparison: {
+        enabled: true,
+        title: "O valor de uma mente saudável não precisa custar tão caro",
+        subtitle: "Veja a comparação real entre os valores de sessões tradicionais e o Drive Mental",
+        options: [
+          {
+            id: "option-1",
+            icon: "Users",
+            title: "Psicólogo Iniciante (R$ 150/sessão)",
+            frequency: "1x por semana",
+            pricePerYear: "R$ 7.200,00/ano",
+            isHighlight: false
+          },
+          {
+            id: "option-2",
+            icon: "Users",
+            title: "Psicólogo Especialista (R$ 250/sessão)",
+            frequency: "1x por semana",
+            pricePerYear: "R$ 12.000,00/ano",
+            isHighlight: false
+          },
+          {
+            id: "option-3",
+            icon: "Award",
+            title: "Psicanalista/Terapeuta (R$ 300/sessão)",
+            frequency: "1x por semana",
+            pricePerYear: "R$ 14.400,00/ano",
+            isHighlight: false
+          },
+          {
+            id: "option-4",
+            icon: "Sparkles",
+            title: "🚀 Drive Mental",
+            frequency: "Acesso diário e ilimitado",
+            pricePerYear: "R$ 358,80/ano",
+            isHighlight: true,
+            badge: "Plano Anual"
+          }
+        ],
+        impactText: "Pelo preço de apenas <span class=\"text-premium\">1 sessão de terapia</span>, você tem <span class=\"text-premium\">12 meses inteiros</span> de reprogramação mental diária e ILIMITADA com o Drive Mental.",
+        ctaButton: {
+          text: "EU QUERO!!!",
+          scrollToSection: "subscription-plans"
+        }
+      },
       footer: {
         copyright: "© 2024 Drive Mental. Todos os direitos reservados.",
         lgpdText: "Este site está em conformidade com a LGPD",
