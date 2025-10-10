@@ -112,7 +112,6 @@ export const LandingContentForm = () => {
       }
     });
   };
-
   const addStep = () => {
     const newStep = {
       id: `step-${Date.now()}`,
@@ -128,7 +127,6 @@ export const LandingContentForm = () => {
       }
     });
   };
-
   const removeStep = (index: number) => {
     const newSteps = formData.comoFunciona.steps.filter((_, i) => i !== index);
     setFormData({
@@ -139,10 +137,12 @@ export const LandingContentForm = () => {
       }
     });
   };
-
   const updateStep = (index: number, field: string, value: string) => {
     const newSteps = [...formData.comoFunciona.steps];
-    newSteps[index] = { ...newSteps[index], [field]: value };
+    newSteps[index] = {
+      ...newSteps[index],
+      [field]: value
+    };
     setFormData({
       ...formData,
       comoFunciona: {
@@ -310,112 +310,76 @@ export const LandingContentForm = () => {
                 <h3 className="text-lg font-semibold">Seção 3 — Como Funciona</h3>
                 <div className="flex items-center gap-2">
                   <Label htmlFor="comoFunciona-enabled" className="text-sm">Ativar Seção</Label>
-                  <Switch
-                    id="comoFunciona-enabled"
-                    checked={formData.comoFunciona.enabled}
-                    onCheckedChange={(checked) => setFormData({
-                      ...formData,
-                      comoFunciona: { ...formData.comoFunciona, enabled: checked }
-                    })}
-                  />
+                  <Switch id="comoFunciona-enabled" checked={formData.comoFunciona.enabled} onCheckedChange={checked => setFormData({
+                  ...formData,
+                  comoFunciona: {
+                    ...formData.comoFunciona,
+                    enabled: checked
+                  }
+                })} />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="comoFunciona-title">Título da Seção</Label>
-                <Input
-                  id="comoFunciona-title"
-                  value={formData.comoFunciona.title}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    comoFunciona: { ...formData.comoFunciona, title: e.target.value }
-                  })}
-                  placeholder="Ex: 🔬 Como Funciona"
-                />
+                <Input id="comoFunciona-title" value={formData.comoFunciona.title} onChange={e => setFormData({
+                ...formData,
+                comoFunciona: {
+                  ...formData.comoFunciona,
+                  title: e.target.value
+                }
+              })} placeholder="Ex: 🔬 Como Funciona" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="comoFunciona-subtitle">Texto Introdutório (aceita HTML)</Label>
-                <Textarea
-                  id="comoFunciona-subtitle"
-                  rows={3}
-                  value={formData.comoFunciona.subtitle}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    comoFunciona: { ...formData.comoFunciona, subtitle: e.target.value }
-                  })}
-                  placeholder="Siga o passo a passo simples..."
-                />
+                <Textarea id="comoFunciona-subtitle" rows={3} value={formData.comoFunciona.subtitle} onChange={e => setFormData({
+                ...formData,
+                comoFunciona: {
+                  ...formData.comoFunciona,
+                  subtitle: e.target.value
+                }
+              })} placeholder="Siga o passo a passo simples..." />
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Etapas do Processo</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addStep}
-                    className="flex items-center gap-2"
-                  >
+                  <Button type="button" variant="outline" size="sm" onClick={addStep} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     Adicionar Etapa
                   </Button>
                 </div>
 
-                {formData.comoFunciona.steps.map((step, index) => (
-                  <Card key={step.id} className="p-4">
+                {formData.comoFunciona.steps.map((step, index) => <Card key={step.id} className="p-4">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-medium">
                           Etapa {index + 1}
                         </Label>
-                        {formData.comoFunciona.steps.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeStep(index)}
-                          >
+                        {formData.comoFunciona.steps.length > 1 && <Button type="button" variant="outline" size="sm" onClick={() => removeStep(index)}>
                             <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                          </Button>}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <Input
-                          value={step.icon}
-                          onChange={(e) => updateStep(index, 'icon', e.target.value)}
-                          placeholder="Ícone (ex: Target)"
-                        />
-                        <Input
-                          value={step.title}
-                          onChange={(e) => updateStep(index, 'title', e.target.value)}
-                          placeholder="Título da etapa"
-                        />
-                        <Input
-                          value={step.description}
-                          onChange={(e) => updateStep(index, 'description', e.target.value)}
-                          placeholder="Descrição"
-                        />
+                        <Input value={step.icon} onChange={e => updateStep(index, 'icon', e.target.value)} placeholder="Ícone (ex: Target)" />
+                        <Input value={step.title} onChange={e => updateStep(index, 'title', e.target.value)} placeholder="Título da etapa" />
+                        <Input value={step.description} onChange={e => updateStep(index, 'description', e.target.value)} placeholder="Descrição" />
                       </div>
                     </div>
-                  </Card>
-                ))}
+                  </Card>)}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="comoFunciona-finalNote">Parágrafo Final Motivacional (aceita HTML)</Label>
-                <Textarea
-                  id="comoFunciona-finalNote"
-                  rows={3}
-                  value={formData.comoFunciona.finalNote}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    comoFunciona: { ...formData.comoFunciona, finalNote: e.target.value }
-                  })}
-                  placeholder="🕒 Em apenas 21 dias..."
-                />
+                <Textarea id="comoFunciona-finalNote" rows={3} value={formData.comoFunciona.finalNote} onChange={e => setFormData({
+                ...formData,
+                comoFunciona: {
+                  ...formData.comoFunciona,
+                  finalNote: e.target.value
+                }
+              })} placeholder="🕒 Em apenas 21 dias..." />
               </div>
             </div>
 
@@ -424,7 +388,7 @@ export const LandingContentForm = () => {
             {/* Features */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Funcionalidades/Benefícios</h3>
+                <h3 className="text-lg font-semibold">Seção 3 — Como Funciona</h3>
                 <Button type="button" variant="outline" size="sm" onClick={addFeature} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
                   Adicionar Funcionalidade
