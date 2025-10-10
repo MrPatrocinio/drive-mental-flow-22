@@ -342,10 +342,10 @@ export default function LandingPage() {
               return (
                 <div
                   key={step.id}
-                  className="bg-white rounded-2xl shadow-md p-6 hover:scale-105 transition-all duration-300 flex flex-col items-center text-center"
+                  className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 hover:scale-105 hover:border-primary/50 transition-all duration-300 flex flex-col items-center text-center"
                   style={{ animationDelay: `${index * 0.15}s` }}
                 >
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-card border border-border flex items-center justify-center mb-4">
                     <IconComponent className="h-8 w-8 text-primary" />
                   </div>
                   
@@ -353,7 +353,7 @@ export default function LandingPage() {
                     Etapa {index + 1}
                   </div>
                   
-                  <h3 className="font-bold text-lg mb-3 text-card-foreground">
+                  <h3 className="font-bold text-lg mb-3 text-foreground">
                     {step.title}
                   </h3>
                   
