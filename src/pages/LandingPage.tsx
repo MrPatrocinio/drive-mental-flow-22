@@ -325,14 +325,14 @@ export default function LandingPage() {
 
     {/* Seção "Como Funciona" */}
     {content.comoFunciona?.enabled && (
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-16 px-4 bg-background">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-slate-900">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-foreground">
             {content.comoFunciona.title}
           </h2>
           
           <p 
-            className="text-lg text-slate-600 text-center mb-12 max-w-3xl mx-auto leading-relaxed"
+            className="text-lg text-muted-foreground text-center mb-12 max-w-3xl mx-auto leading-relaxed"
             dangerouslySetInnerHTML={{ __html: content.comoFunciona.subtitle }}
           />
           
@@ -353,11 +353,11 @@ export default function LandingPage() {
                     Etapa {index + 1}
                   </div>
                   
-                  <h3 className="font-bold text-lg mb-3 text-slate-900">
+                  <h3 className="font-bold text-lg mb-3 text-card-foreground">
                     {step.title}
                   </h3>
                   
-                  <p className="text-sm text-slate-600 leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {step.description}
                   </p>
                 </div>
@@ -366,7 +366,7 @@ export default function LandingPage() {
           </div>
           
           <div 
-            className="text-center text-slate-700 text-lg leading-relaxed max-w-2xl mx-auto"
+            className="text-center text-foreground/90 text-lg leading-relaxed max-w-2xl mx-auto"
             dangerouslySetInnerHTML={{ __html: content.comoFunciona.finalNote }}
           />
         </div>
