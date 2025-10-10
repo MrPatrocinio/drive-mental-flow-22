@@ -38,7 +38,9 @@ export default function LandingPage() {
   const [fields, setFields] = useState<any[]>([]);
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [fieldsLoading, setFieldsLoading] = useState(true);
-  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(
+    typeof window !== 'undefined' && window.scrollY < 500
+  );
   const videoRef = React.useRef<HTMLDivElement>(null);
   
   // Loading geral
@@ -259,33 +261,36 @@ export default function LandingPage() {
             </h1>
             
             {/* Video Section com lazy loading */}
-            {activeVideo && (
-              <div className="mb-8">
-                <div className="max-w-4xl mx-auto px-2">
-                  <div ref={videoRef} className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' }}>
-                    {shouldLoadVideo ? (
-                      <>
-                        {renderVideoPlayer()}
-                        {videoControlsSettings.shouldShowOverlay && (
-                          <div 
-                            className="absolute inset-0"
-                            style={{ pointerEvents: 'auto', background: 'transparent' }}
-                            onContextMenu={videoControlsSettings.preventContextMenu ? (e) => e.preventDefault() : undefined}
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
-                        <Play className="h-16 w-16 text-primary opacity-50" />
+            <div className="mb-8">
+              <div className="max-w-4xl mx-auto px-2">
+                <div ref={videoRef} className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' }}>
+                  {activeVideo && shouldLoadVideo ? (
+                    <>
+                      {renderVideoPlayer()}
+                      {videoControlsSettings.shouldShowOverlay && (
+                        <div 
+                          className="absolute inset-0"
+                          style={{ pointerEvents: 'auto', background: 'transparent' }}
+                          onContextMenu={videoControlsSettings.preventContextMenu ? (e) => e.preventDefault() : undefined}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm">
+                      <div className="text-center space-y-4">
+                        <Play className="h-16 w-16 text-primary opacity-50 mx-auto animate-pulse" />
+                        <p className="text-sm text-muted-foreground">Carregando vídeo...</p>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                </div>
+                {activeVideo && (
                   <p className="text-center text-muted-foreground mt-4 max-w-2xl mx-auto text-sm md:text-base px-2">
                     Pablo Marçal - Palestra sobre Prosperidade!
                   </p>
-                </div>
+                )}
               </div>
-            )}
+            </div>
             <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed px-2">
               {content.hero.subtitle}
             </p>
