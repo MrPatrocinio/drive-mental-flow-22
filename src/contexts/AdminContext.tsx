@@ -61,10 +61,42 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
             title: "Quebrar ciclos de autossabotagem",
             description: "Identifique e elimine padrões mentais que impedem seu crescimento"
           }
-        ],
-        scientificNote: "🧠 <em>Tudo com base em estudos reais...</em>"
-      },
-      features: [
+      ],
+      scientificNote: "🧠 <em>Tudo com base em estudos de neuroplasticidade, coaching ontológico e hipnose estratégica de alta performance.</em>"
+    },
+    comoFunciona: {
+      enabled: true,
+      title: "🔬 Como Funciona",
+      subtitle: "Siga o passo a passo simples e descubra como o Drive Mental transforma seu modo de pensar em poucos minutos por dia:",
+      steps: [
+        {
+          id: "step-1",
+          icon: "Target",
+          title: "Escolha sua área de foco",
+          description: "Exemplo: Prosperidade, Foco, Liderança, Autoestima..."
+        },
+        {
+          id: "step-2",
+          icon: "Headphones",
+          title: "Ouça 1 áudio por dia",
+          description: "Reserve um momento tranquilo e concentre-se totalmente na experiência."
+        },
+        {
+          id: "step-3",
+          icon: "Brain",
+          title: "Aplique o exercício mental prático",
+          description: "Após cada áudio, pratique o exercício proposto para reforçar o aprendizado."
+        },
+        {
+          id: "step-4",
+          icon: "TrendingUp",
+          title: "Acompanhe sua evolução semanal",
+          description: "Veja gráficos e insights personalizados que mostram seu progresso."
+        }
+      ],
+      finalNote: "🕒 <em>Em apenas 21 dias, seu cérebro começa a consolidar novos caminhos neurais — um novo \"drive mental\" de alta performance.</em>"
+    },
+    features: [
         {
           id: "feature-1",
           icon: "Brain",

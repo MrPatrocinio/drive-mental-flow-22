@@ -29,6 +29,18 @@ export interface LandingPageContent {
     }>;
     scientificNote: string;
   };
+  comoFunciona: {
+    enabled: boolean;
+    title: string;
+    subtitle: string;
+    steps: Array<{
+      id: string;
+      icon: string;
+      title: string;
+      description: string;
+    }>;
+    finalNote: string;
+  };
   features: Array<{
     id: string;
     icon: string;
@@ -150,6 +162,8 @@ class LandingContentServiceClass {
       typeof content.hero === 'object' &&
       content.whatIsDriveMental &&
       typeof content.whatIsDriveMental === 'object' &&
+      content.comoFunciona &&
+      typeof content.comoFunciona === 'object' &&
       Array.isArray(content.features) &&
       content.footer &&
       typeof content.footer === 'object'
@@ -197,6 +211,38 @@ class LandingContentServiceClass {
           }
         ],
         scientificNote: "🧠 <em>Tudo com base em estudos reais de neuroplasticidade e psicologia cognitiva.</em> Nada de promessas mágicas — apenas <strong>repetição, consistência e ciência aplicada.</strong>"
+      },
+      comoFunciona: {
+        enabled: true,
+        title: "🔬 Como Funciona",
+        subtitle: "Siga o passo a passo simples e descubra como o Drive Mental transforma seu modo de pensar em poucos minutos por dia:",
+        steps: [
+          {
+            id: "step-1",
+            icon: "Target",
+            title: "Escolha sua área de foco",
+            description: "Exemplo: Prosperidade, Foco, Liderança, Autoestima..."
+          },
+          {
+            id: "step-2",
+            icon: "Headphones",
+            title: "Ouça 1 áudio por dia",
+            description: "Reserve um momento tranquilo e concentre-se totalmente na experiência."
+          },
+          {
+            id: "step-3",
+            icon: "Brain",
+            title: "Aplique o exercício mental prático",
+            description: "Após cada áudio, pratique o exercício proposto para reforçar o aprendizado."
+          },
+          {
+            id: "step-4",
+            icon: "TrendingUp",
+            title: "Acompanhe sua evolução semanal",
+            description: "Veja gráficos e insights personalizados que mostram seu progresso."
+          }
+        ],
+        finalNote: "🕒 <em>Em apenas 21 dias, seu cérebro começa a consolidar novos caminhos neurais — um novo \"drive mental\" de alta performance.</em>"
       },
       features: [
         {

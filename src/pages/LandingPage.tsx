@@ -319,12 +319,62 @@ export default function LandingPage() {
               className="text-center text-foreground/90 leading-relaxed max-w-2xl mx-auto"
               dangerouslySetInnerHTML={{ __html: content.whatIsDriveMental.scientificNote }}
             />
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
+    )}
 
-      {/* Features */}
-      <section className="py-12 md:py-20 px-4">
+    {/* Seção "Como Funciona" */}
+    {content.comoFunciona?.enabled && (
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="container mx-auto max-w-6xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-slate-900">
+            {content.comoFunciona.title}
+          </h2>
+          
+          <p 
+            className="text-lg text-slate-600 text-center mb-12 max-w-3xl mx-auto leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: content.comoFunciona.subtitle }}
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {content.comoFunciona.steps.map((step, index) => {
+              const IconComponent = getIconComponent(step.icon);
+              return (
+                <div
+                  key={step.id}
+                  className="bg-white rounded-2xl shadow-md p-6 hover:scale-105 transition-all duration-300 flex flex-col items-center text-center"
+                  style={{ animationDelay: `${index * 0.15}s` }}
+                >
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <IconComponent className="h-8 w-8 text-primary" />
+                  </div>
+                  
+                  <div className="text-primary font-bold text-sm mb-2">
+                    Etapa {index + 1}
+                  </div>
+                  
+                  <h3 className="font-bold text-lg mb-3 text-slate-900">
+                    {step.title}
+                  </h3>
+                  
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          
+          <div 
+            className="text-center text-slate-700 text-lg leading-relaxed max-w-2xl mx-auto"
+            dangerouslySetInnerHTML={{ __html: content.comoFunciona.finalNote }}
+          />
+        </div>
+      </section>
+    )}
+
+    {/* Features */}
+    <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12 px-2">
             Por que escolher o <span className="text-premium">Drive Mental</span>?
