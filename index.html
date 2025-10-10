@@ -73,9 +73,21 @@
     <meta name="twitter:description" content="SaaS de desenvolvimento pessoal através de repetição auditiva." />
     <meta name="twitter:image" content="/lovable-uploads/501ca431-6207-47e5-a205-81d158d1d371.png" />
 
-    <!-- Preconnect para melhor performance -->
+    <!-- Preconnect e Preload para melhor performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Preload logo crítico -->
+    <link 
+      rel="preload" 
+      as="image" 
+      href="/lovable-uploads/30944d3c-0c99-44cc-aab1-2d9301e418a4.png"
+      type="image/png"
+    />
+    
+    <!-- DNS Prefetch para Supabase -->
+    <link rel="dns-prefetch" href="https://yxszmxpjnqhrcxphixjd.supabase.co" />
+    <link rel="preconnect" href="https://yxszmxpjnqhrcxphixjd.supabase.co" crossorigin />
     
     <!-- Security headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />

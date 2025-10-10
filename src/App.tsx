@@ -20,22 +20,23 @@ import { SubscriptionPage } from '@/pages/SubscriptionPage';
 import PaymentPage from '@/pages/PaymentPage';
 import PaymentSuccessPage from '@/pages/PaymentSuccessPage';
 import PaymentCancelPage from '@/pages/PaymentCancelPage';
-import { AdminSubscriptionPlansPage } from '@/pages/admin/AdminSubscriptionPlansPage';
-import { AdminPricingPage } from '@/pages/admin/AdminPricingPage';
-import { AdminBackgroundMusicPage } from '@/pages/admin/AdminBackgroundMusicPage';
-import { AdminAnalyticsPage } from '@/pages/admin/AdminAnalyticsPage';
-import AdminDashboard from '@/pages/admin/AdminDashboard';
-import AdminLoginPage from '@/pages/admin/AdminLoginPage';
-import AdminLandingPage from '@/pages/admin/AdminLandingPage';
-import AdminLandingVideosPage from '@/pages/admin/AdminLandingVideosPage';
-import AdminFieldsPageNew from '@/pages/admin/AdminFieldsPageNew';
-import AdminAudiosPageNew from '@/pages/admin/AdminAudiosPageNew';
-import { AdminStatsPage } from '@/pages/admin/AdminStatsPage';
-import { AdminValidationPage } from '@/pages/admin/AdminValidationPage';
-import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
-import AdminCommunicationPage from '@/pages/admin/AdminCommunicationPage';
-import AdminFinancialPage from '@/pages/admin/AdminFinancialPage';
-import AdminAnalyticsAdvancedPage from '@/pages/admin/AdminAnalyticsAdvancedPage';
+// Lazy load admin pages para reduzir bundle inicial
+const AdminSubscriptionPlansPage = React.lazy(() => import('@/pages/admin/AdminSubscriptionPlansPage').then(m => ({ default: m.AdminSubscriptionPlansPage })));
+const AdminPricingPage = React.lazy(() => import('@/pages/admin/AdminPricingPage').then(m => ({ default: m.AdminPricingPage })));
+const AdminBackgroundMusicPage = React.lazy(() => import('@/pages/admin/AdminBackgroundMusicPage').then(m => ({ default: m.AdminBackgroundMusicPage })));
+const AdminAnalyticsPage = React.lazy(() => import('@/pages/admin/AdminAnalyticsPage').then(m => ({ default: m.AdminAnalyticsPage })));
+const AdminDashboard = React.lazy(() => import('@/pages/admin/AdminDashboard'));
+const AdminLoginPage = React.lazy(() => import('@/pages/admin/AdminLoginPage'));
+const AdminLandingPage = React.lazy(() => import('@/pages/admin/AdminLandingPage'));
+const AdminLandingVideosPage = React.lazy(() => import('@/pages/admin/AdminLandingVideosPage'));
+const AdminFieldsPageNew = React.lazy(() => import('@/pages/admin/AdminFieldsPageNew'));
+const AdminAudiosPageNew = React.lazy(() => import('@/pages/admin/AdminAudiosPageNew'));
+const AdminStatsPage = React.lazy(() => import('@/pages/admin/AdminStatsPage').then(m => ({ default: m.AdminStatsPage })));
+const AdminValidationPage = React.lazy(() => import('@/pages/admin/AdminValidationPage').then(m => ({ default: m.AdminValidationPage })));
+const AdminUsersPage = React.lazy(() => import('@/pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
+const AdminCommunicationPage = React.lazy(() => import('@/pages/admin/AdminCommunicationPage'));
+const AdminFinancialPage = React.lazy(() => import('@/pages/admin/AdminFinancialPage'));
+const AdminAnalyticsAdvancedPage = React.lazy(() => import('@/pages/admin/AdminAnalyticsAdvancedPage'));
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { UserProvider } from '@/contexts/UserContext';
@@ -142,97 +143,117 @@ const AppContent: React.FC = () => {
       } />
 
       {/* Rota de Login Administrativo */}
-      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin/login" element={
+        <React.Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-muted-foreground">Carregando...</p>
+            </div>
+          </div>
+        }>
+          <AdminLoginPage />
+        </React.Suspense>
+      } />
 
       {/* Rotas Administrativas Protegidas */}
       <Route path="/admin" element={
-        <AdminProtectedRoute>
-          <AdminDashboard />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-muted-foreground">Carregando...</p>
+            </div>
+          </div>
+        }>
+          <AdminProtectedRoute>
+            <AdminDashboard />
+          </AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/users" element={
-        <AdminProtectedRoute>
-          <AdminUsersPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminUsersPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/communication" element={
-        <AdminProtectedRoute>
-          <AdminCommunicationPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminCommunicationPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/financial" element={
-        <AdminProtectedRoute>
-          <AdminFinancialPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminFinancialPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/analytics-advanced" element={
-        <AdminProtectedRoute>
-          <AdminAnalyticsAdvancedPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminAnalyticsAdvancedPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/landing" element={
-        <AdminProtectedRoute>
-          <AdminLandingPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminLandingPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/landing-videos" element={
-        <AdminProtectedRoute>
-          <AdminLandingVideosPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminLandingVideosPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/pricing" element={
-        <AdminProtectedRoute>
-          <AdminPricingPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminPricingPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/subscription-plans" element={
-        <AdminProtectedRoute>
-          <AdminSubscriptionPlansPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminSubscriptionPlansPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/fields" element={
-        <AdminProtectedRoute>
-          <AdminFieldsPageNew />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminFieldsPageNew /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/audios" element={
-        <AdminProtectedRoute>
-          <AdminAudiosPageNew />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminAudiosPageNew /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/background-music" element={
-        <AdminProtectedRoute>
-          <AdminBackgroundMusicPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminBackgroundMusicPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/stats" element={
-        <AdminProtectedRoute>
-          <AdminStatsPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminStatsPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/analytics" element={
-        <AdminProtectedRoute>
-          <AdminAnalyticsPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminAnalyticsPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       <Route path="/admin/validation" element={
-        <AdminProtectedRoute>
-          <AdminValidationPage />
-        </AdminProtectedRoute>
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminValidationPage /></AdminProtectedRoute>
+        </React.Suspense>
       } />
       
       {/* Rota Catch-All para 404 */}

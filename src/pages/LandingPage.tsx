@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { LandingPageMobileHeader } from "@/components/mobile/LandingPageMobileHeader";
 import { LandingPageBottomNav } from "@/components/mobile/LandingPageBottomNav";
-import { ArrowRight, Brain, Heart, Target, DollarSign, Activity, Sparkles, Play, Users, Award } from "lucide-react";
+import { ArrowRight, Brain, Heart, Target, DollarSign, Activity, Sparkles, Play, Users, Award, CheckCircle, TrendingUp, Zap, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { VideoService, Video } from "@/services/supabase/videoService";
@@ -13,10 +13,20 @@ import { useDataSync } from "@/hooks/useDataSync";
 import { useVideoControls } from "@/hooks/useVideoControls";
 import { useVideoLifecycle } from "@/hooks/useVideoLifecycle";
 import { useLandingContent } from "@/hooks/useLandingContent";
-import { SubscriptionPlans } from "@/components/subscription/SubscriptionPlans";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { EnhancedRefreshButton } from "@/components/EnhancedRefreshButton";
-import * as Icons from "lucide-react";
+
+// Lazy load componente pesado
+const SubscriptionPlans = React.lazy(() => 
+  import('@/components/subscription/SubscriptionPlans').then(m => ({ default: m.SubscriptionPlans }))
+);
+
+// Map local de ícones (tree-shakeable)
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
+  Brain, Heart, Target, DollarSign, Activity, 
+  Sparkles, Play, Users, Award, CheckCircle,
+  TrendingUp, Zap, Shield
+};
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -28,6 +38,8 @@ export default function LandingPage() {
   const [fields, setFields] = useState<any[]>([]);
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [fieldsLoading, setFieldsLoading] = useState(true);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+  const videoRef = React.useRef<HTMLDivElement>(null);
   
   // Loading geral
   const loading = contentLoading || fieldsLoading;
@@ -44,11 +56,28 @@ export default function LandingPage() {
   const videoControlsSettings = useVideoControls(activeVideo?.video_controls);
   const { isVideoReady, videoKey, cleanupPreviousVideo } = useVideoLifecycle(activeVideo);
 
-  // Get dynamic icon component
+  // Get dynamic icon component (tree-shakeable)
   const getIconComponent = (iconName: string) => {
-    const IconComponent = (Icons as any)[iconName];
-    return IconComponent || Brain;
+    return ICON_MAP[iconName] || Brain;
   };
+
+  // Lazy load do vídeo quando próximo ao viewport
+  useEffect(() => {
+    if (!videoRef.current) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShouldLoadVideo(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    
+    observer.observe(videoRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const loadFieldsAndVideo = useCallback(async () => {
     try {
@@ -229,19 +258,26 @@ export default function LandingPage() {
               <span className="text-premium">{content.hero.titleHighlight}</span>
             </h1>
             
-            {/* Video Section */}
+            {/* Video Section com lazy loading */}
             {activeVideo && (
               <div className="mb-8">
                 <div className="max-w-4xl mx-auto px-2">
-                  <div className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' }}>
-                    {renderVideoPlayer()}
-
-                    {videoControlsSettings.shouldShowOverlay && (
-                      <div 
-                        className="absolute inset-0"
-                        style={{ pointerEvents: 'auto', background: 'transparent' }}
-                        onContextMenu={videoControlsSettings.preventContextMenu ? (e) => e.preventDefault() : undefined}
-                      />
+                  <div ref={videoRef} className="relative w-full overflow-hidden rounded-xl" style={{ paddingBottom: '56.25%' }}>
+                    {shouldLoadVideo ? (
+                      <>
+                        {renderVideoPlayer()}
+                        {videoControlsSettings.shouldShowOverlay && (
+                          <div 
+                            className="absolute inset-0"
+                            style={{ pointerEvents: 'auto', background: 'transparent' }}
+                            onContextMenu={videoControlsSettings.preventContextMenu ? (e) => e.preventDefault() : undefined}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
+                        <Play className="h-16 w-16 text-primary opacity-50" />
+                      </div>
                     )}
                   </div>
                   <p className="text-center text-muted-foreground mt-4 max-w-2xl mx-auto text-sm md:text-base px-2">
@@ -569,7 +605,7 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* Subscription Plans Section */}
+      {/* Subscription Plans Section com lazy loading */}
       <section className="py-12 md:py-20 px-4 subscription-plans">
         <div className="container mx-auto">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 px-2">
@@ -578,7 +614,13 @@ export default function LandingPage() {
           <p className="text-center text-muted-foreground mb-8 md:mb-12 text-base md:text-lg px-2 max-w-2xl mx-auto">
             Escolha o plano ideal para sua transformação
           </p>
-          <SubscriptionPlans />
+          <React.Suspense fallback={
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          }>
+            <SubscriptionPlans />
+          </React.Suspense>
         </div>
       </section>
 

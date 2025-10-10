@@ -13,12 +13,14 @@ interface LogoProps {
   showText?: boolean;
   size?: "sm" | "md" | "lg";
   className?: string;
+  priority?: boolean; // true para carregar imediatamente (header), false para lazy loading
 }
 
 export const Logo = ({ 
   showText = false, 
   size = "md", 
-  className = "" 
+  className = "",
+  priority = false 
 }: LogoProps) => {
   const [imageError, setImageError] = useState(false);
 
@@ -38,6 +40,12 @@ export const Logo = ({
     setImageError(true);
   };
 
+  const sizeMap = {
+    sm: 128,
+    md: 160,
+    lg: 224
+  };
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {!imageError ? (
@@ -46,6 +54,10 @@ export const Logo = ({
           alt="Drive Mental Logo"
           className={`${sizeClasses[size]} object-contain`}
           style={{ imageRendering: 'crisp-edges' }}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          width={sizeMap[size]}
+          height={sizeMap[size]}
           onError={handleImageError}
         />
       ) : (
