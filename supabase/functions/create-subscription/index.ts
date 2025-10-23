@@ -60,33 +60,19 @@ serve(async (req) => {
       logStep("No existing customer found, will create one during checkout");
     }
 
-    // Define pricing based on plan (valores em centavos)
-    const pricingMap = {
-      quarterly: { 
-        amount: 8990, // R$ 89,90
-        interval: "month",
-        interval_count: 3,
-        name: "Drive Mental - Trimestral",
-        description: "Assinatura trimestral (renovação a cada 3 meses)"
-      },
-      semiannual: { 
-        amount: 17940, // R$ 179,40
-        interval: "month", 
-        interval_count: 6,
-        name: "Drive Mental - Semestral",
-        description: "Assinatura semestral (renovação a cada 6 meses)"
-      },
-      annual: { 
-        amount: 35880, // R$ 358,80
-        interval: "year",
-        interval_count: 1,
-        name: "Drive Mental - Anual",
-        description: "Assinatura anual (renovação a cada 12 meses)"
-      }
+    // Map plan to Stripe Price IDs
+    const priceIdMap: Record<string, string> = {
+      quarterly: "price_PENDING_QUARTERLY", // Aguardando Price ID
+      semiannual: "price_PENDING_SEMIANNUAL", // Aguardando Price ID
+      annual: "price_1SGAyB4J5tUHBhq6eHSyaZeQ"
     };
 
-    const pricing = pricingMap[plan as keyof typeof pricingMap] || pricingMap.quarterly;
-    logStep("Pricing determined", { plan, pricing });
+    const priceId = priceIdMap[plan];
+    if (!priceId || priceId.startsWith("price_PENDING")) {
+      throw new Error(`Price ID não configurado para o plano: ${plan}. Configure o Price ID no Stripe Dashboard.`);
+    }
+    
+    logStep("Price ID determined", { plan, priceId });
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -94,18 +80,7 @@ serve(async (req) => {
       customer_creation: customerId ? undefined : "always",
       line_items: [
         {
-          price_data: {
-            currency: "brl",
-            product_data: { 
-              name: pricing.name,
-              description: pricing.description
-            },
-            unit_amount: pricing.amount,
-            recurring: { 
-              interval: pricing.interval as 'month' | 'year',
-              interval_count: pricing.interval_count
-            },
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
