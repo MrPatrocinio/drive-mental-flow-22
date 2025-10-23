@@ -140,20 +140,24 @@ export const SubscriptionPlans = () => {
                       />
                     )}
                     
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
                       {promotion.isValid && (
-                        <div className="text-lg text-muted-foreground line-through">
+                        <div className="text-base sm:text-lg text-muted-foreground line-through order-1">
                           {formatPrice(promotion.originalPrice, plan.currency)}
                         </div>
                       )}
-                      <span className="text-4xl font-bold text-foreground">
-                        {formatPrice(promotion.discountedPrice, plan.currency)}
-                      </span>
-                      <div className="text-left">
-                        <div className="text-sm text-muted-foreground">por período</div>
+                      
+                      <div className="flex items-baseline gap-1 order-2">
+                        <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+                          {formatPrice(promotion.discountedPrice, plan.currency)}
+                        </span>
+                        <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                          por período
+                        </span>
                       </div>
                     </div>
-                    <div className="text-sm text-green-600 font-medium">{plan.savings}</div>
+                    
+                    <div className="text-xs sm:text-sm text-green-600 font-medium">{plan.savings}</div>
                     
                     {promotion.isValid && plan.promotion_end_date && (
                       <Countdown 
