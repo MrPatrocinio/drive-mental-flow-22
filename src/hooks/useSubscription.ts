@@ -92,8 +92,8 @@ export const useSubscription = () => {
       setIsLoading(true);
       console.log('[SUBSCRIPTION] Criando checkout...', { tier });
       
-      const { data, error } = await supabase.functions.invoke('create-subscription', {
-        body: { tier }
+    const { data, error } = await supabase.functions.invoke('create-subscription', {
+      body: { plan: tier }
       });
       
       if (error) {
