@@ -55,9 +55,22 @@ export class SubscriptionPlansService {
   }
 
   static async save(plansData: SubscriptionPlansInsert): Promise<SubscriptionPlansData> {
-    console.log('SubscriptionPlansService: Salvando planos de assinatura:', plansData);
+    console.log('🔍 [DEBUG] SubscriptionPlansService.save() - Dados recebidos:', plansData);
+    console.log('🔍 [DEBUG] Planos com is_active:', plansData.plans.map(p => ({ 
+      id: p.id, 
+      name: p.name, 
+      is_active: p.is_active 
+    })));
     
     try {
+      const dataToSave = {
+        section: 'subscription_plans',
+        content: plansData as any,
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log('🔍 [DEBUG] Dados que serão salvos no Supabase:', JSON.stringify(dataToSave, null, 2));
+      
       // Primeiro, tenta fazer upsert com onConflict especificado
       const { data, error } = await supabase
         .from('landing_content')
@@ -72,18 +85,23 @@ export class SubscriptionPlansService {
         .single();
 
       if (error) {
-        console.error('SubscriptionPlansService: Erro no upsert:', error);
+        console.error('🔴 [DEBUG] Erro no upsert:', error);
         
         // Se falhou por constraint única, tenta estratégia alternativa
         if (error.code === '23505') {
-          console.log('SubscriptionPlansService: Tentando update direto devido a constraint única');
+          console.log('🔍 [DEBUG] Tentando update direto devido a constraint única');
           return await this.updateExistingRecord(plansData);
         }
         
         throw error;
       }
 
-      console.log('SubscriptionPlansService: Planos salvos com sucesso via upsert');
+      console.log('✅ [DEBUG] Upsert bem-sucedido! Dados retornados:', JSON.stringify(data, null, 2));
+      console.log('✅ [DEBUG] Planos salvos com is_active:', (data.content as any).plans.map((p: any) => ({ 
+        id: p.id, 
+        name: p.name, 
+        is_active: p.is_active 
+      })));
       
       // Notificar mudança via DataSync
       this.notifyDataChange(plansData);
@@ -96,7 +114,10 @@ export class SubscriptionPlansService {
   }
 
   private static async updateExistingRecord(plansData: SubscriptionPlansInsert): Promise<SubscriptionPlansData> {
-    console.log('SubscriptionPlansService: Executando update direto');
+    console.log('🔍 [DEBUG] Executando update direto com dados:', JSON.stringify(plansData.plans.map(p => ({ 
+      id: p.id, 
+      is_active: p.is_active 
+    })), null, 2));
     
     const { data, error } = await supabase
       .from('landing_content')
@@ -109,11 +130,16 @@ export class SubscriptionPlansService {
       .single();
 
     if (error) {
-      console.error('SubscriptionPlansService: Erro no update direto:', error);
+      console.error('🔴 [DEBUG] Erro no update direto:', error);
       throw error;
     }
 
-    console.log('SubscriptionPlansService: Update direto executado com sucesso');
+    console.log('✅ [DEBUG] Update direto bem-sucedido! Dados retornados:', JSON.stringify(data, null, 2));
+    console.log('✅ [DEBUG] Planos atualizados com is_active:', (data.content as any).plans.map((p: any) => ({ 
+      id: p.id, 
+      name: p.name, 
+      is_active: p.is_active 
+    })));
     
     // Notificar mudança via DataSync
     this.notifyDataChange(plansData);
