@@ -80,6 +80,15 @@ export const useSubscription = () => {
 
   const createSubscription = useCallback(async (tier: string = 'premium') => {
     try {
+      // Verifica se o usuário está autenticado
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        console.log('[SUBSCRIPTION] Usuário não autenticado, salvando plano escolhido');
+        localStorage.setItem('pendingSubscriptionPlan', tier);
+        return { requiresAuth: true };
+      }
+
       setIsLoading(true);
       console.log('[SUBSCRIPTION] Criando checkout...', { tier });
       
@@ -90,14 +99,16 @@ export const useSubscription = () => {
       if (error) {
         console.error('[SUBSCRIPTION] Erro ao criar assinatura:', error);
         toast.error('Erro ao criar assinatura');
-        return;
+        return { requiresAuth: false };
       }
 
       console.log('[SUBSCRIPTION] Redirecionando para:', data.url);
       window.open(data.url, '_blank');
+      return { requiresAuth: false };
     } catch (error) {
       console.error('[SUBSCRIPTION] Erro ao criar assinatura:', error);
       toast.error('Erro ao criar assinatura');
+      return { requiresAuth: false };
     } finally {
       setIsLoading(false);
     }

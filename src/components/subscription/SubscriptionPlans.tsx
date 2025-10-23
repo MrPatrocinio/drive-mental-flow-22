@@ -11,11 +11,14 @@ import { PromotionBadge } from '@/components/ui/promotion-badge';
 import { Countdown } from '@/components/ui/countdown';
 import { formatPrice } from '@/utils/pricingUtils';
 import { useDataSync } from '@/hooks/useDataSync';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export const SubscriptionPlans = () => {
   const [plansData, setPlansData] = useState<SubscriptionPlansData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { createSubscription, isLoading: isCreatingSubscription, subscription_tier, subscribed } = useSubscription();
+  const navigate = useNavigate();
 
   const loadPlansData = async () => {
     try {
@@ -40,8 +43,13 @@ export const SubscriptionPlans = () => {
     }
   });
 
-  const handleSelectPlan = (planId: string) => {
-    createSubscription(planId);
+  const handleSelectPlan = async (planId: string) => {
+    const result = await createSubscription(planId);
+    
+    if (result?.requiresAuth) {
+      toast.info('Faça login para continuar com a assinatura');
+      navigate(`/login?redirect=/assinatura&plan=${planId}`);
+    }
   };
 
   const isCurrentPlan = (planId: string) => {

@@ -15,6 +15,7 @@ import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useUserAuthentication } from "@/hooks/useUserAuthentication";
 import type { LoginCredentials } from "@/services/supabase/authService";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useSubscription } from "@/hooks/useSubscription";
 
 /**
  * Componente focado apenas na UI do formulário
@@ -29,8 +30,14 @@ export const UserLoginForm: React.FC = () => {
   const location = useLocation();
   const { isLoading, error, login, clearError } = useUserAuthentication();
   const { trackEvent } = useAnalytics();
+  const { createSubscription } = useSubscription();
 
-  const from = location.state?.from?.pathname || "/dashboard";
+  // Extrai parâmetros da URL
+  const searchParams = new URLSearchParams(location.search);
+  const redirectPath = searchParams.get('redirect') || "/dashboard";
+  const pendingPlan = searchParams.get('plan');
+
+  const from = location.state?.from?.pathname || redirectPath;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +52,14 @@ export const UserLoginForm: React.FC = () => {
     if (success) {
       // Tracking analytics: login bem-sucedido
       trackEvent('login_success', { email });
+      
+      // Processa assinatura pendente após login
+      if (pendingPlan) {
+        console.log('[LOGIN] Processando assinatura pendente:', pendingPlan);
+        localStorage.removeItem('pendingSubscriptionPlan');
+        await createSubscription(pendingPlan);
+      }
+      
       navigate(from, { replace: true });
     } else {
       // Tracking analytics: falha no login
