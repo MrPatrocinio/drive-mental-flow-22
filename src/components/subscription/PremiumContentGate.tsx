@@ -16,27 +16,26 @@ interface PremiumContentGateProps {
 }
 
 /**
- * Componente responsável por controlar acesso a conteúdo
- * ATUALIZADO: Agora todos os áudios são acessíveis - sem diferenciação premium
- * Mantido para compatibilidade com o código existente
+ * Componente responsável por controlar acesso a conteúdo premium
+ * SEGURANÇA: Verifica assinatura antes de exibir conteúdo premium
+ * Demo e conteúdo gratuito permanecem acessíveis para onboarding
  */
 export const PremiumContentGate = ({ 
   children, 
   contentTitle = 'Este conteúdo',
   showPreview = false,
-  isPremium = false, // Não importa mais - todos os áudios são acessíveis
+  isPremium = false,
   isDemoAudio = false
 }: PremiumContentGateProps) => {
   const { canAccessAudio } = useContentAccess();
   const { createSubscription } = useSubscription();
 
-  // TODOS os áudios são acessíveis agora - sempre retorna o conteúdo
-  // Mantém a estrutura para compatibilidade futura
+  // 🔒 Verificação real de acesso baseada em assinatura
   if (canAccessAudio(isPremium, isDemoAudio)) {
     return <>{children}</>;
   }
 
-  // Este código nunca será executado na prática, mas mantido para compatibilidade
+  // 🚫 Acesso negado - exibir tela de upgrade
   return (
     <div className="relative">
       {showPreview && (

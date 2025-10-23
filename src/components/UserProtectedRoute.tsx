@@ -18,7 +18,7 @@ interface UserProtectedRouteProps {
  */
 export const UserProtectedRoute = ({ 
   children, 
-  requiresSubscription = false 
+  requiresSubscription = true // 🛡️ Seguro por padrão - assinatura obrigatória
 }: UserProtectedRouteProps) => {
   const { isAuthenticated, isLoading, user } = useSupabaseAuth();
   const { subscribed, createSubscription, checkSubscription } = useSubscription();
@@ -31,6 +31,19 @@ export const UserProtectedRoute = ({
       checkSubscription();
     }
   }, [isAuthenticated, requiresSubscription, checkSubscription]);
+
+  // 🔒 Logs de auditoria para tentativas de acesso não autorizado
+  useEffect(() => {
+    if (isAuthenticated && requiresSubscription && !subscribed) {
+      console.warn('[SECURITY AUDIT] Acesso negado - Assinatura necessária', {
+        user_id: user?.id,
+        user_email: user?.email,
+        route: location.pathname,
+        subscribed,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [isAuthenticated, requiresSubscription, subscribed, user, location.pathname]);
 
   // Loading state
   if (isLoading) {
