@@ -9,6 +9,7 @@ interface SubscriptionData {
   subscribed: boolean;
   subscription_tier: string | null;
   subscription_end: string | null;
+  subscription_status?: string; // 🔥 FASE 2: Status detalhado do Stripe
 }
 
 export const useSubscription = () => {
@@ -16,6 +17,7 @@ export const useSubscription = () => {
     subscribed: false,
     subscription_tier: null,
     subscription_end: null,
+    subscription_status: 'none', // 🔥 FASE 2: Status padrão
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -38,6 +40,7 @@ export const useSubscription = () => {
         subscribed: cachedData.subscribed,
         subscription_tier: cachedData.subscription_tier,
         subscription_end: cachedData.subscription_end,
+        subscription_status: cachedData.subscription_status || 'none', // 🔥 FASE 2
       });
       return;
     }
@@ -179,6 +182,7 @@ export const useSubscription = () => {
           subscribed: false,
           subscription_tier: null,
           subscription_end: null,
+          subscription_status: 'none', // 🔥 FASE 2
         });
       }
     });

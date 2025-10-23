@@ -54,7 +54,7 @@ serve(async (req) => {
         email: user.email,
         user_id: user.id,
         stripe_customer_id: null,
-        subscribed: false,
+        subscription_status: 'none', // 🔥 FASE 2
         subscription_tier: null,
         subscription_end: null,
         updated_at: new Date().toISOString(),
@@ -62,7 +62,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         subscribed: false,
         subscription_tier: null,
-        subscription_end: null
+        subscription_end: null,
+        subscription_status: 'none' // 🔥 FASE 2
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -72,19 +73,29 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
+    // 🔥 FASE 2: Buscar todas as subscriptions (não só 'active')
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
       limit: 1,
     });
-    const hasActiveSub = subscriptions.data.length > 0;
+    
+    const hasSubscription = subscriptions.data.length > 0;
     let subscriptionTier = null;
     let subscriptionEnd = null;
+    let subscriptionStatus = 'none'; // 🔥 FASE 2: Status padrão
+    let subscriptionId = null;
 
-    if (hasActiveSub) {
+    if (hasSubscription) {
       const subscription = subscriptions.data[0];
+      subscriptionId = subscription.id;
+      subscriptionStatus = subscription.status; // 🔥 FASE 2: Status do Stripe
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
+      
+      logStep("Subscription found", { 
+        subscriptionId, 
+        status: subscriptionStatus, 
+        endDate: subscriptionEnd 
+      });
       
       // Determine subscription tier from price
       const priceId = subscription.items.data[0].price.id;
@@ -100,24 +111,34 @@ serve(async (req) => {
       }
       logStep("Determined subscription tier", { priceId, amount, subscriptionTier });
     } else {
-      logStep("No active subscription found");
+      logStep("No subscription found");
     }
+
+    // 🔥 FASE 2: Determinar se está ativo (backward compatibility)
+    const isActive = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
 
     await supabaseClient.from("subscribers").upsert({
       email: user.email,
       user_id: user.id,
       stripe_customer_id: customerId,
-      subscribed: hasActiveSub,
+      stripe_subscription_id: subscriptionId, // 🔥 FASE 1
+      subscription_status: subscriptionStatus, // 🔥 FASE 2
       subscription_tier: subscriptionTier,
       subscription_end: subscriptionEnd,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'email' });
 
-    logStep("Updated database with subscription info", { subscribed: hasActiveSub, subscriptionTier });
+    logStep("Updated database with subscription info", { 
+      subscriptionStatus, 
+      isActive, 
+      subscriptionTier 
+    });
+    
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
+      subscribed: isActive, // Backward compatibility
       subscription_tier: subscriptionTier,
-      subscription_end: subscriptionEnd
+      subscription_end: subscriptionEnd,
+      subscription_status: subscriptionStatus // 🔥 FASE 2
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

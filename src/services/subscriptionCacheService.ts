@@ -10,6 +10,7 @@ interface CachedSubscriptionData {
   subscribed: boolean;
   subscription_tier: string | null;
   subscription_end: string | null;
+  subscription_status?: string; // 🔥 FASE 2: Status detalhado
   timestamp: number;
 }
 

@@ -95,21 +95,25 @@ serve(async (req) => {
         
         // Calculate subscription end date
         const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+        
+        // 🔥 FASE 2: Usar status detalhado do Stripe
+        const subscriptionStatus = subscription.status; // 'active', 'trialing', etc.
 
         console.log('[WEBHOOK] Atualizando subscriber:', {
           userId,
           email: customerEmail,
           tier: planTier,
           subscriptionId,
+          status: subscriptionStatus,
           end: subscriptionEnd
         });
 
-        // 🔥 FASE 1: Incluir user_id e stripe_subscription_id
+        // 🔥 FASE 2: Incluir subscription_status (subscribed será sincronizado via trigger)
         const subscriberData: any = {
           email: customerEmail!,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
-          subscribed: true,
+          subscription_status: subscriptionStatus,
           subscription_tier: planTier,
           subscription_end: subscriptionEnd,
           updated_at: new Date().toISOString(),
@@ -155,20 +159,22 @@ serve(async (req) => {
 
         // Calculate subscription end date
         const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-        const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+        
+        // 🔥 FASE 2: Usar status detalhado do Stripe
+        const subscriptionStatus = subscription.status;
 
         console.log('[WEBHOOK] Atualizando status:', {
           userId,
           email: customerEmail,
           subscriptionId: subscription.id,
-          active: isActive,
+          status: subscriptionStatus,
           end: subscriptionEnd
         });
 
-        // 🔥 FASE 1: Incluir stripe_subscription_id na atualização
+        // 🔥 FASE 2: Usar subscription_status (subscribed sincroniza via trigger)
         const updateData: any = {
           stripe_subscription_id: subscription.id,
-          subscribed: isActive,
+          subscription_status: subscriptionStatus,
           subscription_end: subscriptionEnd,
           updated_at: new Date().toISOString(),
         };
@@ -221,11 +227,12 @@ serve(async (req) => {
           .eq('stripe_subscription_id', subscription.id)
           .single();
 
+        // 🔥 FASE 2: Marcar como 'canceled' (não 'none' pois pode ainda estar ativa até o fim do período)
         // Deactivate subscription
         let query = supabase
           .from('subscribers')
           .update({
-            subscribed: false,
+            subscription_status: 'canceled',
             subscription_end: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });
@@ -277,12 +284,13 @@ serve(async (req) => {
             .eq('stripe_subscription_id', subscriptionId)
             .single();
 
+          // 🔥 FASE 2: Renovação bem-sucedida = 'active'
           // Update subscription period
           let query = supabase
             .from('subscribers')
             .update({
               stripe_subscription_id: subscriptionId,
-              subscribed: true,
+              subscription_status: 'active',
               subscription_end: subscriptionEnd,
               updated_at: new Date().toISOString(),
             });

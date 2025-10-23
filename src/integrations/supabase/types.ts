@@ -457,6 +457,9 @@ export type Database = {
           stripe_subscription_id: string | null
           subscribed: boolean
           subscription_end: string | null
+          subscription_status:
+            | Database["public"]["Enums"]["subscription_status_enum"]
+            | null
           subscription_tier: string | null
           updated_at: string
           user_id: string | null
@@ -469,6 +472,9 @@ export type Database = {
           stripe_subscription_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
+          subscription_status?:
+            | Database["public"]["Enums"]["subscription_status_enum"]
+            | null
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
@@ -481,6 +487,9 @@ export type Database = {
           stripe_subscription_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
+          subscription_status?:
+            | Database["public"]["Enums"]["subscription_status_enum"]
+            | null
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
@@ -493,6 +502,12 @@ export type Database = {
     }
     Functions: {
       get_current_user_role: { Args: never; Returns: string }
+      is_subscription_active: {
+        Args: {
+          status: Database["public"]["Enums"]["subscription_status_enum"]
+        }
+        Returns: boolean
+      }
       search_unified_content: {
         Args: { search_query: string }
         Returns: {
@@ -509,7 +524,16 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      subscription_status_enum:
+        | "none"
+        | "active"
+        | "trialing"
+        | "past_due"
+        | "canceled"
+        | "incomplete"
+        | "incomplete_expired"
+        | "unpaid"
+        | "paused"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -636,6 +660,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      subscription_status_enum: [
+        "none",
+        "active",
+        "trialing",
+        "past_due",
+        "canceled",
+        "incomplete",
+        "incomplete_expired",
+        "unpaid",
+        "paused",
+      ],
+    },
   },
 } as const
