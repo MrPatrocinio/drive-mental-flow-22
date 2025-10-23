@@ -62,8 +62,8 @@ serve(async (req) => {
 
     // Map plan to Stripe Price IDs
     const priceIdMap: Record<string, string> = {
-      quarterly: "price_PENDING_QUARTERLY", // Aguardando Price ID
-      semiannual: "price_PENDING_SEMIANNUAL", // Aguardando Price ID
+      quarterly: "price_1SGAwC4J5tUHBhq6jylL5ZCz",
+      semiannual: "price_1SGAxS4J5tUHBhq6cK6qFdgy",
       annual: "price_1SGAyB4J5tUHBhq6eHSyaZeQ"
     };
 
