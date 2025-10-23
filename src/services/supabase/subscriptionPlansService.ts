@@ -12,6 +12,7 @@ export interface SubscriptionPlan {
   description: string;
   savings: string;
   popular: boolean;
+  is_active: boolean;
   has_promotion: boolean;
   discount_percentage: number;
   promotion_end_date: string | null;
@@ -145,6 +146,7 @@ export class SubscriptionPlansService {
           description: 'Renovação automática a cada 3 meses',
           savings: 'Economize R$ 0,80',
           popular: false,
+          is_active: true,
           has_promotion: false,
           discount_percentage: 0,
           promotion_end_date: null,
@@ -161,6 +163,7 @@ export class SubscriptionPlansService {
           description: 'Renovação automática a cada 6 meses - Mais Popular',
           savings: 'Economize R$ 0,00',
           popular: true,
+          is_active: true,
           has_promotion: false,
           discount_percentage: 0,
           promotion_end_date: null,
@@ -177,6 +180,7 @@ export class SubscriptionPlansService {
           description: 'Renovação automática a cada 12 meses',
           savings: 'Economize R$ 0,00',
           popular: false,
+          is_active: true,
           has_promotion: false,
           discount_percentage: 0,
           promotion_end_date: null,

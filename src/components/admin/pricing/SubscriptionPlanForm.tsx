@@ -51,10 +51,16 @@ export const SubscriptionPlanForm: React.FC<SubscriptionPlanFormProps> = ({
   const Icon = getIcon();
 
   return (
-    <Card className={`relative ${plan.popular ? 'border-primary shadow-md' : 'border-border'}`}>
+    <Card className={`relative ${plan.is_active === false ? 'opacity-50 border-dashed' : ''} ${plan.popular ? 'border-primary shadow-md' : 'border-border'}`}>
       {plan.popular && (
         <Badge className="absolute -top-2 left-4 bg-primary text-primary-foreground">
           Mais Popular
+        </Badge>
+      )}
+      
+      {plan.is_active === false && (
+        <Badge className="absolute -top-2 right-4 bg-muted text-muted-foreground border-dashed">
+          Desativado
         </Badge>
       )}
       
@@ -68,6 +74,19 @@ export const SubscriptionPlanForm: React.FC<SubscriptionPlanFormProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Toggle de Ativação */}
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/10">
+          <div className="space-y-1">
+            <Label className="font-semibold">Status do Plano</Label>
+            <p className="text-xs text-muted-foreground">
+              {plan.is_active !== false ? 'Plano ativo e visível na página principal' : 'Plano desativado e oculto'}
+            </p>
+          </div>
+          <Switch
+            checked={plan.is_active !== false}
+            onCheckedChange={(value) => handleChange('is_active', value)}
+          />
+        </div>
         {/* Informações Básicas */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">

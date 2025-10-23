@@ -82,7 +82,9 @@ export const SubscriptionPlans = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {plansData.plans.map((plan) => {
+          {plansData.plans
+            .filter(plan => plan.is_active !== false)
+            .map((plan) => {
             const Icon = plan.popular ? Crown : Star;
             const isCurrent = isCurrentPlan(plan.id);
             const promotion = PromotionService.calculatePromotion({

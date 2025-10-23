@@ -131,6 +131,12 @@ export class SubscriptionValidationService {
       errors.push('Apenas um plano pode ser marcado como popular');
     }
 
+    // Verificar se há pelo menos um plano ativo
+    const activePlans = plans.filter(plan => plan.is_active !== false);
+    if (activePlans.length === 0) {
+      errors.push('Pelo menos um plano deve estar ativo');
+    }
+
     return errors;
   }
 }
