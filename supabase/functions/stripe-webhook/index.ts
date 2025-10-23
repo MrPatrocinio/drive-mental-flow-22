@@ -77,13 +77,16 @@ serve(async (req) => {
           break;
         }
 
+        // 🔥 FASE 1: Recuperar user_id da metadata (prioridade)
+        const userId = session.metadata?.user_id;
+        
         // Get subscription details from Stripe
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const customer = await stripe.customers.retrieve(customerId);
         
         const customerEmail = (customer as Stripe.Customer).email;
-        if (!customerEmail) {
-          console.error('[WEBHOOK] Email do cliente não encontrado');
+        if (!customerEmail && !userId) {
+          console.error('[WEBHOOK] Nem email nem user_id encontrado');
           break;
         }
 
@@ -94,23 +97,34 @@ serve(async (req) => {
         const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
         console.log('[WEBHOOK] Atualizando subscriber:', {
+          userId,
           email: customerEmail,
           tier: planTier,
+          subscriptionId,
           end: subscriptionEnd
         });
 
-        // Update or insert subscriber
+        // 🔥 FASE 1: Incluir user_id e stripe_subscription_id
+        const subscriberData: any = {
+          email: customerEmail!,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
+          subscribed: true,
+          subscription_tier: planTier,
+          subscription_end: subscriptionEnd,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Adicionar user_id se disponível (prioridade)
+        if (userId) {
+          subscriberData.user_id = userId;
+        }
+
+        // Update or insert subscriber (usando email como fallback para onConflict)
         const { error: upsertError } = await supabase
           .from('subscribers')
-          .upsert({
-            email: customerEmail,
-            stripe_customer_id: customerId,
-            subscribed: true,
-            subscription_tier: planTier,
-            subscription_end: subscriptionEnd,
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'email'
+          .upsert(subscriberData, {
+            onConflict: userId ? 'user_id' : 'email'
           });
 
         if (upsertError) {
@@ -127,11 +141,15 @@ serve(async (req) => {
         console.log('[WEBHOOK] Assinatura atualizada:', subscription.id);
         
         const customerId = subscription.customer as string;
+        
+        // 🔥 FASE 1: Tentar recuperar user_id da metadata da subscription
+        const userId = subscription.metadata?.user_id;
+        
         const customer = await stripe.customers.retrieve(customerId);
         const customerEmail = (customer as Stripe.Customer).email;
         
-        if (!customerEmail) {
-          console.error('[WEBHOOK] Email do cliente não encontrado');
+        if (!customerEmail && !userId) {
+          console.error('[WEBHOOK] Nem email nem user_id encontrado');
           break;
         }
 
@@ -140,20 +158,38 @@ serve(async (req) => {
         const isActive = subscription.status === 'active' || subscription.status === 'trialing';
 
         console.log('[WEBHOOK] Atualizando status:', {
+          userId,
           email: customerEmail,
+          subscriptionId: subscription.id,
           active: isActive,
           end: subscriptionEnd
         });
 
-        // Update subscriber status
-        const { error: updateError } = await supabase
+        // 🔥 FASE 1: Incluir stripe_subscription_id na atualização
+        const updateData: any = {
+          stripe_subscription_id: subscription.id,
+          subscribed: isActive,
+          subscription_end: subscriptionEnd,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Update subscriber status (priorizar por stripe_subscription_id, fallback para customer_id)
+        let query = supabase.from('subscribers').update(updateData);
+        
+        // Prioridade: buscar por subscription_id, depois por customer_id
+        const { data: existingSub } = await supabase
           .from('subscribers')
-          .update({
-            subscribed: isActive,
-            subscription_end: subscriptionEnd,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_customer_id', customerId);
+          .select('id')
+          .eq('stripe_subscription_id', subscription.id)
+          .single();
+        
+        if (existingSub) {
+          query = query.eq('stripe_subscription_id', subscription.id);
+        } else {
+          query = query.eq('stripe_customer_id', customerId);
+        }
+
+        const { error: updateError } = await query;
 
         if (updateError) {
           console.error('[WEBHOOK] Erro ao atualizar subscriber:', updateError);
@@ -172,22 +208,36 @@ serve(async (req) => {
         const customer = await stripe.customers.retrieve(customerId);
         const customerEmail = (customer as Stripe.Customer).email;
         
-        if (!customerEmail) {
-          console.error('[WEBHOOK] Email do cliente não encontrado');
-          break;
-        }
+        console.log('[WEBHOOK] Desativando assinatura:', {
+          subscriptionId: subscription.id,
+          customerId,
+          email: customerEmail
+        });
 
-        console.log('[WEBHOOK] Desativando assinatura:', customerEmail);
+        // 🔥 FASE 1: Buscar por subscription_id primeiro
+        const { data: existingSub } = await supabase
+          .from('subscribers')
+          .select('id')
+          .eq('stripe_subscription_id', subscription.id)
+          .single();
 
         // Deactivate subscription
-        const { error: deactivateError } = await supabase
+        let query = supabase
           .from('subscribers')
           .update({
             subscribed: false,
             subscription_end: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_customer_id', customerId);
+          });
+        
+        // Priorizar busca por subscription_id
+        if (existingSub) {
+          query = query.eq('stripe_subscription_id', subscription.id);
+        } else {
+          query = query.eq('stripe_customer_id', customerId);
+        }
+
+        const { error: deactivateError } = await query;
 
         if (deactivateError) {
           console.error('[WEBHOOK] Erro ao desativar assinatura:', deactivateError);
@@ -212,29 +262,44 @@ serve(async (req) => {
           const customer = await stripe.customers.retrieve(customerId);
           const customerEmail = (customer as Stripe.Customer).email;
           
-          if (customerEmail) {
-            const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-            
-            console.log('[WEBHOOK] Atualizando período de assinatura:', {
-              email: customerEmail,
-              end: subscriptionEnd
+          const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+          
+          console.log('[WEBHOOK] Atualizando período de assinatura:', {
+            subscriptionId,
+            email: customerEmail,
+            end: subscriptionEnd
+          });
+
+          // 🔥 FASE 1: Buscar por subscription_id primeiro
+          const { data: existingSub } = await supabase
+            .from('subscribers')
+            .select('id')
+            .eq('stripe_subscription_id', subscriptionId)
+            .single();
+
+          // Update subscription period
+          let query = supabase
+            .from('subscribers')
+            .update({
+              stripe_subscription_id: subscriptionId,
+              subscribed: true,
+              subscription_end: subscriptionEnd,
+              updated_at: new Date().toISOString(),
             });
+          
+          // Priorizar por subscription_id
+          if (existingSub) {
+            query = query.eq('stripe_subscription_id', subscriptionId);
+          } else {
+            query = query.eq('stripe_customer_id', customerId);
+          }
 
-            // Update subscription period
-            const { error: updateError } = await supabase
-              .from('subscribers')
-              .update({
-                subscribed: true,
-                subscription_end: subscriptionEnd,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('stripe_customer_id', customerId);
+          const { error: updateError } = await query;
 
-            if (updateError) {
-              console.error('[WEBHOOK] Erro ao atualizar período:', updateError);
-            } else {
-              console.log('[WEBHOOK] Período atualizado com sucesso');
-            }
+          if (updateError) {
+            console.error('[WEBHOOK] Erro ao atualizar período:', updateError);
+          } else {
+            console.log('[WEBHOOK] Período atualizado com sucesso');
           }
         }
         break;
