@@ -526,7 +526,7 @@ export default function LandingPage() {
                         <td className={`p-4 text-center ${option.isHighlight ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
                           {option.frequency}
                         </td>
-                        <td className={`p-4 text-right ${option.isHighlight ? 'font-bold text-2xl text-primary' : 'font-semibold text-lg text-red-600'}`}>
+                        <td className={`p-4 text-right ${option.isHighlight ? 'font-bold text-2xl text-green-600' : 'font-semibold text-lg text-red-600'}`}>
                           {option.pricePerYear}
                         </td>
                       </tr>
@@ -573,7 +573,7 @@ export default function LandingPage() {
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-border/50">
                         <span className="text-sm text-muted-foreground">Custo Anual:</span>
-                        <span className={`font-bold ${option.isHighlight ? 'text-2xl text-primary' : 'text-lg text-red-600'}`}>{option.pricePerYear}</span>
+                        <span className={`font-bold ${option.isHighlight ? 'text-2xl text-green-600' : 'text-lg text-red-600'}`}>{option.pricePerYear}</span>
                       </div>
                     </div>
                   </div>
