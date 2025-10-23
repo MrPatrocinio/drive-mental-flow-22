@@ -1,7 +1,7 @@
 
 /**
- * UserLoginForm - Componente de formulário de login para usuários
- * Responsabilidade: Apenas UI do formulário de login (princípio SRP)
+ * UserLoginForm - Componente de formulário de login/cadastro para usuários
+ * Responsabilidade: Apenas UI do formulário (princípio SRP)
  * Princípio SoC: Separação entre apresentação e lógica
  */
 
@@ -13,22 +13,27 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useUserAuthentication } from "@/hooks/useUserAuthentication";
-import type { LoginCredentials } from "@/services/supabase/authService";
+import type { LoginCredentials, SignUpCredentials } from "@/services/supabase/authService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useSubscription } from "@/hooks/useSubscription";
+
+interface UserLoginFormProps {
+  mode: "login" | "signup";
+}
 
 /**
  * Componente focado apenas na UI do formulário
  * Princípio KISS: Interface simples e intuitiva
  */
-export const UserLoginForm: React.FC = () => {
+export const UserLoginForm: React.FC<UserLoginFormProps> = ({ mode }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoading, error, login, clearError } = useUserAuthentication();
+  const { isLoading, error, login, signUp, clearError } = useUserAuthentication();
   const { trackEvent } = useAnalytics();
   const { createSubscription } = useSubscription();
 
@@ -43,27 +48,56 @@ export const UserLoginForm: React.FC = () => {
     e.preventDefault();
     clearError();
 
-    // Tracking analytics: tentativa de login
-    trackEvent('login_attempt', { email });
+    if (mode === "login") {
+      // Tracking analytics: tentativa de login
+      trackEvent('login_attempt', { email });
 
-    const credentials: LoginCredentials = { email, password };
-    const { success } = await login(credentials);
-    
-    if (success) {
-      // Tracking analytics: login bem-sucedido
-      trackEvent('login_success', { email });
+      const credentials: LoginCredentials = { email, password };
+      const { success } = await login(credentials);
       
-      // Processa assinatura pendente após login
-      if (pendingPlan) {
-        console.log('[LOGIN] Processando assinatura pendente:', pendingPlan);
-        localStorage.removeItem('pendingSubscriptionPlan');
-        await createSubscription(pendingPlan);
+      if (success) {
+        // Tracking analytics: login bem-sucedido
+        trackEvent('login_success', { email });
+        
+        // Processa assinatura pendente após login
+        if (pendingPlan) {
+          console.log('[LOGIN] Processando assinatura pendente:', pendingPlan);
+          localStorage.removeItem('pendingSubscriptionPlan');
+          await createSubscription(pendingPlan);
+        }
+        
+        navigate(from, { replace: true });
+      } else {
+        // Tracking analytics: falha no login
+        trackEvent('login_failure', { email });
       }
-      
-      navigate(from, { replace: true });
     } else {
-      // Tracking analytics: falha no login
-      trackEvent('login_failure', { email });
+      // Tracking analytics: tentativa de cadastro
+      trackEvent('signup_attempt', { email });
+
+      const credentials: SignUpCredentials = { 
+        email, 
+        password,
+        display_name: displayName || email.split('@')[0]
+      };
+      const { success } = await signUp(credentials);
+      
+      if (success) {
+        // Tracking analytics: cadastro bem-sucedido
+        trackEvent('signup_success', { email });
+        
+        // Processa assinatura pendente após cadastro
+        if (pendingPlan) {
+          console.log('[SIGNUP] Processando assinatura pendente:', pendingPlan);
+          localStorage.removeItem('pendingSubscriptionPlan');
+          await createSubscription(pendingPlan);
+        }
+        
+        navigate(from, { replace: true });
+      } else {
+        // Tracking analytics: falha no cadastro
+        trackEvent('signup_failure', { email });
+      }
     }
   };
 
@@ -76,12 +110,27 @@ export const UserLoginForm: React.FC = () => {
         </Alert>
       )}
 
+      {mode === "signup" && (
+        <div className="space-y-2">
+          <Label htmlFor="displayName">Nome (opcional)</Label>
+          <Input
+            id="displayName"
+            type="text"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Seu nome"
+            disabled={isLoading}
+            className="bg-background/50 h-12 text-base"
+          />
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"
           type="email"
-          autoComplete="username"
+          autoComplete={mode === "signup" ? "email" : "username"}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="seu@email.com"
@@ -138,7 +187,9 @@ export const UserLoginForm: React.FC = () => {
         className="w-full h-12 text-base"
         disabled={isLoading}
       >
-        {isLoading ? "Entrando..." : "Entrar"}
+        {isLoading 
+          ? (mode === "login" ? "Entrando..." : "Criando conta...") 
+          : (mode === "login" ? "Entrar" : "Criar conta")}
       </Button>
     </form>
   );

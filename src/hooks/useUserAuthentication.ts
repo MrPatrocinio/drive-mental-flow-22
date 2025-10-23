@@ -7,12 +7,13 @@
 
 import { useState } from "react";
 import { UserAuthenticationService } from "@/services/userAuthenticationService";
-import type { LoginCredentials } from "@/services/supabase/authService";
+import type { LoginCredentials, SignUpCredentials } from "@/services/supabase/authService";
 
 interface UseUserAuthenticationReturn {
   isLoading: boolean;
   error: string;
   login: (credentials: LoginCredentials) => Promise<{ success: boolean }>;
+  signUp: (credentials: SignUpCredentials) => Promise<{ success: boolean }>;
   clearError: () => void;
 }
 
@@ -45,6 +46,27 @@ export const useUserAuthentication = (): UseUserAuthenticationReturn => {
     }
   };
 
+  const signUp = async (credentials: SignUpCredentials): Promise<{ success: boolean }> => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const { user, error: authError } = await UserAuthenticationService.signUpUser(credentials);
+      
+      if (authError) {
+        setError(authError);
+        return { success: false };
+      }
+
+      return { success: true };
+    } catch (err) {
+      setError("Erro interno no cadastro.");
+      return { success: false };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const clearError = () => {
     setError("");
   };
@@ -53,6 +75,7 @@ export const useUserAuthentication = (): UseUserAuthenticationReturn => {
     isLoading,
     error,
     login,
+    signUp,
     clearError
   };
 };

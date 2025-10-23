@@ -6,7 +6,7 @@
  * Princípio DRY: Centraliza lógica de auth evitando duplicação
  */
 
-import { SupabaseAuthService, type AuthUser, type LoginCredentials } from "@/services/supabase/authService";
+import { SupabaseAuthService, type AuthUser, type LoginCredentials, type SignUpCredentials } from "@/services/supabase/authService";
 
 export interface UserAuthResult {
   user: AuthUser | null;
@@ -44,6 +44,33 @@ export class UserAuthenticationService {
       return { user, error: null };
     } catch (error) {
       return { user: null, error: "Erro interno no login" };
+    }
+  }
+
+  /**
+   * Realiza cadastro de usuário regular
+   * Princípio KISS: Implementação simples e direta
+   */
+  static async signUpUser(credentials: SignUpCredentials): Promise<UserAuthResult> {
+    try {
+      const { user, error } = await SupabaseAuthService.signUp(credentials);
+      
+      if (error) {
+        return { user: null, error };
+      }
+
+      if (!user) {
+        return { user: null, error: "Erro ao criar usuário" };
+      }
+
+      // Validar que não é admin
+      if (user.role === 'admin') {
+        return { user: null, error: "Não é possível criar conta de admin por este formulário" };
+      }
+
+      return { user, error: null };
+    } catch (error) {
+      return { user: null, error: "Erro interno no cadastro" };
     }
   }
 
