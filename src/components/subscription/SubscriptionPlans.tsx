@@ -81,10 +81,17 @@ export const SubscriptionPlans = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {plansData.plans
-            .filter(plan => plan.is_active !== false)
-            .map((plan) => {
+        {(() => {
+          const activePlans = plansData.plans.filter(plan => plan.is_active !== false);
+          const gridColsClass = activePlans.length === 1 
+            ? 'md:grid-cols-1 max-w-md mx-auto' 
+            : activePlans.length === 2 
+              ? 'md:grid-cols-2 max-w-4xl mx-auto' 
+              : 'md:grid-cols-3';
+
+          return (
+            <div className={`grid grid-cols-1 ${gridColsClass} gap-8 justify-items-center`}>
+              {activePlans.map((plan) => {
             const Icon = plan.popular ? Crown : Star;
             const isCurrent = isCurrentPlan(plan.id);
             const promotion = PromotionService.calculatePromotion({
@@ -191,8 +198,10 @@ export const SubscriptionPlans = () => {
                 </CardFooter>
               </Card>
             );
-          })}
-        </div>
+              })}
+            </div>
+          );
+        })()}
 
         <div className="text-center mt-12 space-y-4">
           <div className="bg-muted/50 rounded-lg p-6 max-w-2xl mx-auto">
