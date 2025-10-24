@@ -118,15 +118,15 @@ export const useSubscription = () => {
     [checkSubscription]
   );
 
-  const createSubscription = useCallback(async (priceId: string) => {
+  const createSubscription = useCallback(async (planCode: string) => {
     try {
       setIsLoading(true);
-      console.log('[SUBSCRIPTION] Criando checkout session para priceId:', priceId);
+      console.log('[SUBSCRIPTION] Criando checkout session para planCode:', planCode);
       
       toast.loading('Preparando pagamento seguro...', { id: 'checkout' });
       
       const { data, error } = await supabase.functions.invoke('create-subscription', {
-        body: { priceId }
+        body: { planCode }
       });
       
       if (error) {

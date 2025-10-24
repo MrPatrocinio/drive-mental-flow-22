@@ -1,4 +1,3 @@
-
 project_id = "ipdzkzlrcyrcfwvhiulc"
 
 [functions.create-payment]
@@ -14,4 +13,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.stripe-webhook]
+verify_jwt = false
+
+[functions.create-subscription]
+verify_jwt = false
+
+[functions.verify-session]
 verify_jwt = false

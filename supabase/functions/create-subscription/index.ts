@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.51.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,13 @@ const corsHeaders = {
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-SUBSCRIPTION] ${step}${detailsStr}`);
+};
+
+// Mapeamento de planCode para Stripe Price ID
+const PLAN_PRICE_MAPPING: Record<string, string> = {
+  'quarterly': 'price_1RBwMOBs9EqB2tIL0pRIU93B',
+  'semiannual': 'price_1RBwN2Bs9EqB2tILgwCt6l6K',
+  'annual': 'price_1RBwNcBs9EqB2tILcihN3JI7'
 };
 
 serve(async (req) => {
@@ -25,13 +33,57 @@ serve(async (req) => {
     }
     logStep("Stripe key verified");
 
-    const { priceId } = await req.json();
-    logStep("Price ID requested", { priceId });
+    const { planCode } = await req.json();
+    logStep("Plan code requested", { planCode });
+
+    if (!planCode) {
+      throw new Error("planCode é obrigatório");
+    }
+
+    // Inicializar Supabase
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Supabase não configurado");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Buscar dados dos planos no Supabase
+    const { data: landingContent, error: supabaseError } = await supabase
+      .from('landing_content')
+      .select('content')
+      .eq('section', 'subscription_plans')
+      .single();
+
+    if (supabaseError || !landingContent) {
+      logStep("ERROR fetching plans from Supabase", { error: supabaseError });
+      throw new Error("Erro ao buscar planos de assinatura");
+    }
+
+    const plansData = landingContent.content as any;
+    const selectedPlan = plansData.plans.find((p: any) => p.id === planCode);
+
+    if (!selectedPlan) {
+      throw new Error(`Plano ${planCode} não encontrado`);
+    }
+
+    if (!selectedPlan.is_active) {
+      throw new Error(`Plano ${planCode} não está ativo`);
+    }
+
+    // Mapear planCode para priceId do Stripe
+    const priceId = PLAN_PRICE_MAPPING[planCode];
+    if (!priceId) {
+      throw new Error(`Price ID não configurado para o plano ${planCode}`);
+    }
+
+    logStep("Price ID mapped", { planCode, priceId });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
     // Criar checkout session SEM exigir autenticação
-    // Stripe captura email automaticamente
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
@@ -48,11 +100,17 @@ serve(async (req) => {
       phone_number_collection: {
         enabled: false,
       },
+      metadata: {
+        plan_code: planCode,
+        plan_name: selectedPlan.name
+      }
     });
 
     logStep("Checkout session created successfully", { 
       sessionId: session.id, 
-      url: session.url 
+      url: session.url,
+      planCode,
+      priceId
     });
 
     return new Response(JSON.stringify({ 
