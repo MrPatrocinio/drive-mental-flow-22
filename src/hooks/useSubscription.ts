@@ -18,48 +18,58 @@ export const useSubscription = () => {
     subscribed: false,
     subscription_tier: null,
     subscription_end: null,
-    subscription_status: 'none', // 🔥 FASE 2: Status padrão
+    subscription_status: 'none',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   
-  // Controle para evitar múltiplas chamadas simultâneas
+  // Controle para evitar múltiplas chamadas simultâneas e retry logic
   const isCheckingRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
-  const checkSubscription = useCallback(async () => {
+  // Função interna com retry logic
+  const checkSubscriptionInternal = useCallback(async (isRetry = false) => {
     // Evita múltiplas chamadas simultâneas
     if (isCheckingRef.current) {
       console.log('[SUBSCRIPTION] Verificação já em andamento, ignorando');
       return;
     }
 
-    // Primeiro tenta cache local
-    const cachedData = SubscriptionCacheService.getFromCache();
-    if (cachedData) {
-      console.log('[SUBSCRIPTION] Usando dados do cache');
-      setSubscriptionData({
-        subscribed: cachedData.subscribed,
-        subscription_tier: cachedData.subscription_tier,
-        subscription_end: cachedData.subscription_end,
-        subscription_status: cachedData.subscription_status || 'none', // 🔥 FASE 2
-      });
-      return;
+    // Primeiro tenta cache local (exceto em retry)
+    if (!isRetry) {
+      const cachedData = SubscriptionCacheService.getFromCache();
+      if (cachedData) {
+        console.log('[SUBSCRIPTION] Usando dados do cache');
+        setSubscriptionData({
+          subscribed: cachedData.subscribed,
+          subscription_tier: cachedData.subscription_tier,
+          subscription_end: cachedData.subscription_end,
+          subscription_status: cachedData.subscription_status || 'none',
+        });
+        setIsInitializing(false);
+        return;
+      }
     }
 
     try {
       isCheckingRef.current = true;
       setIsChecking(true);
-      console.log('[SUBSCRIPTION] Verificando assinatura via API...');
+      
+      const attemptNumber = isRetry ? retryCountRef.current + 1 : 1;
+      console.log(`[SUBSCRIPTION] Verificando assinatura via API (tentativa ${attemptNumber}/${maxRetries})...`);
       
       const { data, error } = await supabase.functions.invoke('check-subscription');
       
       if (error) {
-        console.error('[SUBSCRIPTION] Erro na verificação:', error);
-        toast.error('Erro ao verificar assinatura');
-        return;
+        throw error;
       }
 
       console.log('[SUBSCRIPTION] Dados recebidos:', data);
+      
+      // Sucesso - reseta retry count
+      retryCountRef.current = 0;
       
       // Atualiza estado
       setSubscriptionData(data);
@@ -67,14 +77,40 @@ export const useSubscription = () => {
       // Salva no cache
       SubscriptionCacheService.setCache(data);
       
+      setIsInitializing(false);
+      
     } catch (error) {
-      console.error('[SUBSCRIPTION] Erro na verificação:', error);
-      toast.error('Erro ao verificar assinatura');
+      console.error(`[SUBSCRIPTION] Erro na verificação (tentativa ${retryCountRef.current + 1}/${maxRetries}):`, error);
+      
+      // Implementa retry com exponential backoff
+      if (retryCountRef.current < maxRetries - 1) {
+        retryCountRef.current++;
+        const delay = Math.pow(2, retryCountRef.current) * 1000; // 1s, 2s, 4s
+        
+        console.log(`[SUBSCRIPTION] Tentando novamente em ${delay}ms...`);
+        
+        setTimeout(() => {
+          checkSubscriptionInternal(true);
+        }, delay);
+      } else {
+        // Após todas as tentativas, só mostra erro se não for inicialização
+        if (!isInitializing) {
+          toast.error('Erro ao verificar assinatura. Tente novamente.');
+        }
+        console.error('[SUBSCRIPTION] Falhou após todas as tentativas de retry');
+        retryCountRef.current = 0;
+        setIsInitializing(false);
+      }
     } finally {
       setIsChecking(false);
       isCheckingRef.current = false;
     }
-  }, []);
+  }, [isInitializing]);
+
+  // Função pública sem parâmetros (para uso em botões/events)
+  const checkSubscription = useCallback(() => {
+    checkSubscriptionInternal(false);
+  }, [checkSubscriptionInternal]);
 
   // Versão com debounce para evitar chamadas excessivas
   const debouncedCheckSubscription = useCallback(
@@ -218,6 +254,7 @@ export const useSubscription = () => {
     ...subscriptionData,
     isLoading,
     isChecking,
+    isInitializing,
     checkSubscription: debouncedCheckSubscription,
     createSubscription,
     openCustomerPortal,

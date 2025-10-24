@@ -4,6 +4,7 @@ import { FieldService } from "@/services/supabase/fieldService";
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/RefreshButton";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
+import { WelcomeMessage } from "@/components/WelcomeMessage";
 import { Search, User, Play, FolderOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +120,9 @@ export default function Dashboard() {
       <Header />
       
       <div className="container mx-auto px-4 py-12">
+        {/* Banner de Boas-Vindas para Novos Assinantes */}
+        <WelcomeMessage />
+
         {/* Header do Dashboard */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
