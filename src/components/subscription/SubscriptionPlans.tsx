@@ -44,12 +44,7 @@ export const SubscriptionPlans = () => {
   });
 
   const handleSelectPlan = async (planId: string) => {
-    const result = await createSubscription(planId);
-    
-    if (result?.requiresAuth) {
-      toast.info('Faça login para continuar com a assinatura');
-      navigate(`/login?redirect=/assinatura&plan=${planId}`);
-    }
+    await createSubscription(planId);
   };
 
   const isCurrentPlan = (planId: string) => {

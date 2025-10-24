@@ -66,70 +66,71 @@ serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log('[WEBHOOK] Checkout completado:', session.id);
-        
-        // Get customer and subscription details
-        const customerId = session.customer as string;
+        console.log('[WEBHOOK] Processing checkout.session.completed for session:', session.id);
+
         const subscriptionId = session.subscription as string;
-        
-        if (!customerId || !subscriptionId) {
-          console.error('[WEBHOOK] Customer ID ou Subscription ID não encontrado');
+        const customerId = session.customer as string;
+        const customerEmail = session.customer_details?.email;
+
+        if (!subscriptionId || !customerId || !customerEmail) {
+          console.error('[WEBHOOK] Missing subscription, customer ID, or email');
           break;
         }
 
-        // 🔥 FASE 1: Recuperar user_id da metadata (prioridade)
-        const userId = session.metadata?.user_id;
-        
-        // Get subscription details from Stripe
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const customer = await stripe.customers.retrieve(customerId);
-        
-        const customerEmail = (customer as Stripe.Customer).email;
-        if (!customerEmail && !userId) {
-          console.error('[WEBHOOK] Nem email nem user_id encontrado');
-          break;
+        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+
+        console.log('[WEBHOOK] Subscription:', subscription.id, 'Status:', subscription.status);
+        console.log('[WEBHOOK] Customer:', customer.id, 'Email:', customerEmail);
+
+        // Determinar o tier baseado no preço
+        let tier = 'quarterly';
+        if (subscription.items.data[0]?.price?.id) {
+          const priceId = subscription.items.data[0].price.id;
+          if (priceId.includes('monthly')) tier = 'monthly';
+          else if (priceId.includes('quarterly')) tier = 'quarterly';
+          else if (priceId.includes('annual')) tier = 'annual';
         }
 
-        // Get plan tier from metadata or subscription
-        const planTier = session.metadata?.subscription_plan || 'premium';
-        
-        // Calculate subscription end date
-        const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-        
-        // 🔥 FASE 2: Usar status detalhado do Stripe
-        const subscriptionStatus = subscription.status; // 'active', 'trialing', etc.
+        // Calcular data de término
+        const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
 
-        console.log('[WEBHOOK] Atualizando subscriber:', {
-          userId,
-          email: customerEmail,
-          tier: planTier,
-          subscriptionId,
-          status: subscriptionStatus,
-          end: subscriptionEnd
-        });
-
-        // 🔥 FASE 2: Incluir subscription_status (subscribed será sincronizado via trigger)
-        const subscriberData: any = {
-          email: customerEmail!,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          subscription_status: subscriptionStatus,
-          subscription_tier: planTier,
-          subscription_end: subscriptionEnd,
-          updated_at: new Date().toISOString(),
-        };
-
-        // Adicionar user_id se disponível (prioridade)
-        if (userId) {
-          subscriberData.user_id = userId;
-        }
-
-        // Update or insert subscriber (usando email como fallback para onConflict)
-        const { error: upsertError } = await supabase
+        // Verificar se o usuário já existe
+        const { data: existingSubscriber } = await supabase
           .from('subscribers')
-          .upsert(subscriberData, {
-            onConflict: userId ? 'user_id' : 'email'
-          });
+          .select('user_id')
+          .eq('email', customerEmail)
+          .maybeSingle();
+
+        if (existingSubscriber?.user_id) {
+          console.log('[WEBHOOK] User exists, updating subscriber');
+          await supabase
+            .from('subscribers')
+            .update({
+              stripe_customer_id: customer.id,
+              stripe_subscription_id: subscription.id,
+              subscription_status: subscription.status as any,
+              subscribed: subscription.status === 'active' || subscription.status === 'trialing',
+              subscription_tier: tier,
+              subscription_end: currentPeriodEnd.toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('email', customerEmail);
+        } else {
+          console.log('[WEBHOOK] User not found, saving to pending_subscriptions');
+          await supabase
+            .from('pending_subscriptions')
+            .insert({
+              email: customerEmail,
+              stripe_customer_id: customer.id,
+              stripe_subscription_id: subscription.id,
+              session_id: session.id,
+              subscription_tier: tier,
+            });
+        }
+
+        break;
+      }
 
         if (upsertError) {
           console.error('[WEBHOOK] Erro ao atualizar subscriber:', upsertError);

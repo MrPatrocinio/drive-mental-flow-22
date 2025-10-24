@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User } from "lucide-react";
@@ -12,6 +12,16 @@ import { UserLoginForm } from "@/components/UserLoginForm";
  */
 export default function UserLoginPage() {
   const [activeTab, setActiveTab] = useState("login");
+  const [prefilledEmail, setPrefilledEmail] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const emailParam = params.get('email');
+    if (emailParam) {
+      setPrefilledEmail(emailParam);
+      setActiveTab("signup"); // Default to signup if email is provided
+    }
+  }, []);
 
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
@@ -40,11 +50,11 @@ export default function UserLoginPage() {
             </TabsList>
             
             <TabsContent value="login">
-              <UserLoginForm mode="login" />
+              <UserLoginForm mode="login" initialEmail={prefilledEmail} />
             </TabsContent>
             
             <TabsContent value="signup">
-              <UserLoginForm mode="signup" />
+              <UserLoginForm mode="signup" initialEmail={prefilledEmail} />
             </TabsContent>
           </Tabs>
         </CardContent>

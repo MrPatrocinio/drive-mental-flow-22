@@ -15,40 +15,67 @@ export default function PaymentProcessingPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(3);
-  const sessionId = searchParams.get("session_id");
 
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
-      // Verifica se usuário está autenticado
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Timer visual para usuário ver a confirmação
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            // Redireciona baseado no estado de autenticação
-            if (session?.user) {
-              navigate(`/assinatura/sucesso?session_id=${sessionId}`);
-            } else {
-              navigate(`/login?redirect=/assinatura/sucesso&session_id=${sessionId}`);
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    };
-
-    if (sessionId) {
-      checkAuthAndRedirect();
-    } else {
-      // Sem session_id, redireciona para home
-      navigate("/");
+    const sessionId = searchParams.get('session_id');
+    
+    if (!sessionId) {
+      console.log('[PAYMENT-PROCESSING] No session_id, redirecting to home');
+      navigate('/');
+      return;
     }
-  }, [sessionId, navigate]);
+
+    console.log('[PAYMENT-PROCESSING] Session ID:', sessionId);
+    
+    // Verify payment and redirect after countdown
+    const timer = setTimeout(async () => {
+      try {
+        // Verificar sessão no Stripe
+        const { data: sessionData, error } = await supabase.functions.invoke('verify-session', {
+          body: { sessionId }
+        });
+
+        if (error) {
+          console.error('[PAYMENT-PROCESSING] Error verifying session:', error);
+          navigate('/assinatura?error=verification_failed');
+          return;
+        }
+
+        console.log('[PAYMENT-PROCESSING] Session data:', sessionData);
+
+        // Verificar autenticação
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          console.log('[PAYMENT-PROCESSING] User authenticated, redirecting to success');
+          navigate('/assinatura/sucesso');
+        } else {
+          console.log('[PAYMENT-PROCESSING] User not authenticated, redirecting to login with email');
+          const email = sessionData?.email || '';
+          navigate(`/login?redirect=/assinatura/sucesso&email=${encodeURIComponent(email)}&session_id=${sessionId}`);
+        }
+      } catch (error) {
+        console.error('[PAYMENT-PROCESSING] Exception:', error);
+        navigate('/assinatura?error=verification_failed');
+      }
+    }, countdown * 1000);
+
+    // Countdown visual
+    const countdownInterval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(countdownInterval);
+    };
+  }, [navigate, searchParams]);
 
   return (
     <div className="min-h-screen hero-gradient">

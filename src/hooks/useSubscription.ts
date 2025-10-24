@@ -118,34 +118,24 @@ export const useSubscription = () => {
     [checkSubscription]
   );
 
-  const createSubscription = useCallback(async (tier: string = 'premium') => {
+  const createSubscription = useCallback(async (priceId: string) => {
     try {
-      // Verifica se o usuário está autenticado
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        console.log('[SUBSCRIPTION] Usuário não autenticado, salvando plano escolhido');
-        localStorage.setItem('pendingSubscriptionPlan', tier);
-        toast.info('Faça login para continuar com a assinatura');
-        return { requiresAuth: true };
-      }
-
       setIsLoading(true);
-      console.log('[SUBSCRIPTION] Criando checkout...', { tier });
+      console.log('[SUBSCRIPTION] Criando checkout session para priceId:', priceId);
       
       toast.loading('Preparando pagamento seguro...', { id: 'checkout' });
       
       const { data, error } = await supabase.functions.invoke('create-subscription', {
-        body: { plan: tier }
+        body: { priceId }
       });
       
       if (error) {
-        console.error('[SUBSCRIPTION] Erro ao criar assinatura:', error);
+        console.error('[SUBSCRIPTION] Erro ao criar checkout:', error);
         toast.error('Erro ao criar assinatura', { id: 'checkout' });
-        return { requiresAuth: false };
+        return;
       }
 
-      console.log('[SUBSCRIPTION] Redirecionando para:', data.url);
+      console.log('[SUBSCRIPTION] Redirecionando para Stripe:', data.url);
       
       toast.success('Redirecionando para pagamento...', { 
         id: 'checkout',
@@ -160,12 +150,9 @@ export const useSubscription = () => {
           NavigationService.openInNewTab(data.url);
         }
       }, 500);
-      
-      return { requiresAuth: false };
     } catch (error) {
       console.error('[SUBSCRIPTION] Erro ao criar assinatura:', error);
       toast.error('Erro ao criar assinatura. Tente novamente.', { id: 'checkout' });
-      return { requiresAuth: false };
     } finally {
       setIsLoading(false);
     }

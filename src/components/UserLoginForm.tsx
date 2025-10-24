@@ -5,8 +5,9 @@
  * Princípio SoC: Separação entre apresentação e lógica
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,14 +20,15 @@ import { useSubscription } from "@/hooks/useSubscription";
 
 interface UserLoginFormProps {
   mode: "login" | "signup";
+  initialEmail?: string;
 }
 
 /**
  * Componente focado apenas na UI do formulário
  * Princípio KISS: Interface simples e intuitiva
  */
-export const UserLoginForm: React.FC<UserLoginFormProps> = ({ mode }) => {
-  const [email, setEmail] = useState("");
+export const UserLoginForm: React.FC<UserLoginFormProps> = ({ mode, initialEmail = "" }) => {
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,7 +37,14 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ mode }) => {
   const location = useLocation();
   const { isLoading, error, login, signUp, clearError } = useUserAuthentication();
   const { trackEvent } = useAnalytics();
-  const { createSubscription } = useSubscription();
+  const { checkSubscription } = useSubscription();
+
+  // Update email when initialEmail changes
+  useEffect(() => {
+    if (initialEmail) {
+      setEmail(initialEmail);
+    }
+  }, [initialEmail]);
 
   // Extrai parâmetros da URL
   const searchParams = new URLSearchParams(location.search);
@@ -59,14 +68,54 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ mode }) => {
         // Tracking analytics: login bem-sucedido
         trackEvent('login_success', { email });
         
-        // Processa assinatura pendente após login
-        if (pendingPlan) {
-          console.log('[LOGIN] Processando assinatura pendente:', pendingPlan);
-          localStorage.removeItem('pendingSubscriptionPlan');
-          await createSubscription(pendingPlan);
+        // Check for pending subscription after successful login/signup
+        const searchParams = new URLSearchParams(location.search);
+        const sessionId = searchParams.get('session_id');
+        
+        // If there's a session_id, process pending subscription
+        if (sessionId) {
+          console.log('[USER-LOGIN] Processing pending subscription for session:', sessionId);
+          try {
+            // Verificar se existe assinatura pendente e associá-la
+            const { data: pendingData } = await supabase
+              .from('pending_subscriptions')
+              .select('*')
+              .eq('email', email)
+              .maybeSingle();
+
+            if (pendingData) {
+              console.log('[USER-LOGIN] Found pending subscription, associating with user');
+              
+              // Atualizar subscriber com dados da assinatura pendente
+              const { error: updateError } = await supabase
+                .from('subscribers')
+                .update({
+                  stripe_customer_id: pendingData.stripe_customer_id,
+                  stripe_subscription_id: pendingData.stripe_subscription_id,
+                  subscription_status: 'active',
+                  subscribed: true,
+                  subscription_tier: pendingData.subscription_tier
+                })
+                .eq('email', email);
+
+              if (!updateError) {
+                // Deletar da tabela de pendentes
+                await supabase
+                  .from('pending_subscriptions')
+                  .delete()
+                  .eq('id', pendingData.id);
+                
+                console.log('[USER-LOGIN] Pending subscription successfully associated');
+              }
+            }
+          } catch (error) {
+            console.error('[USER-LOGIN] Error processing pending subscription:', error);
+          }
         }
         
-        navigate(from, { replace: true });
+        const redirect = searchParams.get('redirect') || '/dashboard';
+        await checkSubscription();
+        navigate(redirect);
       } else {
         // Tracking analytics: falha no login
         trackEvent('login_failure', { email });
@@ -86,14 +135,54 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ mode }) => {
         // Tracking analytics: cadastro bem-sucedido
         trackEvent('signup_success', { email });
         
-        // Processa assinatura pendente após cadastro
-        if (pendingPlan) {
-          console.log('[SIGNUP] Processando assinatura pendente:', pendingPlan);
-          localStorage.removeItem('pendingSubscriptionPlan');
-          await createSubscription(pendingPlan);
+        // Check for pending subscription after successful signup
+        const searchParams = new URLSearchParams(location.search);
+        const sessionId = searchParams.get('session_id');
+        
+        // If there's a session_id, process pending subscription
+        if (sessionId) {
+          console.log('[USER-SIGNUP] Processing pending subscription for session:', sessionId);
+          try {
+            // Verificar se existe assinatura pendente e associá-la
+            const { data: pendingData } = await supabase
+              .from('pending_subscriptions')
+              .select('*')
+              .eq('email', email)
+              .maybeSingle();
+
+            if (pendingData) {
+              console.log('[USER-SIGNUP] Found pending subscription, associating with user');
+              
+              // Atualizar subscriber com dados da assinatura pendente
+              const { error: updateError } = await supabase
+                .from('subscribers')
+                .update({
+                  stripe_customer_id: pendingData.stripe_customer_id,
+                  stripe_subscription_id: pendingData.stripe_subscription_id,
+                  subscription_status: 'active',
+                  subscribed: true,
+                  subscription_tier: pendingData.subscription_tier
+                })
+                .eq('email', email);
+
+              if (!updateError) {
+                // Deletar da tabela de pendentes
+                await supabase
+                  .from('pending_subscriptions')
+                  .delete()
+                  .eq('id', pendingData.id);
+                
+                console.log('[USER-SIGNUP] Pending subscription successfully associated');
+              }
+            }
+          } catch (error) {
+            console.error('[USER-SIGNUP] Error processing pending subscription:', error);
+          }
         }
         
-        navigate(from, { replace: true });
+        const redirect = searchParams.get('redirect') || '/dashboard';
+        await checkSubscription();
+        navigate(redirect);
       } else {
         // Tracking analytics: falha no cadastro
         trackEvent('signup_failure', { email });
