@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SubscriptionCacheService } from '@/services/subscriptionCacheService';
 import { DebounceService } from '@/services/debounceService';
+import { NavigationService } from '@/services/navigationService';
 
 interface SubscriptionData {
   subscribed: boolean;
@@ -119,7 +120,6 @@ export const useSubscription = () => {
       });
       
       setTimeout(() => {
-        const { NavigationService } = require('@/services/navigationService');
         if (!NavigationService.goToExternal(data.url)) {
           NavigationService.openInNewTab(data.url);
         }
@@ -160,7 +160,6 @@ export const useSubscription = () => {
       });
       
       setTimeout(() => {
-        const { NavigationService } = require('@/services/navigationService');
         if (!NavigationService.goToExternal(data.url)) {
           NavigationService.openInNewTab(data.url);
         }
