@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CreditCard, Shield, Check, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PricingService, PricingInfo } from "@/services/supabase/pricingService";
 import { PromotionService } from "@/services/promotionService";
@@ -27,7 +27,6 @@ export default function PaymentPage() {
   const [error, setError] = useState("");
   const [pricingData, setPricingData] = useState<PricingInfo | null>(null);
   const [isPricingLoading, setIsPricingLoading] = useState(true);
-  const { toast } = useToast();
 
   const envInfo = StripeEnvironmentService.getEnvironmentInfo();
 
@@ -71,27 +70,32 @@ export default function PaymentPage() {
       
       if (!result.success) {
         setError(result.error || "Erro desconhecido");
-        toast({
-          title: "Erro no pagamento",
-          description: result.error,
-          variant: "destructive",
-        });
+        toast.error(result.error || "Erro no pagamento");
         return;
       }
 
       if (result.url) {
         console.log("Redirecionando para:", result.url);
-        window.location.href = result.url;
+        
+        toast.success("Redirecionando para pagamento...", {
+          action: {
+            label: 'Abrir agora',
+            onClick: () => window.open(result.url!, '_blank', 'noopener,noreferrer')
+          }
+        });
+        
+        setTimeout(async () => {
+          const { NavigationService } = await import('@/services/navigationService');
+          if (!NavigationService.goToExternal(result.url!)) {
+            NavigationService.openInNewTab(result.url!);
+          }
+        }, 500);
       }
       
     } catch (error) {
       console.error("Erro inesperado:", error);
       setError("Erro interno do servidor");
-      toast({
-        title: "Erro no pagamento",
-        description: "Erro interno do servidor",
-        variant: "destructive",
-      });
+      toast.error("Erro interno do servidor");
     } finally {
       setIsLoading(false);
     }

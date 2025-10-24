@@ -96,7 +96,6 @@ export const useSubscription = () => {
       setIsLoading(true);
       console.log('[SUBSCRIPTION] Criando checkout...', { tier });
       
-      // 🔔 Feedback: Informar usuário sobre o redirecionamento
       toast.loading('Preparando pagamento seguro...', { id: 'checkout' });
       
       const { data, error } = await supabase.functions.invoke('create-subscription', {
@@ -111,13 +110,20 @@ export const useSubscription = () => {
 
       console.log('[SUBSCRIPTION] Redirecionando para:', data.url);
       
-      // 🔔 Feedback final antes do redirecionamento
-      toast.success('Redirecionando para pagamento...', { id: 'checkout' });
+      toast.success('Redirecionando para pagamento...', { 
+        id: 'checkout',
+        action: {
+          label: 'Abrir agora',
+          onClick: () => window.open(data.url, '_blank', 'noopener,noreferrer')
+        }
+      });
       
-      // 🚀 Opção C: Redirecionar na mesma aba (experiência mais linear)
       setTimeout(() => {
-        window.location.href = data.url;
-      }, 500); // Pequeno delay para usuário ver o toast
+        const { NavigationService } = require('@/services/navigationService');
+        if (!NavigationService.goToExternal(data.url)) {
+          NavigationService.openInNewTab(data.url);
+        }
+      }, 500);
       
       return { requiresAuth: false };
     } catch (error) {
@@ -145,11 +151,19 @@ export const useSubscription = () => {
       }
 
       console.log('[SUBSCRIPTION] Redirecionando para portal:', data.url);
-      toast.success('Redirecionando...', { id: 'portal' });
+      toast.success('Redirecionando...', { 
+        id: 'portal',
+        action: {
+          label: 'Abrir agora',
+          onClick: () => window.open(data.url, '_blank', 'noopener,noreferrer')
+        }
+      });
       
-      // 🚀 Redirecionar na mesma aba para consistência
       setTimeout(() => {
-        window.location.href = data.url;
+        const { NavigationService } = require('@/services/navigationService');
+        if (!NavigationService.goToExternal(data.url)) {
+          NavigationService.openInNewTab(data.url);
+        }
       }, 500);
     } catch (error) {
       console.error('[SUBSCRIPTION] Erro ao abrir portal:', error);
