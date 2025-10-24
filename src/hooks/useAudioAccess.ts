@@ -32,16 +32,21 @@ export const useAudioAccess = (audioId: string, isPremium: boolean = false) => {
     }
   }, [audioId]);
 
-  // Lógica simplificada: todos os áudios são acessíveis agora
-  // Mantém a verificação de assinatura para futuras funcionalidades
+  // ✅ FASE 3: Modelo Paga/Não Paga
   const hasAccess = () => {
-    // TODOS os áudios são acessíveis agora - não há mais diferenciação premium
-    return true;
+    // Demo sempre acessível (landing page)
+    if (isDemoAudio) return true;
+    
+    // Demais áudios: só com assinatura ativa
+    return subscribed && subscription_tier !== null;
   };
 
   const getAccessDeniedReason = () => {
-    // Como todos têm acesso, esta função é mantida para compatibilidade
-    return 'Todos os áudios estão disponíveis.';
+    if (isDemoAudio) return '';
+    if (!subscribed) {
+      return 'Escolha um plano para acessar todos os áudios.';
+    }
+    return 'Assinatura inativa.';
   };
 
   return {

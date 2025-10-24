@@ -85,29 +85,20 @@ export const UserProtectedRoute = ({
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Assinatura Necessária</h2>
+              <h2 className="text-xl font-semibold">Escolha Seu Plano</h2>
               <p className="text-sm text-muted-foreground">
-                Esta área é exclusiva para assinantes premium. Faça upgrade agora e tenha acesso completo.
+                Para acessar todos os áudios, escolha um dos nossos planos: trimestral, semestral ou anual.
               </p>
             </div>
             
             <div className="space-y-3">
               <Button 
-                onClick={() => createSubscription('premium')}
+                onClick={() => navigate('/subscription')}
                 className="w-full"
                 size="lg"
               >
                 <Crown className="h-4 w-4 mr-2" />
-                Assinar Premium
-              </Button>
-              
-              <Button 
-                onClick={() => navigate('/subscription')}
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                Ver Planos
+                Ver Planos Disponíveis
               </Button>
             </div>
           </CardContent>

@@ -17,7 +17,6 @@ interface AudioData {
   file_url: string;
   cover_image_url?: string;
   duration?: string;
-  is_premium: boolean;
   tags?: string[];
 }
 

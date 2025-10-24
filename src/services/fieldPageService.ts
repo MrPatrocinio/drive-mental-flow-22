@@ -15,7 +15,6 @@ interface AudioData {
   file_url: string;
   cover_image_url?: string;
   duration?: string;
-  is_premium: boolean;
   tags?: string[];
 }
 
@@ -86,7 +85,6 @@ export class FieldPageService {
       file_url: audio.url,
       cover_image_url: undefined,
       duration: audio.duration,
-      is_premium: audio.is_premium,
       tags: audio.tags || []
     })) || [];
   }

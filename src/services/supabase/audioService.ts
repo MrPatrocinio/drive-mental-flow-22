@@ -8,7 +8,6 @@ export interface Audio {
   duration: string;
   field_id: string;
   tags: string[];
-  is_premium: boolean;
   is_demo?: boolean;
   created_at: string;
   updated_at: string;
@@ -20,7 +19,6 @@ export interface AudioInsert {
   duration: string;
   field_id: string;
   tags?: string[];
-  is_premium?: boolean;
   is_demo?: boolean;
 }
 
@@ -30,7 +28,6 @@ export interface AudioUpdate {
   duration?: string;
   field_id?: string;
   tags?: string[];
-  is_premium?: boolean;
   is_demo?: boolean;
 }
 
@@ -42,7 +39,6 @@ export interface AudioWithFile {
   tags?: string[];
   url?: string;
   file?: File;
-  is_premium?: boolean;
   is_demo?: boolean;
 }
 

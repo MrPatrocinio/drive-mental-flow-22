@@ -81,7 +81,6 @@ export type Database = {
           field_id: string
           id: string
           is_demo: boolean
-          is_premium: boolean
           tags: string[] | null
           title: string
           updated_at: string
@@ -93,7 +92,6 @@ export type Database = {
           field_id: string
           id?: string
           is_demo?: boolean
-          is_premium?: boolean
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -105,7 +103,6 @@ export type Database = {
           field_id?: string
           id?: string
           is_demo?: boolean
-          is_premium?: boolean
           tags?: string[] | null
           title?: string
           updated_at?: string

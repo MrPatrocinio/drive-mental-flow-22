@@ -11,27 +11,24 @@ interface PremiumContentGateProps {
   children: ReactNode;
   contentTitle?: string;
   showPreview?: boolean;
-  isPremium?: boolean;
   isDemoAudio?: boolean;
 }
 
 /**
- * Componente responsável por controlar acesso a conteúdo premium
- * SEGURANÇA: Verifica assinatura antes de exibir conteúdo premium
- * Demo e conteúdo gratuito permanecem acessíveis para onboarding
+ * ✅ FASE 3: Gate simplificado - Modelo Paga/Não Paga
+ * SEGURANÇA: Assinatura obrigatória para acessar conteúdo
  */
 export const PremiumContentGate = ({ 
   children, 
   contentTitle = 'Este conteúdo',
   showPreview = false,
-  isPremium = false,
   isDemoAudio = false
 }: PremiumContentGateProps) => {
-  const { canAccessAudio } = useContentAccess();
+  const { hasSubscriptionAccess } = useContentAccess();
   const { createSubscription } = useSubscription();
 
-  // 🔒 Verificação real de acesso baseada em assinatura
-  if (canAccessAudio(isPremium, isDemoAudio)) {
+  // ✅ Demo ou assinatura ativa = acesso
+  if (isDemoAudio || hasSubscriptionAccess) {
     return <>{children}</>;
   }
 
@@ -69,16 +66,16 @@ export const PremiumContentGate = ({
           
           <div className="space-y-3">
             <Button 
-              onClick={() => createSubscription('semiannual')}
+              onClick={() => createSubscription('quarterly')}
               className="w-full"
               size="lg"
             >
               <Crown className="h-4 w-4 mr-2" />
-              Ver Planos
+              Escolher Plano
             </Button>
             
             <p className="text-xs text-muted-foreground">
-              Acesso completo a todos os áudios
+              Trimestral, Semestral ou Anual - Todos com acesso completo
             </p>
           </div>
         </CardContent>

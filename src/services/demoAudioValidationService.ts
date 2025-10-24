@@ -72,13 +72,12 @@ export class DemoAudioValidationService {
       
       const allAudios = await AudioService.getAll();
       
-      // Buscar áudios com URL válida que não sejam premium
+      // Buscar áudios com URL válida
       const validAudios = allAudios.filter(audio => 
         audio.url && 
         audio.url.trim() !== '' && 
         audio.title && 
-        audio.title.trim() !== '' &&
-        !audio.is_premium
+        audio.title.trim() !== ''
       );
 
       if (validAudios.length === 0) {

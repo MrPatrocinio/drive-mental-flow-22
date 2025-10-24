@@ -52,7 +52,6 @@ export const useAudioUpload = () => {
         field_id: audioData.field_id,
         url: mockUrl,
         tags: audioData.tags || [],
-        is_premium: audioData.is_premium || false,
         is_demo: audioData.is_demo || false
       });
 

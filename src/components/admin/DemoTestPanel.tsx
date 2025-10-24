@@ -77,19 +77,6 @@ export const DemoTestPanel: React.FC = () => {
           status: 'success',
           message: 'Áudio de demo acessível publicamente ✓'
         });
-
-        // Test 3: Check if audio is premium but accessible
-        if (audioData.is_premium) {
-          results.push({
-            status: 'success',
-            message: 'Áudio premium configurado como demo está acessível ✓'
-          });
-        } else {
-          results.push({
-            status: 'warning',
-            message: 'Áudio de demo não é premium (pode ser acessado normalmente)'
-          });
-        }
       }
 
       // Test 4: Verify landing content configuration
