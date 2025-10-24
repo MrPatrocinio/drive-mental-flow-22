@@ -325,6 +325,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_subscriptions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          session_id: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          subscription_tier: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          session_id: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          subscription_tier?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          session_id?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          subscription_tier?: string | null
+        }
+        Relationships: []
+      }
       playlist_items: {
         Row: {
           audio_id: string
