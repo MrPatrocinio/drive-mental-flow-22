@@ -27,18 +27,23 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // 🔒 VALIDAÇÃO JWT - Primeira camada de segurança (Fail-Fast)
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      logStep("ERROR: Missing Authorization header");
+      return new Response(JSON.stringify({ 
+        error: "Autenticação necessária. Faça login para assinar." 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       throw new Error("STRIPE_SECRET_KEY não configurada");
     }
     logStep("Stripe key verified");
-
-    const { planCode } = await req.json();
-    logStep("Plan code requested", { planCode });
-
-    if (!planCode) {
-      throw new Error("planCode é obrigatório");
-    }
 
     // Inicializar Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -48,7 +53,37 @@ serve(async (req) => {
       throw new Error("Supabase não configurado");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // 🔒 Criar cliente Supabase com token do usuário para validação
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: {
+        headers: { Authorization: authHeader }
+      }
+    });
+
+    // 🔒 Validar token e obter dados do usuário autenticado (SSOT)
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      logStep("ERROR: Invalid or expired token", { error: authError });
+      return new Response(JSON.stringify({ 
+        error: "Token inválido ou expirado. Faça login novamente." 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    logStep("User authenticated successfully", { 
+      userId: user.id, 
+      email: user.email 
+    });
+
+    const { planCode } = await req.json();
+    logStep("Plan code requested", { planCode, userId: user.id });
+
+    if (!planCode) {
+      throw new Error("planCode é obrigatório");
+    }
 
     // Buscar dados dos planos no Supabase
     const { data: landingContent, error: supabaseError } = await supabase
@@ -83,7 +118,8 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Criar checkout session SEM exigir autenticação
+    // 🔒 Criar checkout session com email do usuário autenticado (SSOT)
+    // Email vem de auth.users (fonte confiável), não do frontend
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
@@ -95,12 +131,14 @@ serve(async (req) => {
       ],
       success_url: `${req.headers.get("origin")}/assinatura/processando?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/assinatura?canceled=true`,
-      client_reference_id: crypto.randomUUID(),
+      customer_email: user.email, // ✅ Email verificado do auth.users
       billing_address_collection: "required",
       phone_number_collection: {
         enabled: false,
       },
       metadata: {
+        user_id: user.id, // ✅ Vinculação imediata ao user_id
+        user_email: user.email, // ✅ Para auditoria
         plan_code: planCode,
         plan_name: selectedPlan.name
       }

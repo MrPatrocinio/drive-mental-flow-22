@@ -11,14 +11,17 @@ import { PromotionBadge } from '@/components/ui/promotion-badge';
 import { Countdown } from '@/components/ui/countdown';
 import { formatPrice } from '@/utils/pricingUtils';
 import { useDataSync } from '@/hooks/useDataSync';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useUser } from '@/contexts/UserContext';
 
 export const SubscriptionPlans = () => {
   const [plansData, setPlansData] = useState<SubscriptionPlansData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { createSubscription, isLoading: isCreatingSubscription, subscription_tier, subscribed } = useSubscription();
+  const { isAuthenticated } = useUser();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const loadPlansData = async () => {
     try {
@@ -43,7 +46,27 @@ export const SubscriptionPlans = () => {
     }
   });
 
+  // Auto-iniciar checkout se houver auto_plan nos query params e usuário estiver logado
+  useEffect(() => {
+    const autoPlan = searchParams.get('auto_plan');
+    if (autoPlan && isAuthenticated && !isCreatingSubscription) {
+      console.log('[SUBSCRIPTION_PLANS] Auto-iniciando checkout para plano:', autoPlan);
+      toast.info('Iniciando checkout do plano selecionado...');
+      handleSelectPlan(autoPlan);
+    }
+  }, [isAuthenticated]);
+
   const handleSelectPlan = async (planId: string) => {
+    // 🔒 Verificação de autenticação (primeira camada de segurança - Fail-Fast)
+    if (!isAuthenticated) {
+      toast.error('Você precisa estar logado para assinar', {
+        description: 'Redirecionando para o login...'
+      });
+      // Redirecionar para login com redirect e plan nos query params
+      navigate(`/login?redirect=/assinatura&plan=${planId}`);
+      return;
+    }
+
     await createSubscription(planId);
   };
 

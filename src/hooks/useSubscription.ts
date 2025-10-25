@@ -125,8 +125,22 @@ export const useSubscription = () => {
       
       toast.loading('Preparando pagamento seguro...', { id: 'checkout' });
       
+      // 🔒 Obter sessão autenticada (segunda camada - enviar JWT)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('[SUBSCRIPTION] Usuário não autenticado:', sessionError);
+        toast.error('Você precisa estar logado para assinar', { id: 'checkout' });
+        return;
+      }
+
+      console.log('[SUBSCRIPTION] Enviando JWT token para validação backend');
+      
       const { data, error } = await supabase.functions.invoke('create-subscription', {
-        body: { planCode }
+        body: { planCode },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
       
       if (error) {

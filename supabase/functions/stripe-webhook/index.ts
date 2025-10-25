@@ -63,9 +63,13 @@ serve(async (req) => {
         const subscriptionId = session.subscription as string;
         const customerId = session.customer as string;
         const customerEmail = session.customer_details?.email;
+        
+        // 🔒 Ler user_id dos metadados (SSOT - vinculação imediata)
+        const userId = session.metadata?.user_id;
+        const userEmail = session.metadata?.user_email;
 
-        if (!subscriptionId || !customerId || !customerEmail) {
-          console.error('[WEBHOOK] Missing subscription, customer ID, or email');
+        if (!subscriptionId || !customerId) {
+          console.error('[WEBHOOK] Missing subscription or customer ID');
           break;
         }
 
@@ -74,6 +78,7 @@ serve(async (req) => {
 
         console.log('[WEBHOOK] Subscription:', subscription.id, 'Status:', subscription.status);
         console.log('[WEBHOOK] Customer:', customer.id, 'Email:', customerEmail);
+        console.log('[WEBHOOK] User ID from metadata:', userId);
 
         let tier = 'quarterly';
         if (subscription.items.data[0]?.price?.id) {
@@ -85,17 +90,15 @@ serve(async (req) => {
 
         const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
 
-        const { data: existingSubscriber } = await supabase
-          .from('subscribers')
-          .select('user_id')
-          .eq('email', customerEmail)
-          .maybeSingle();
-
-        if (existingSubscriber?.user_id) {
-          console.log('[WEBHOOK] User exists, updating subscriber');
-          await supabase
+        // 🔒 Vinculação direta ao user_id (não mais via email)
+        if (userId && userEmail) {
+          console.log('[WEBHOOK] Direct linking to user_id:', userId);
+          
+          const { error: upsertError } = await supabase
             .from('subscribers')
-            .update({
+            .upsert({
+              user_id: userId, // ✅ Vinculação imediata
+              email: userEmail,
               stripe_customer_id: customer.id,
               stripe_subscription_id: subscription.id,
               subscription_status: subscription.status as any,
@@ -103,19 +106,51 @@ serve(async (req) => {
               subscription_tier: tier,
               subscription_end: currentPeriodEnd.toISOString(),
               updated_at: new Date().toISOString(),
-            })
-            .eq('email', customerEmail);
-        } else {
-          console.log('[WEBHOOK] User not found, saving to pending_subscriptions');
-          await supabase
-            .from('pending_subscriptions')
-            .insert({
-              email: customerEmail,
-              stripe_customer_id: customer.id,
-              stripe_subscription_id: subscription.id,
-              session_id: session.id,
-              subscription_tier: tier,
+            }, {
+              onConflict: 'user_id'
             });
+
+          if (upsertError) {
+            console.error('[WEBHOOK] Error upserting subscriber:', upsertError);
+          } else {
+            console.log('[WEBHOOK] Subscriber linked successfully to user_id:', userId);
+          }
+        } else {
+          // Fallback para lógica antiga (compatibilidade com pending_subscriptions)
+          console.log('[WEBHOOK] No user_id in metadata, using legacy flow');
+          
+          const { data: existingSubscriber } = await supabase
+            .from('subscribers')
+            .select('user_id')
+            .eq('email', customerEmail || '')
+            .maybeSingle();
+
+          if (existingSubscriber?.user_id) {
+            console.log('[WEBHOOK] User exists, updating subscriber');
+            await supabase
+              .from('subscribers')
+              .update({
+                stripe_customer_id: customer.id,
+                stripe_subscription_id: subscription.id,
+                subscription_status: subscription.status as any,
+                subscribed: subscription.status === 'active' || subscription.status === 'trialing',
+                subscription_tier: tier,
+                subscription_end: currentPeriodEnd.toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('email', customerEmail || '');
+          } else {
+            console.log('[WEBHOOK] User not found, saving to pending_subscriptions');
+            await supabase
+              .from('pending_subscriptions')
+              .insert({
+                email: customerEmail || '',
+                stripe_customer_id: customer.id,
+                stripe_subscription_id: subscription.id,
+                session_id: session.id,
+                subscription_tier: tier,
+              });
+          }
         }
 
         break;
