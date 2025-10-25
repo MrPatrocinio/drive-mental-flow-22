@@ -37,6 +37,7 @@ const AdminStatsPage = React.lazy(() => import('@/pages/admin/AdminStatsPage').t
 const AdminValidationPage = React.lazy(() => import('@/pages/admin/AdminValidationPage').then(m => ({ default: m.AdminValidationPage })));
 const AdminUsersPage = React.lazy(() => import('@/pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
 const AdminCommunicationPage = React.lazy(() => import('@/pages/admin/AdminCommunicationPage'));
+const AdminGuaranteePage = React.lazy(() => import('@/pages/admin/AdminGuaranteePage'));
 const AdminFinancialPage = React.lazy(() => import('@/pages/admin/AdminFinancialPage'));
 const AdminAnalyticsAdvancedPage = React.lazy(() => import('@/pages/admin/AdminAnalyticsAdvancedPage'));
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
@@ -185,6 +186,12 @@ const AppContent: React.FC = () => {
       <Route path="/admin/communication" element={
         <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
           <AdminProtectedRoute><AdminCommunicationPage /></AdminProtectedRoute>
+        </React.Suspense>
+      } />
+      
+      <Route path="/admin/garantia" element={
+        <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <AdminProtectedRoute><AdminGuaranteePage /></AdminProtectedRoute>
         </React.Suspense>
       } />
       

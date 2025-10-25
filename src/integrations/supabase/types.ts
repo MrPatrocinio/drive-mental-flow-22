@@ -223,6 +223,96 @@ export type Database = {
         }
         Relationships: []
       }
+      guarantee_daily: {
+        Row: {
+          created_at: string | null
+          day: string
+          enrollment_id: string
+          id: string
+          meets_20: boolean | null
+          plays_valid: number
+        }
+        Insert: {
+          created_at?: string | null
+          day: string
+          enrollment_id: string
+          id?: string
+          meets_20?: boolean | null
+          plays_valid?: number
+        }
+        Update: {
+          created_at?: string | null
+          day?: string
+          enrollment_id?: string
+          id?: string
+          meets_20?: boolean | null
+          plays_valid?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guarantee_daily_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "guarantee_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guarantee_daily_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "v_guarantee_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guarantee_enrollments: {
+        Row: {
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_reason: string | null
+          id: string
+          monitoring_until: string
+          purchase_id: string
+          retention_until: string
+          start_date: string
+          status: string
+          unconditional_until: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          id?: string
+          monitoring_until: string
+          purchase_id: string
+          retention_until: string
+          start_date?: string
+          status?: string
+          unconditional_until: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          id?: string
+          monitoring_until?: string
+          purchase_id?: string
+          retention_until?: string
+          start_date?: string
+          status?: string
+          unconditional_until?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       landing_content: {
         Row: {
           content: Json
@@ -525,9 +615,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_guarantee_status: {
+        Row: {
+          best_len: number | null
+          computed_state: string | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_reason: string | null
+          id: string | null
+          monitoring_until: string | null
+          purchase_id: string | null
+          retention_until: string | null
+          start_date: string | null
+          status: string | null
+          unconditional_until: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      aggregate_guarantee_daily: {
+        Args: { target_date?: string }
+        Returns: undefined
+      }
       get_current_user_role: { Args: never; Returns: string }
       is_subscription_active: {
         Args: {

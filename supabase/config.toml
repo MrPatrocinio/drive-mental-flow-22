@@ -20,3 +20,12 @@ verify_jwt = false
 
 [functions.verify-session]
 verify_jwt = false
+
+[functions.guarantee-cancel-request]
+verify_jwt = true
+
+[functions.guarantee-refund]
+verify_jwt = true
+
+[functions.guarantee-deny]
+verify_jwt = true
