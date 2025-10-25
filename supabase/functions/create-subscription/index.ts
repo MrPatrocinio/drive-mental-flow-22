@@ -14,9 +14,9 @@ const logStep = (step: string, details?: any) => {
 
 // Mapeamento de planCode para Stripe Price ID
 const PLAN_PRICE_MAPPING: Record<string, string> = {
-  'quarterly': 'price_1RBwMOBs9EqB2tIL0pRIU93B',
-  'semiannual': 'price_1RBwN2Bs9EqB2tILgwCt6l6K',
-  'annual': 'price_1RBwNcBs9EqB2tILcihN3JI7'
+  'quarterly': 'price_1SGAwC4J5tUHBhq6jylL5ZCz',
+  'semiannual': 'price_1SGAxS4J5tUHBhq6cK6qFdgy',
+  'annual': 'price_1SGAyB4J5tUHBhq6eHSyaZeQ'
 };
 
 serve(async (req) => {
