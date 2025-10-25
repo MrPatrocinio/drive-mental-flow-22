@@ -195,7 +195,22 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ mode, initialEmail
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="flex flex-col gap-2">
+            <span>{error}</span>
+            {error.includes('já está cadastrado') && mode === 'signup' && (
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => {
+                  const currentUrl = new URLSearchParams(location.search);
+                  navigate(`/login?${currentUrl.toString()}`);
+                }}
+                className="h-auto p-0 text-sm underline"
+              >
+                Ir para Login
+              </Button>
+            )}
+          </AlertDescription>
         </Alert>
       )}
 

@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { translateAuthError } from "@/services/errorTranslationService";
 
 export interface AuthUser {
   id: string;
@@ -34,7 +35,7 @@ export class SupabaseAuthService {
       });
 
       if (error) {
-        return { user: null, error: error.message };
+        return { user: null, error: translateAuthError(error.message) };
       }
 
       if (!data.user) {
@@ -76,7 +77,7 @@ export class SupabaseAuthService {
       });
 
       if (error) {
-        return { user: null, error: error.message };
+        return { user: null, error: translateAuthError(error.message) };
       }
 
       if (!data.user) {
@@ -102,9 +103,9 @@ export class SupabaseAuthService {
   static async signOut(): Promise<{ error: string | null }> {
     try {
       const { error } = await supabase.auth.signOut();
-      return { error: error?.message || null };
+      return { error: error ? translateAuthError(error.message) : null };
     } catch (error) {
-      return { error: "Erro interno no logout" };
+      return { error: "Erro ao fazer logout" };
     }
   }
 
