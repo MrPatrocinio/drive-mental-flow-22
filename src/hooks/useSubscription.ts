@@ -125,22 +125,25 @@ export const useSubscription = () => {
       
       toast.loading('Preparando pagamento seguro...', { id: 'checkout' });
       
-      // 🔒 Obter sessão autenticada (segunda camada - enviar JWT)
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Autenticação opcional - permite pay-first flow
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const session = sessionData?.session ?? null;
       
-      if (sessionError || !session) {
-        console.error('[SUBSCRIPTION] Usuário não autenticado:', sessionError);
-        toast.error('Você precisa estar logado para assinar', { id: 'checkout' });
-        return;
+      if (sessionError) {
+        console.warn('[SUBSCRIPTION] Erro ao obter sessão (seguindo como novo usuário):', sessionError);
       }
-
-      console.log('[SUBSCRIPTION] Enviando JWT token para validação backend');
+      
+      if (session) {
+        console.log('[SUBSCRIPTION] Usuário autenticado, enviando JWT token');
+      } else {
+        console.log('[SUBSCRIPTION] Usuário novo, iniciando fluxo pay-first');
+      }
+      
+      const headers = session ? { Authorization: `Bearer ${session.access_token}` } : undefined;
       
       const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: { planCode },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+        headers
       });
       
       if (error) {
