@@ -27,18 +27,11 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    // 🔒 VALIDAÇÃO JWT - Primeira camada de segurança (Fail-Fast)
+    // 🔒 VALIDAÇÃO JWT OPCIONAL - Suporta fluxos auth-first e pay-first
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      logStep("ERROR: Missing Authorization header");
-      return new Response(JSON.stringify({ 
-        error: "Autenticação necessária. Faça login para assinar." 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       throw new Error("STRIPE_SECRET_KEY não configurada");
@@ -53,37 +46,39 @@ serve(async (req) => {
       throw new Error("Supabase não configurado");
     }
 
-    // 🔒 Criar cliente Supabase com token do usuário para validação
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: {
-        headers: { Authorization: authHeader }
-      }
-    });
-
-    // 🔒 Validar token e obter dados do usuário autenticado (SSOT)
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      logStep("ERROR: Invalid or expired token", { error: authError });
-      return new Response(JSON.stringify({ 
-        error: "Token inválido ou expirado. Faça login novamente." 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
+    // Tentar autenticar se houver token (mas não falhar se não houver)
+    if (authHeader) {
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        global: {
+          headers: { Authorization: authHeader }
+        }
       });
+
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (user && !authError) {
+        userId = user.id;
+        userEmail = user.email;
+        logStep("User authenticated successfully", { 
+          userId, 
+          email: userEmail 
+        });
+      } else {
+        logStep("No valid authentication, proceeding as new user");
+      }
+    } else {
+      logStep("No authorization header, proceeding as new user");
     }
 
-    logStep("User authenticated successfully", { 
-      userId: user.id, 
-      email: user.email 
-    });
-
     const { planCode } = await req.json();
-    logStep("Plan code requested", { planCode, userId: user.id });
+    logStep("Plan code requested", { planCode, userId });
 
     if (!planCode) {
       throw new Error("planCode é obrigatório");
     }
+
+    // Criar cliente Supabase para buscar planos
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Buscar dados dos planos no Supabase
     const { data: landingContent, error: supabaseError } = await supabase
@@ -118,8 +113,7 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // 🔒 Criar checkout session com email do usuário autenticado (SSOT)
-    // Email vem de auth.users (fonte confiável), não do frontend
+    // 🔒 Criar checkout session com suporte a ambos os fluxos
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
@@ -131,16 +125,17 @@ serve(async (req) => {
       ],
       success_url: `${req.headers.get("origin")}/assinatura/processando?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/assinatura?canceled=true`,
-      customer_email: user.email, // ✅ Email verificado do auth.users
+      customer_email: userEmail || undefined, // Email do usuário autenticado ou undefined (Stripe vai pedir)
       billing_address_collection: "required",
       phone_number_collection: {
         enabled: false,
       },
       metadata: {
-        user_id: user.id, // ✅ Vinculação imediata ao user_id
-        user_email: user.email, // ✅ Para auditoria
+        user_id: userId || '', // Vazio se não autenticado
+        user_email: userEmail || '', // Vazio se não autenticado
         plan_code: planCode,
-        plan_name: selectedPlan.name
+        plan_name: selectedPlan.name,
+        is_new_user: userId ? 'false' : 'true' // Flag para o webhook
       }
     });
 

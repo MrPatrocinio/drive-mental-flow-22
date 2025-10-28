@@ -22,6 +22,7 @@ import PaymentSuccessPage from '@/pages/PaymentSuccessPage';
 import PaymentCancelPage from '@/pages/PaymentCancelPage';
 import PaymentProcessingPage from '@/pages/PaymentProcessingPage';
 import SubscriptionSuccessPage from '@/pages/SubscriptionSuccessPage';
+import OnboardingPage from '@/pages/OnboardingPage';
 // Lazy load admin pages para reduzir bundle inicial
 const AdminSubscriptionPlansPage = React.lazy(() => import('@/pages/admin/AdminSubscriptionPlansPage').then(m => ({ default: m.AdminSubscriptionPlansPage })));
 const AdminPricingPage = React.lazy(() => import('@/pages/admin/AdminPricingPage').then(m => ({ default: m.AdminPricingPage })));
@@ -105,6 +106,7 @@ const AppContent: React.FC = () => {
       <Route path="/pagamento" element={<PaymentPage />} />
       <Route path="/pagamento/sucesso" element={<PaymentSuccessPage />} />
       <Route path="/pagamento/cancelado" element={<PaymentCancelPage />} />
+      <Route path="/onboarding/definir-senha" element={<OnboardingPage />} />
       
       {/* Páginas Legais */}
       <Route path="/lgpd" element={<LgpdPage />} />

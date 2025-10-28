@@ -64,9 +64,10 @@ serve(async (req) => {
         const customerId = session.customer as string;
         const customerEmail = session.customer_details?.email;
         
-        // 🔒 Ler user_id dos metadados (SSOT - vinculação imediata)
+        // 🔒 Ler metadados da sessão
         const userId = session.metadata?.user_id;
         const userEmail = session.metadata?.user_email;
+        const isNewUser = session.metadata?.is_new_user === 'true';
 
         if (!subscriptionId || !customerId) {
           console.error('[WEBHOOK] Missing subscription or customer ID');
@@ -78,7 +79,7 @@ serve(async (req) => {
 
         console.log('[WEBHOOK] Subscription:', subscription.id, 'Status:', subscription.status);
         console.log('[WEBHOOK] Customer:', customer.id, 'Email:', customerEmail);
-        console.log('[WEBHOOK] User ID from metadata:', userId);
+        console.log('[WEBHOOK] User ID from metadata:', userId, 'Is new user:', isNewUser);
 
         let tier = 'quarterly';
         if (subscription.items.data[0]?.price?.id) {
@@ -90,15 +91,69 @@ serve(async (req) => {
 
         const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
 
-        // 🔒 Vinculação direta ao user_id (não mais via email)
-        if (userId && userEmail) {
-          console.log('[WEBHOOK] Direct linking to user_id:', userId);
+        // 🆕 LÓGICA PAY-FIRST: Criar usuário automaticamente se for novo
+        let finalUserId = userId;
+
+        if (isNewUser && !userId && customerEmail) {
+          console.log('[WEBHOOK] Creating new user for:', customerEmail);
+          
+          try {
+            // 1. Criar usuário via Admin API (SEM SENHA)
+            const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+              email: customerEmail,
+              email_confirm: true,
+              user_metadata: {
+                display_name: customerEmail.split('@')[0],
+                created_via: 'stripe_checkout',
+                stripe_customer_id: customerId,
+                subscription_tier: tier,
+                created_at: new Date().toISOString()
+              }
+            });
+            
+            if (createError) {
+              console.error('[WEBHOOK] Error creating user:', createError);
+              // Salvar em pending_subscriptions para retry manual
+              await supabase.from('pending_subscriptions').insert({
+                email: customerEmail,
+                stripe_customer_id: customerId,
+                stripe_subscription_id: subscriptionId,
+                session_id: session.id,
+                subscription_tier: tier,
+              });
+              break;
+            }
+            
+            finalUserId = newUser.user.id;
+            console.log('[WEBHOOK] User created successfully:', finalUserId);
+            
+            // 2. Enviar convite para definir senha
+            const appUrl = Deno.env.get('APP_URL') || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com';
+            const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
+              customerEmail,
+              { redirectTo: `${appUrl}/onboarding/definir-senha` }
+            );
+            
+            if (inviteError) {
+              console.error('[WEBHOOK] Error sending invite:', inviteError);
+            } else {
+              console.log('[WEBHOOK] Invite email sent to:', customerEmail);
+            }
+          } catch (error) {
+            console.error('[WEBHOOK] Exception creating user:', error);
+            finalUserId = null;
+          }
+        }
+
+        // 🔒 Vinculação da assinatura ao usuário
+        if (finalUserId && (userEmail || customerEmail)) {
+          console.log('[WEBHOOK] Linking subscription to user:', finalUserId);
           
           const { error: upsertError } = await supabase
             .from('subscribers')
             .upsert({
-              user_id: userId, // ✅ Vinculação imediata
-              email: userEmail,
+              user_id: finalUserId,
+              email: userEmail || customerEmail,
               stripe_customer_id: customer.id,
               stripe_subscription_id: subscription.id,
               subscription_status: subscription.status as any,
@@ -113,7 +168,7 @@ serve(async (req) => {
           if (upsertError) {
             console.error('[WEBHOOK] Error upserting subscriber:', upsertError);
           } else {
-            console.log('[WEBHOOK] Subscriber linked successfully to user_id:', userId);
+            console.log('[WEBHOOK] Subscriber linked successfully to user_id:', finalUserId);
           }
         } else {
           // Fallback para lógica antiga (compatibilidade com pending_subscriptions)
