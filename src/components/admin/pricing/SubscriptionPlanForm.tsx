@@ -84,9 +84,23 @@ export const SubscriptionPlanForm: React.FC<SubscriptionPlanFormProps> = ({
         {/* Toggle de Ativação */}
         <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/10">
           <div className="space-y-1">
-            <Label className="font-semibold">Status do Plano</Label>
+            <Label className="font-semibold flex items-center gap-2">
+              {plan.is_active !== false ? (
+                <>
+                  <span className="text-green-600">✅</span>
+                  Visível na Landing Page
+                </>
+              ) : (
+                <>
+                  <span className="text-muted-foreground">👻</span>
+                  Oculto na Landing Page
+                </>
+              )}
+            </Label>
             <p className="text-xs text-muted-foreground">
-              {plan.is_active !== false ? 'Plano ativo e visível na página principal' : 'Plano desativado e oculto'}
+              {plan.is_active !== false 
+                ? '🌐 Os visitantes podem ver e comprar este plano' 
+                : '🔒 Este plano está oculto para os visitantes'}
             </p>
           </div>
           <Switch

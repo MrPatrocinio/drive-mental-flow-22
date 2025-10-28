@@ -15,6 +15,7 @@ export const AdminSubscriptionPlansPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [warnings, setWarnings] = useState<string[]>([]);
   const { toast } = useToast();
 
   const loadPlansData = async () => {
@@ -49,6 +50,7 @@ export const AdminSubscriptionPlansPage: React.FC = () => {
     try {
       setIsSaving(true);
       setErrors([]);
+      setWarnings([]);
 
       // Validar dados usando o serviço de validação
       const validation = SubscriptionValidationService.validatePlansData(data);
@@ -74,6 +76,10 @@ export const AdminSubscriptionPlansPage: React.FC = () => {
         });
         return;
       }
+
+      // Gerar warnings (não bloqueiam salvamento)
+      const plansWarnings = SubscriptionValidationService.getPlansWarnings(data.plans);
+      setWarnings(plansWarnings);
 
       const savedPlansData = await SubscriptionPlansService.save(data);
       setPlansData(savedPlansData);
@@ -137,12 +143,26 @@ export const AdminSubscriptionPlansPage: React.FC = () => {
 
           <TabsContent value="edit" className="mt-6">
             {plansData && (
-              <SubscriptionPlansForm
-                initialData={plansData}
-                onSubmit={handleSave}
-                isLoading={isSaving}
-                errors={errors}
-              />
+              <div className="space-y-4">
+                {warnings.length > 0 && (
+                  <Card className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
+                    <CardContent className="pt-6">
+                      <h4 className="font-semibold text-sm mb-2">⚠️ Sugestões de Otimização</h4>
+                      <ul className="list-disc pl-4 space-y-1">
+                        {warnings.map((warning, index) => (
+                          <li key={index} className="text-sm text-muted-foreground">{warning}</li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+                <SubscriptionPlansForm
+                  initialData={plansData}
+                  onSubmit={handleSave}
+                  isLoading={isSaving}
+                  errors={errors}
+                />
+              </div>
             )}
           </TabsContent>
 

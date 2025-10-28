@@ -11,6 +11,7 @@ import { SubscriptionPlan, SubscriptionPlansInsert } from './supabase/subscripti
 export interface ValidationResult {
   isValid: boolean;
   errors: string[];
+  warnings?: string[];
 }
 
 export class SubscriptionValidationService {
@@ -114,6 +115,7 @@ export class SubscriptionValidationService {
 
   /**
    * Valida consistência entre planos
+   * Retorna array de erros E warnings separadamente
    */
   static validatePlansConsistency(plans: SubscriptionPlan[]): string[] {
     const errors: string[] = [];
@@ -137,13 +139,37 @@ export class SubscriptionValidationService {
       errors.push('Pelo menos um plano deve estar ativo');
     }
 
-    // VALIDAÇÕES ESPECÍFICAS PARA 2 PLANOS ANUAIS
+    return errors;
+  }
+
+  /**
+   * Gera warnings (não bloqueiam salvamento) para estratégia de vendas
+   */
+  static getPlansWarnings(plans: SubscriptionPlan[]): string[] {
+    const warnings: string[] = [];
+    const activePlans = plans.filter(plan => plan.is_active !== false);
+
+    // ⚠️ WARNING (não erro): Sugestão para picos de vendas
+    if (activePlans.length > 1) {
+      warnings.push(
+        `⚠️ Estratégia de Picos de Vendas: Você tem ${activePlans.length} planos ativos. ` +
+        `Para criar urgência e escassez, recomendamos ativar apenas 1 plano por vez. ` +
+        `Use os botões "Modo Normal" ou "Modo Promoção" para alternar facilmente.`
+      );
+    }
+
+    return warnings;
+  }
+
+  /**
+   * Valida regras específicas para os 2 planos anuais
+   */
+  static validateAnnualPlansRules(plans: SubscriptionPlan[]): string[] {
+    const errors: string[] = [];
     const activePlansFiltered = plans.filter(plan => plan.is_active !== false);
     
-    // Verificar número exato de planos ativos
-    if (activePlansFiltered.length !== 2) {
-      errors.push(`Exatamente 2 planos devem estar ativos. Atualmente há ${activePlansFiltered.length} planos ativos`);
-    }
+    // REMOVIDO: Não forçar 2 planos ativos (permite estratégia de 1 plano por vez)
+    // Agora é apenas uma sugestão em warnings
 
     // Verificar se todos os planos ativos são anuais
     const nonAnnualPlans = activePlansFiltered.filter(

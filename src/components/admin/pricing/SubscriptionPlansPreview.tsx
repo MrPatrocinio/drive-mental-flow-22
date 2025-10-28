@@ -17,11 +17,20 @@ interface SubscriptionPlansPreviewProps {
 export const SubscriptionPlansPreview: React.FC<SubscriptionPlansPreviewProps> = ({ 
   plansData 
 }) => {
+  // Filtrar apenas planos ativos, igual à landing page
+  const activePlans = plansData.plans.filter(plan => plan.is_active !== false);
+  const hasInactivePlans = plansData.plans.some(plan => plan.is_active === false);
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-center">Preview - Como aparecerá na página</CardTitle>
+          {hasInactivePlans && (
+            <p className="text-xs text-center text-muted-foreground mt-2">
+              ⚠️ Mostrando apenas planos ativos. Planos ocultos não aparecem na landing page.
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <div className="space-y-8">
@@ -32,8 +41,15 @@ export const SubscriptionPlansPreview: React.FC<SubscriptionPlansPreviewProps> =
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {plansData.plans.map((plan) => {
+            {activePlans.length === 0 ? (
+              <div className="text-center p-8 border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground">
+                  ⚠️ Nenhum plano ativo. Ative pelo menos um plano para exibir na landing page.
+                </p>
+              </div>
+            ) : (
+              <div className={`grid grid-cols-1 ${activePlans.length === 1 ? 'max-w-md mx-auto' : 'md:grid-cols-2 max-w-4xl mx-auto'} gap-6`}>
+                {activePlans.map((plan) => {
                 const Icon = plan.popular ? Crown : Star;
                 const promotion = PromotionService.calculatePromotion({
                   has_promotion: plan.has_promotion,
@@ -53,8 +69,13 @@ export const SubscriptionPlansPreview: React.FC<SubscriptionPlansPreviewProps> =
                         : 'border-border'
                     }`}
                   >
+                    {/* Badge de Visibilidade */}
+                    <Badge className="absolute -top-3 left-4 bg-green-600 text-white">
+                      👁️ VISÍVEL NA LANDING
+                    </Badge>
+                    
                     {plan.popular && (
-                      <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
+                      <Badge className="absolute -top-3 right-4 bg-primary text-primary-foreground">
                         Mais Popular
                       </Badge>
                     )}
@@ -121,6 +142,47 @@ export const SubscriptionPlansPreview: React.FC<SubscriptionPlansPreviewProps> =
                 );
               })}
             </div>
+            )}
+
+            {/* Mostrar planos ocultos (apenas para referência do admin) */}
+            {hasInactivePlans && (
+              <div className="mt-8 pt-6 border-t">
+                <h3 className="text-sm font-semibold text-center text-muted-foreground mb-4">
+                  Planos Ocultos (não visíveis na landing page)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                  {plansData.plans
+                    .filter(plan => plan.is_active === false)
+                    .map((plan) => {
+                      const Icon = plan.popular ? Crown : Star;
+                      return (
+                        <Card 
+                          key={plan.id}
+                          className="relative opacity-50 border-dashed"
+                        >
+                          <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-muted text-muted-foreground">
+                            👻 OCULTO
+                          </Badge>
+                          <CardHeader className="text-center pb-6">
+                            <div className="flex justify-center mb-4">
+                              <div className="p-3 rounded-full bg-muted">
+                                <Icon className="h-6 w-6" />
+                              </div>
+                            </div>
+                            <CardTitle className="text-xl font-bold">{plan.name}</CardTitle>
+                            <p className="text-sm text-muted-foreground">{plan.description}</p>
+                            <div className="mt-4">
+                              <span className="text-3xl font-bold text-foreground">
+                                {formatPrice(plan.price, plan.currency)}
+                              </span>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

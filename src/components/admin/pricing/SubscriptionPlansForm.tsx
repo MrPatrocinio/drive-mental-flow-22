@@ -165,6 +165,27 @@ export const SubscriptionPlansForm: React.FC<SubscriptionPlansFormProps> = ({
   };
 
   const needsMigration = formData.plans.length > 2;
+  const activePlansCount = formData.plans.filter(p => p.is_active !== false).length;
+
+  const activateNormalMode = () => {
+    setFormData(prev => ({
+      ...prev,
+      plans: prev.plans.map(plan => ({
+        ...plan,
+        is_active: plan.id === 'annual' // Ativa apenas o plano normal
+      }))
+    }));
+  };
+
+  const activatePromoMode = () => {
+    setFormData(prev => ({
+      ...prev,
+      plans: prev.plans.map(plan => ({
+        ...plan,
+        is_active: plan.id === 'annual_promo' // Ativa apenas o plano promocional
+      }))
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -186,6 +207,36 @@ export const SubscriptionPlansForm: React.FC<SubscriptionPlansFormProps> = ({
                 >
                   {isMigrating ? 'Migrando...' : '🔄 Migrar para 2 Planos Anuais'}
                 </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Alert de Estratégia de Picos de Vendas */}
+      {!needsMigration && (
+        <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <h4 className="font-semibold text-sm mb-1">Estratégia de Picos de Vendas</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Ative apenas 1 plano por vez para criar urgência e escassez. 
+                  Use os botões rápidos abaixo para alternar facilmente entre os modos.
+                </p>
+                <div className="flex items-center gap-2 mb-3">
+                  <Button size="sm" variant="outline" onClick={activateNormalMode} type="button">
+                    🎯 Modo Normal (R$ 197)
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={activatePromoMode} type="button">
+                    🔥 Modo Promoção (R$ 97)
+                  </Button>
+                </div>
+                <div className="text-center p-2 rounded-lg bg-muted">
+                  <span className="text-sm font-medium">
+                    {activePlansCount} de 2 planos ativos na landing page
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
