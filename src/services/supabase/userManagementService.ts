@@ -159,24 +159,35 @@ export class UserManagementService {
   }
 
   /**
-   * Remove usuário (soft delete - desativa)
+   * Remove usuário permanentemente do banco de dados
+   * ATENÇÃO: Esta ação é IRREVERSÍVEL e deleta todos os dados do usuário
+   * @param userId - ID do usuário a ser removido
+   * @returns Resultado da operação
    */
   static async deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // Primeiro, desativar assinatura se existir
-      await supabase
-        .from('subscribers')
-        .update({ subscribed: false, subscription_end: new Date().toISOString() })
-        .eq('user_id', userId);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        return { success: false, error: 'Não autorizado' };
+      }
 
-      // Atualizar role para inativo
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: 'inactive' })
-        .eq('user_id', userId);
+      const response = await fetch(
+        `https://ipdzkzlrcyrcfwvhiulc.supabase.co/functions/v1/delete-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ userId })
+        }
+      );
 
-      if (error) {
-        return { success: false, error: error.message };
+      const result = await response.json();
+
+      if (!result.success) {
+        return { success: false, error: result.error || 'Erro ao deletar usuário' };
       }
 
       return { success: true };

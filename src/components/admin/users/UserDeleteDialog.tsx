@@ -41,20 +41,27 @@ export const UserDeleteDialog = ({ user, open, onOpenChange, onConfirm }: UserDe
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja desativar o usuário{" "}
-            <strong>{user?.display_name || user?.email}</strong>?
-            <br />
-            <br />
-            Esta ação irá:
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>Desativar a conta do usuário</li>
-              <li>Cancelar assinatura ativa (se houver)</li>
-              <li>Impedir acesso ao sistema</li>
-            </ul>
-            <br />
-            <strong>Esta ação pode ser revertida alterando a função do usuário.</strong>
+          <AlertDialogTitle>⚠️ Confirmar Exclusão PERMANENTE</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-3">
+            <p className="text-destructive font-semibold">
+              ATENÇÃO: Esta ação é IRREVERSÍVEL!
+            </p>
+            <p>
+              Tem certeza que deseja <strong>DELETAR PERMANENTEMENTE</strong> o usuário{" "}
+              <strong>{user?.display_name || user?.email}</strong>?
+            </p>
+            <div className="bg-destructive/10 border border-destructive/30 rounded-md p-3">
+              <p className="font-medium mb-2">Esta ação irá:</p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-destructive">
+                <li>Deletar a conta permanentemente</li>
+                <li>Remover todos os dados do usuário</li>
+                <li>Apagar histórico, favoritos e playlists</li>
+                <li>Cancelar assinatura no Stripe (se houver)</li>
+              </ul>
+            </div>
+            <p className="text-destructive font-semibold">
+              ⚠️ NÃO É POSSÍVEL DESFAZER ESTA AÇÃO!
+            </p>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -66,7 +73,7 @@ export const UserDeleteDialog = ({ user, open, onOpenChange, onConfirm }: UserDe
             disabled={loading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {loading ? "Processando..." : "Sim, Desativar"}
+            {loading ? "Deletando..." : "⚠️ Sim, Deletar PERMANENTEMENTE"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
