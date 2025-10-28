@@ -57,14 +57,13 @@ export const SubscriptionPlans = () => {
   }, [isAuthenticated]);
 
   const handleSelectPlan = async (planId: string) => {
-    // 🔒 Verificação de autenticação (primeira camada de segurança - Fail-Fast)
-    if (!isAuthenticated) {
-      toast.error('Você precisa estar logado para assinar', {
-        description: 'Redirecionando para o login...'
-      });
-      // Redirecionar para login com redirect e plan nos query params
-      navigate(`/login?redirect=/assinatura&plan=${planId}`);
-      return;
+    // 🆕 Fluxo pay-first: Não exige autenticação prévia
+    // Usuários logados continuam funcionando normalmente
+    // Novos usuários vão direto para checkout e criam conta após pagamento
+    if (isAuthenticated) {
+      console.log('[SUBSCRIPTION] User authenticated, using auth-first flow');
+    } else {
+      console.log('[SUBSCRIPTION] New user, using pay-first flow');
     }
 
     await createSubscription(planId);

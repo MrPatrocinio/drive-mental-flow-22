@@ -41,18 +41,20 @@ export default function PaymentProcessingPage() {
           return;
         }
 
-        console.log('[PAYMENT-PROCESSING] Session data:', sessionData);
+        console.log('[PAYMENT-PROCESSING] Session verified:', sessionData);
 
         // Verificar autenticação
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
+          // ✅ Usuário já autenticado (fluxo auth-first antigo)
           console.log('[PAYMENT-PROCESSING] User authenticated, redirecting to success');
           navigate('/assinatura/sucesso');
         } else {
-          console.log('[PAYMENT-PROCESSING] User not authenticated, redirecting to login with email');
+          // 🆕 Usuário novo (fluxo pay-first)
+          console.log('[PAYMENT-PROCESSING] New user, redirecting to onboarding');
           const email = sessionData?.email || '';
-          navigate(`/login?redirect=/assinatura/sucesso&email=${encodeURIComponent(email)}&session_id=${sessionId}`);
+          navigate(`/onboarding/definir-senha?email=${encodeURIComponent(email)}`);
         }
       } catch (error) {
         console.error('[PAYMENT-PROCESSING] Exception:', error);
