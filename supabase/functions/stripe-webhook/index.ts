@@ -128,10 +128,15 @@ serve(async (req) => {
             console.log('[WEBHOOK] User created successfully:', finalUserId);
             
             // 2. Enviar convite para definir senha
-            const appUrl = Deno.env.get('APP_URL') || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com';
+            const inviteRedirectUrl = Deno.env.get('INVITE_REDIRECT_URL') 
+              || `${Deno.env.get('APP_URL')}/onboarding/definir-senha`
+              || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com/onboarding/definir-senha';
+            
+            console.log('[WEBHOOK] Sending invite email with redirect:', inviteRedirectUrl);
+            
             const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
               customerEmail,
-              { redirectTo: `${appUrl}/onboarding/definir-senha` }
+              { redirectTo: inviteRedirectUrl }
             );
             
             if (inviteError) {
