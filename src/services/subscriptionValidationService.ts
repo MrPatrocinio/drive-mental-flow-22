@@ -137,6 +137,40 @@ export class SubscriptionValidationService {
       errors.push('Pelo menos um plano deve estar ativo');
     }
 
+    // VALIDAÇÕES ESPECÍFICAS PARA 2 PLANOS ANUAIS
+    const activePlansFiltered = plans.filter(plan => plan.is_active !== false);
+    
+    // Verificar número exato de planos ativos
+    if (activePlansFiltered.length !== 2) {
+      errors.push(`Exatamente 2 planos devem estar ativos. Atualmente há ${activePlansFiltered.length} planos ativos`);
+    }
+
+    // Verificar se todos os planos ativos são anuais
+    const nonAnnualPlans = activePlansFiltered.filter(
+      plan => plan.interval !== 'year' || plan.interval_count !== 1
+    );
+    if (nonAnnualPlans.length > 0) {
+      errors.push('Todos os planos ativos devem ser anuais (interval: year, interval_count: 1)');
+    }
+
+    // Verificar se há exatamente um plano com promoção
+    const promotionalPlans = activePlansFiltered.filter(plan => plan.has_promotion);
+    if (promotionalPlans.length === 0) {
+      errors.push('Um dos planos deve ter promoção ativada (has_promotion: true)');
+    } else if (promotionalPlans.length > 1) {
+      errors.push('Apenas um plano pode ter promoção ativada');
+    }
+
+    // Verificar se o plano promocional tem preço menor
+    if (promotionalPlans.length === 1 && activePlansFiltered.length === 2) {
+      const normalPlan = activePlansFiltered.find(plan => !plan.has_promotion);
+      const promoPlan = promotionalPlans[0];
+      
+      if (normalPlan && promoPlan && promoPlan.price >= normalPlan.price) {
+        errors.push(`O plano promocional (${promoPlan.name}) deve ter preço menor que o plano normal (${normalPlan.name})`);
+      }
+    }
+
     return errors;
   }
 }

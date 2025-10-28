@@ -27,32 +27,15 @@ export const SubscriptionPlansForm: React.FC<SubscriptionPlansFormProps> = ({
   const [formData, setFormData] = useState<SubscriptionPlansInsert>({
     plans: [
       {
-        id: 'quarterly',
-        name: 'Trimestral',
-        price: 89.90,
-        original_price: 89.90,
+        id: 'annual',
+        name: 'Anual',
+        price: 197.00,
+        original_price: 197.00,
         currency: 'R$',
-        interval: 'month',
-        interval_count: 3,
-        description: 'Renovação automática a cada 3 meses',
-        savings: 'Economize R$ 0,80',
-        popular: false,
-        is_active: true,
-        has_promotion: false,
-        discount_percentage: 0,
-        promotion_end_date: null,
-        promotion_label: ''
-      },
-      {
-        id: 'semiannual',
-        name: 'Semestral',
-        price: 159.90,
-        original_price: 179.40,
-        currency: 'R$',
-        interval: 'month',
-        interval_count: 6,
-        description: 'Renovação automática a cada 6 meses - Mais Popular',
-        savings: 'Economize R$ 20,40',
+        interval: 'year',
+        interval_count: 1,
+        description: 'Renovação automática a cada 12 meses',
+        savings: '',
         popular: true,
         is_active: true,
         has_promotion: false,
@@ -61,21 +44,21 @@ export const SubscriptionPlansForm: React.FC<SubscriptionPlansFormProps> = ({
         promotion_label: ''
       },
       {
-        id: 'annual',
-        name: 'Anual',
-        price: 299.90,
-        original_price: 358.80,
+        id: 'annual_promo',
+        name: 'Anual Promocional',
+        price: 97.00,
+        original_price: 197.00,
         currency: 'R$',
         interval: 'year',
         interval_count: 1,
-        description: 'Renovação automática a cada 12 meses',
-        savings: 'Economize R$ 59,80',
+        description: 'Renovação automática a cada 12 meses - Oferta Especial',
+        savings: 'Economize R$ 100,00',
         popular: false,
         is_active: true,
-        has_promotion: false,
-        discount_percentage: 0,
-        promotion_end_date: null,
-        promotion_label: ''
+        has_promotion: true,
+        discount_percentage: 50,
+        promotion_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        promotion_label: 'OFERTA LIMITADA'
       }
     ],
     global_benefits: [''],
@@ -153,14 +136,23 @@ export const SubscriptionPlansForm: React.FC<SubscriptionPlansFormProps> = ({
 
             {/* Planos de Assinatura */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Planos de Assinatura</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {formData.plans.map((plan) => (
-                  <SubscriptionPlanForm
-                    key={plan.id}
-                    plan={plan}
-                    onUpdate={handlePlanUpdate}
-                  />
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Planos de Assinatura</h3>
+                <p className="text-sm text-muted-foreground">
+                  Configure os 2 planos anuais: Plano Normal (R$ 197,00) e Plano Promocional (R$ 97,00)
+                </p>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl">
+                {formData.plans.map((plan, index) => (
+                  <div key={plan.id} className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {index === 0 ? 'Plano Anual Normal' : 'Plano Anual Promocional'}
+                    </div>
+                    <SubscriptionPlanForm
+                      plan={plan}
+                      onUpdate={handlePlanUpdate}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
