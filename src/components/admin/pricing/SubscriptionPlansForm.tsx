@@ -24,6 +24,7 @@ export const SubscriptionPlansForm: React.FC<SubscriptionPlansFormProps> = ({
   isLoading = false,
   errors = []
 }) => {
+  const [isMigrating, setIsMigrating] = useState(false);
   const [formData, setFormData] = useState<SubscriptionPlansInsert>({
     plans: [
       {
@@ -113,8 +114,84 @@ export const SubscriptionPlansForm: React.FC<SubscriptionPlansFormProps> = ({
     }));
   };
 
+  const handleMigrateToNewPlans = async () => {
+    setIsMigrating(true);
+    try {
+      const newPlansData: SubscriptionPlansInsert = {
+        ...formData,
+        plans: [
+          {
+            id: 'annual',
+            name: 'Anual',
+            price: 197.00,
+            original_price: 197.00,
+            currency: 'R$',
+            interval: 'year',
+            interval_count: 1,
+            description: 'Renovação automática a cada 12 meses',
+            savings: '',
+            popular: true,
+            is_active: true,
+            has_promotion: false,
+            discount_percentage: 0,
+            promotion_end_date: null,
+            promotion_label: ''
+          },
+          {
+            id: 'annual_promo',
+            name: 'Anual Promocional',
+            price: 97.00,
+            original_price: 197.00,
+            currency: 'R$',
+            interval: 'year',
+            interval_count: 1,
+            description: 'Renovação automática a cada 12 meses - Oferta Especial',
+            savings: 'Economize R$ 100,00',
+            popular: false,
+            is_active: true,
+            has_promotion: true,
+            discount_percentage: 50,
+            promotion_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            promotion_label: 'OFERTA LIMITADA'
+          }
+        ]
+      };
+      
+      await onSubmit(newPlansData);
+      setFormData(newPlansData);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  const needsMigration = formData.plans.length > 2;
+
   return (
     <div className="space-y-6">
+      {needsMigration && (
+        <Card className="border-warning bg-warning/10">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-2">Migração Necessária</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Detectamos {formData.plans.length} planos configurados. O sistema foi atualizado para trabalhar apenas com 2 planos anuais (Normal e Promocional).
+                </p>
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={handleMigrateToNewPlans}
+                  disabled={isMigrating || isLoading}
+                  className="flex items-center gap-2"
+                >
+                  {isMigrating ? 'Migrando...' : '🔄 Migrar para 2 Planos Anuais'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle>Configurar Planos de Assinatura</CardTitle>
