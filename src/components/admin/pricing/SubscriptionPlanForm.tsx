@@ -70,7 +70,14 @@ export const SubscriptionPlanForm: React.FC<SubscriptionPlanFormProps> = ({
             <Icon className="h-5 w-5" />
           </div>
         </div>
-        <CardTitle className="text-lg">{plan.name}</CardTitle>
+        <div className="flex items-center justify-center gap-2">
+          <CardTitle className="text-lg">{plan.name}</CardTitle>
+          {plan.has_promotion && (
+            <Badge variant="destructive" className="text-xs animate-pulse">
+              PROMOÇÃO
+            </Badge>
+          )}
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
