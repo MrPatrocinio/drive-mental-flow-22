@@ -14,9 +14,8 @@ const logStep = (step: string, details?: any) => {
 
 // Mapeamento de planCode para Stripe Price ID
 const PLAN_PRICE_MAPPING: Record<string, string> = {
-  'quarterly': 'price_1SGAwC4J5tUHBhq6jylL5ZCz',
-  'semiannual': 'price_1SGAxS4J5tUHBhq6cK6qFdgy',
-  'annual': 'price_1SGAyB4J5tUHBhq6eHSyaZeQ'
+  'annual': 'price_1SN0nIKsqfyBCf8Cho3UNexQ',        // R$ 197,00 - Plano Normal
+  'annual_promo': 'price_1SN0o7KsqfyBCf8CnuXhPnCE'   // R$ 97,00 - Plano Promocional
 };
 
 serve(async (req) => {
