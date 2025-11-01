@@ -35,7 +35,8 @@ serve(async (req) => {
     if (!stripeKey) {
       throw new Error("STRIPE_SECRET_KEY não configurada");
     }
-    logStep("Stripe key verified");
+    const stripeMode = stripeKey.startsWith("sk_test_") ? "test" : stripeKey.startsWith("sk_live_") ? "live" : "unknown";
+    logStep("Stripe key verified", { mode: stripeMode });
 
     // Inicializar Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
