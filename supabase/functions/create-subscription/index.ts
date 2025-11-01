@@ -12,10 +12,16 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Mapeamento de planCode para Stripe Price ID
-const PLAN_PRICE_MAPPING: Record<string, string> = {
-  'annual': 'price_1SN0nIKsqfyBCf8Cho3UNexQ',        // R$ 197,00 - Plano Normal
-  'annual_promo': 'price_1SN0o7KsqfyBCf8CnuXhPnCE'   // R$ 97,00 - Plano Promocional
+// Mapeamento de planCode para Stripe Price ID - TEST Mode
+const TEST_PLAN_PRICE_MAPPING: Record<string, string> = {
+  'annual': 'price_1SN0nIKsqfyBCf8Cho3UNexQ',        // R$ 197,00 - Plano Normal (TEST)
+  'annual_promo': 'price_1SN0o7KsqfyBCf8CnuXhPnCE'   // R$ 97,00 - Plano Promocional (TEST)
+};
+
+// Mapeamento de planCode para Stripe Price ID - LIVE Mode
+const LIVE_PLAN_PRICE_MAPPING: Record<string, string> = {
+  'annual': 'price_1SN0ktKsqfyBCf8Co11YPSGG',        // R$ 197,00 - Plano Normal (LIVE)
+  'annual_promo': 'price_1SOSu0KsqfyBCf8CNAZ0TxxY'   // R$ 97,00 - Plano Promocional (LIVE)
 };
 
 serve(async (req) => {
@@ -103,13 +109,15 @@ serve(async (req) => {
       throw new Error(`Plano ${planCode} não está ativo`);
     }
 
-    // Mapear planCode para priceId do Stripe
-    const priceId = PLAN_PRICE_MAPPING[planCode];
+    // Selecionar mapeamento correto baseado no modo Stripe
+    const priceMapping = stripeMode === "live" ? LIVE_PLAN_PRICE_MAPPING : TEST_PLAN_PRICE_MAPPING;
+    const priceId = priceMapping[planCode];
+    
     if (!priceId) {
-      throw new Error(`Price ID não configurado para o plano ${planCode}`);
+      throw new Error(`Price ID não configurado para o plano ${planCode} no ambiente ${stripeMode}`);
     }
 
-    logStep("Price ID mapped", { planCode, priceId });
+    logStep("Price ID mapped", { planCode, priceId, stripeMode });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
