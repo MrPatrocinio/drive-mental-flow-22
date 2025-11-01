@@ -174,6 +174,65 @@ serve(async (req) => {
             console.error('[WEBHOOK] Error upserting subscriber:', upsertError);
           } else {
             console.log('[WEBHOOK] Subscriber linked successfully to user_id:', finalUserId);
+            
+            // 📧 Enviar recibo de pagamento por email
+            try {
+              console.log('[WEBHOOK] Sending payment receipt email...');
+              
+              // Calcular próxima cobrança (1 ano para planos anuais)
+              const nextBillingDate = new Date(currentPeriodEnd);
+              const nextBillingFormatted = nextBillingDate.toLocaleDateString('pt-BR', { 
+                day: '2-digit', 
+                month: 'long', 
+                year: 'numeric' 
+              });
+              
+              // Determinar nome do plano e valor
+              let planName = 'Plano Anual Premium';
+              let amount = 'R$ 197,00';
+              
+              if (tier === 'annual') {
+                planName = 'Plano Anual Premium';
+                amount = 'R$ 197,00';
+              } else if (subscription.items.data[0]?.price?.id?.includes('promo')) {
+                planName = 'Plano Anual Promocional';
+                amount = 'R$ 97,00';
+              }
+              
+              const emailData = {
+                name: customer.name || customerEmail?.split('@')[0] || 'Usuário',
+                email: customerEmail,
+                planName,
+                plan: tier,
+                amount,
+                paymentMethod: 'Cartão de Crédito',
+                paymentDate: new Date().toLocaleDateString('pt-BR', { 
+                  day: '2-digit', 
+                  month: 'long', 
+                  year: 'numeric' 
+                }),
+                nextBilling: nextBillingFormatted,
+                transactionId: session.id,
+                loginUrl: Deno.env.get('APP_URL') || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com',
+                manageUrl: `${Deno.env.get('APP_URL')}/subscription` || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com/subscription'
+              };
+              
+              const { error: emailError } = await supabase.functions.invoke('send-email', {
+                body: {
+                  to: customerEmail,
+                  template: 'payment_success',
+                  data: emailData
+                }
+              });
+              
+              if (emailError) {
+                console.error('[WEBHOOK] Error sending payment receipt:', emailError);
+              } else {
+                console.log('[WEBHOOK] Payment receipt sent to:', customerEmail);
+              }
+            } catch (emailError) {
+              console.error('[WEBHOOK] Exception sending payment receipt:', emailError);
+            }
           }
         } else {
           // Fallback para lógica antiga (compatibilidade com pending_subscriptions)
