@@ -54,6 +54,7 @@ import NotFound from '@/pages/NotFound';
 import { InscricaoPage } from '@/pages/InscricaoPage';
 import { ObrigadoPage } from '@/pages/ObrigadoPage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 
 // Create a single client instance outside of the component
 const queryClient = new QueryClient({
@@ -125,6 +126,9 @@ const AppContent: React.FC = () => {
       
       {/* Rota de Recuperação de Senha */}
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      
+      {/* Rota de Redefinição de Senha */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Rotas de Usuários Protegidas */}
       <Route path="/dashboard" element={
