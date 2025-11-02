@@ -284,6 +284,19 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ mode, initialEmail
         </div>
       </div>
 
+      {mode === "login" && (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="link"
+            onClick={() => navigate('/forgot-password')}
+            className="h-auto p-0 text-sm text-muted-foreground hover:text-primary"
+          >
+            Esqueci minha senha
+          </Button>
+        </div>
+      )}
+
       <Button
         type="submit"
         variant="premium"

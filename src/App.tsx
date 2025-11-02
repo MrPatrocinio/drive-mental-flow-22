@@ -53,6 +53,7 @@ import { usePWABoot } from '@/hooks/usePWABoot';
 import NotFound from '@/pages/NotFound';
 import { InscricaoPage } from '@/pages/InscricaoPage';
 import { ObrigadoPage } from '@/pages/ObrigadoPage';
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 
 // Create a single client instance outside of the component
 const queryClient = new QueryClient({
@@ -121,6 +122,9 @@ const AppContent: React.FC = () => {
 
       {/* Rota de Login de Usuários */}
       <Route path="/login" element={<UserLoginPage />} />
+      
+      {/* Rota de Recuperação de Senha */}
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       {/* Rotas de Usuários Protegidas */}
       <Route path="/dashboard" element={
