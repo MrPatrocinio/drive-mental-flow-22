@@ -146,15 +146,26 @@ const getEmailTemplate = (template: string, data: Record<string, any> = {}): { s
               </div>
               
               <div style="text-align: center; margin: 32px 0;">
-                <a href="${data.loginUrl || APP_URL}" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; box-shadow: 0 4px 6px rgba(22, 163, 74, 0.3); margin: 8px;">🚀 Acessar Plataforma</a>
+                ${data.recoveryLink ? `
+                  <a href="${data.recoveryLink}" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 700; font-size: 16px; box-shadow: 0 6px 12px rgba(37, 99, 235, 0.4); margin: 12px auto; letter-spacing: 0.5px; text-transform: uppercase;">
+                    🔐 Definir Senha e Acessar Plataforma
+                  </a>
+                  <p style="color: #64748b; font-size: 13px; margin: 12px 0;">
+                    ⏰ Este link é válido por 1 hora. Clique acima para criar sua senha de acesso.
+                  </p>
+                ` : `
+                  <a href="${data.loginUrl || APP_URL}" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; box-shadow: 0 4px 6px rgba(22, 163, 74, 0.3); margin: 8px;">🚀 Acessar Plataforma</a>
+                `}
                 ${data.manageUrl ? `<a href="${data.manageUrl}" style="background: white; color: #2563eb; border: 2px solid #2563eb; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; margin: 8px;">⚙️ Gerenciar Assinatura</a>` : ''}
               </div>
               
-              <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 4px; margin: 24px 0;">
-                <p style="color: #92400e; margin: 0; font-size: 14px;">
-                  <strong>💡 Dica:</strong> Verifique sua caixa de entrada para o email de convite se ainda não criou sua senha!
-                </p>
-              </div>
+              ${!data.recoveryLink ? `
+                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 4px; margin: 24px 0;">
+                  <p style="color: #92400e; margin: 0; font-size: 14px;">
+                    <strong>💡 Dica:</strong> Se você já tem uma conta, faça login com suas credenciais existentes!
+                  </p>
+                </div>
+              ` : ''}
               
               <p style="color: #475569; line-height: 1.6; margin: 24px 0 0 0;">Obrigado por confiar no Drive Mental!<br><strong>Equipe Drive Mental</strong></p>
             </div>

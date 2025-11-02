@@ -91,61 +91,76 @@ serve(async (req) => {
 
         const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
 
-        // 🆕 LÓGICA PAY-FIRST: Criar usuário automaticamente se for novo
+        // 🆕 LÓGICA PAY-FIRST: Verificar se usuário já existe ou criar novo
         let finalUserId = userId;
+        let recoveryLink = '';
 
         if (isNewUser && !userId && customerEmail) {
-          console.log('[WEBHOOK] Creating new user for:', customerEmail);
+          console.log('[WEBHOOK] Checking if user exists for:', customerEmail);
           
           try {
-            // 1. Criar usuário via Admin API (SEM SENHA)
-            const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+            // 1. Verificar se usuário já existe
+            const { data: existingUsers } = await supabase.auth.admin.listUsers();
+            const existingUser = existingUsers?.users?.find(u => u.email === customerEmail);
+            
+            if (existingUser) {
+              console.log('[WEBHOOK] User already exists:', existingUser.id);
+              finalUserId = existingUser.id;
+            } else {
+              console.log('[WEBHOOK] Creating new user for:', customerEmail);
+              
+              // 2. Criar usuário via Admin API (SEM SENHA)
+              const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+                email: customerEmail,
+                email_confirm: true,
+                user_metadata: {
+                  display_name: customerEmail.split('@')[0],
+                  created_via: 'stripe_checkout',
+                  stripe_customer_id: customerId,
+                  subscription_tier: tier,
+                  created_at: new Date().toISOString()
+                }
+              });
+              
+              if (createError) {
+                console.error('[WEBHOOK] Error creating user:', createError);
+                // Salvar em pending_subscriptions para retry manual
+                await supabase.from('pending_subscriptions').insert({
+                  email: customerEmail,
+                  stripe_customer_id: customerId,
+                  stripe_subscription_id: subscriptionId,
+                  session_id: session.id,
+                  subscription_tier: tier,
+                });
+                break;
+              }
+              
+              finalUserId = newUser.user.id;
+              console.log('[WEBHOOK] User created successfully:', finalUserId);
+            }
+            
+            // 3. Gerar recovery link para definir senha (sempre, mesmo se usuário já existe)
+            const onboardingUrl = `${Deno.env.get('APP_URL')}/onboarding` 
+              || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com/onboarding';
+            
+            console.log('[WEBHOOK] Generating recovery link with redirect:', onboardingUrl);
+            
+            const { data: recoveryData, error: recoveryError } = await supabase.auth.admin.generateLink({
+              type: 'recovery',
               email: customerEmail,
-              email_confirm: true,
-              user_metadata: {
-                display_name: customerEmail.split('@')[0],
-                created_via: 'stripe_checkout',
-                stripe_customer_id: customerId,
-                subscription_tier: tier,
-                created_at: new Date().toISOString()
+              options: {
+                redirectTo: onboardingUrl
               }
             });
             
-            if (createError) {
-              console.error('[WEBHOOK] Error creating user:', createError);
-              // Salvar em pending_subscriptions para retry manual
-              await supabase.from('pending_subscriptions').insert({
-                email: customerEmail,
-                stripe_customer_id: customerId,
-                stripe_subscription_id: subscriptionId,
-                session_id: session.id,
-                subscription_tier: tier,
-              });
-              break;
-            }
-            
-            finalUserId = newUser.user.id;
-            console.log('[WEBHOOK] User created successfully:', finalUserId);
-            
-            // 2. Enviar convite para definir senha
-            const inviteRedirectUrl = Deno.env.get('INVITE_REDIRECT_URL') 
-              || `${Deno.env.get('APP_URL')}/onboarding/definir-senha`
-              || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com/onboarding/definir-senha';
-            
-            console.log('[WEBHOOK] Sending invite email with redirect:', inviteRedirectUrl);
-            
-            const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
-              customerEmail,
-              { redirectTo: inviteRedirectUrl }
-            );
-            
-            if (inviteError) {
-              console.error('[WEBHOOK] Error sending invite:', inviteError);
+            if (recoveryError) {
+              console.error('[WEBHOOK] Error generating recovery link:', recoveryError);
             } else {
-              console.log('[WEBHOOK] Invite email sent to:', customerEmail);
+              recoveryLink = recoveryData.properties.action_link;
+              console.log('[WEBHOOK] Recovery link generated successfully');
             }
           } catch (error) {
-            console.error('[WEBHOOK] Exception creating user:', error);
+            console.error('[WEBHOOK] Exception in user setup:', error);
             finalUserId = null;
           }
         }
@@ -214,7 +229,8 @@ serve(async (req) => {
                 nextBilling: nextBillingFormatted,
                 transactionId: session.id,
                 loginUrl: Deno.env.get('APP_URL') || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com',
-                manageUrl: `${Deno.env.get('APP_URL')}/subscription` || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com/subscription'
+                manageUrl: `${Deno.env.get('APP_URL')}/subscription` || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com/subscription',
+                recoveryLink: recoveryLink || `${Deno.env.get('APP_URL')}/user-login` || 'https://b7c23806-3309-4153-a75f-9d564d99ecdc.lovableproject.com/user-login'
               };
               
               const { error: emailError } = await supabase.functions.invoke('send-email', {

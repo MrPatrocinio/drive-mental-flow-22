@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,8 +15,29 @@ export default function OnboardingPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
   
   const email = searchParams.get('email');
+
+  // Verificar se há sessão ativa (recovery token)
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        console.log('[ONBOARDING] User authenticated via recovery token');
+        setHasSession(true);
+      } else {
+        console.log('[ONBOARDING] No active session');
+        setHasSession(false);
+        toast.error("Link expirado ou inválido. Por favor, acesse o link do email novamente.", {
+          duration: 6000
+        });
+      }
+    };
+    
+    checkSession();
+  }, []);
 
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +56,16 @@ export default function OnboardingPage() {
     setIsLoading(true);
     
     try {
-      // Atualizar senha do usuário
+      // Verificar se há sessão ativa
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Sessão expirada. Por favor, acesse o link do email novamente.");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Atualizar senha do usuário (agora com sessão ativa)
       const { error } = await supabase.auth.updateUser({
         password: password
       });
@@ -68,48 +98,71 @@ export default function OnboardingPage() {
             </CardHeader>
             
             <CardContent>
-              <form onSubmit={handleSetPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Nova Senha</Label>
-                  <Input 
-                    id="password"
-                    type="password" 
-                    placeholder="Mínimo 6 caracteres" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    required
-                  />
+              {hasSession === false ? (
+                <div className="text-center py-8 space-y-4">
+                  <p className="text-muted-foreground">
+                    O link de acesso expirou ou é inválido.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Por favor, verifique seu email e clique no link mais recente de "Definir Senha e Acessar Plataforma".
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/user-login')}
+                    className="mt-4"
+                  >
+                    Ir para Login
+                  </Button>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirme a Senha</Label>
-                  <Input 
-                    id="confirmPassword"
-                    type="password" 
-                    placeholder="Digite a senha novamente" 
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={isLoading}
-                    required
-                  />
+              ) : hasSession === null ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  <p className="mt-4 text-muted-foreground">Verificando autenticação...</p>
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Definindo senha...
-                    </>
-                  ) : (
-                    'Definir Senha e Acessar'
-                  )}
-                </Button>
-              </form>
+              ) : (
+                <form onSubmit={handleSetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Nova Senha</Label>
+                    <Input 
+                      id="password"
+                      type="password" 
+                      placeholder="Mínimo 6 caracteres" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirme a Senha</Label>
+                    <Input 
+                      id="confirmPassword"
+                      type="password" 
+                      placeholder="Digite a senha novamente" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={isLoading}
+                      required
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Definindo senha...
+                      </>
+                    ) : (
+                      'Definir Senha e Acessar'
+                    )}
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>
