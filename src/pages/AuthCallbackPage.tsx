@@ -15,6 +15,21 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const processCallback = async () => {
       console.log('[AUTH CALLBACK] URL:', window.location.href);
+      
+      // Verifica se há erro do Supabase nos query params
+      const urlParams = new URLSearchParams(window.location.search);
+      const errorCode = urlParams.get('error_code');
+      const errorDescription = urlParams.get('error_description');
+      
+      if (errorCode) {
+        console.error('[CALLBACK] Supabase error:', { errorCode, errorDescription });
+        navigate('/forgot-password', { 
+          replace: true,
+          state: { error: errorDescription || 'Link inválido ou expirado. Solicite um novo.' }
+        });
+        return;
+      }
+
       const { token, type, code } = ResetPasswordService.extractRecoveryToken();
       console.log('[AUTH CALLBACK] Extracted:', { token: token?.substring(0, 20) + '...', type, code: code?.substring(0, 20) });
 
