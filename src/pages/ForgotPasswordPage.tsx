@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,21 @@ import { KeyRound, ArrowLeft, Mail } from "lucide-react";
  */
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // Exibe mensagens de erro vindas do callback e limpa o state da rota
+  useEffect(() => {
+    const navState = location.state as { error?: string } | null;
+    if (navState?.error) {
+      setError(navState.error);
+      // Remove o estado da URL para evitar mensagem persistente ao recarregar
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
