@@ -3,37 +3,89 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * ResetPasswordService - Serviço de redefinição de senha
  * Responsabilidade: Gerenciar atualização de senha após recuperação (princípio SRP)
- * Princípio KISS: Usa API nativa do Supabase para máxima simplicidade
+ * Suporta múltiplos formatos: hash fragment, query params e PKCE code
  */
 export class ResetPasswordService {
   /**
-   * Extrai o token de recuperação da URL (hash fragment)
-   * Supabase adiciona #access_token=...&type=recovery na URL
+   * Extrai o token de recuperação da URL (hash fragment ou query params)
+   * Suporta:
+   * - #access_token=...&type=recovery (hash fragment - padrão)
+   * - ?access_token=...&type=recovery (query params - alguns clientes reescrevem)
+   * - ?code=... (PKCE flow - requer exchangeCodeForSession)
    * 
-   * @returns Token de acesso ou null se não encontrado
+   * @returns { token, type, code } ou null se não encontrado
    */
-  static extractRecoveryToken(): string | null {
+  static extractRecoveryToken(): { 
+    token: string | null; 
+    type: 'access_token' | 'code' | null;
+    code: string | null;
+  } {
     try {
+      // 1. Tenta extrair do hash fragment primeiro (padrão Supabase)
       const hash = window.location.hash;
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const token = hashParams.get('access_token');
+        const type = hashParams.get('type');
+
+        if (token && type === 'recovery') {
+          return { token, type: 'access_token', code: null };
+        }
+      }
+
+      // 2. Tenta extrair dos query params (alguns navegadores/provedores reescrevem)
+      const searchParams = new URLSearchParams(window.location.search);
       
-      if (!hash) {
-        return null;
+      // 2a. Verifica se há access_token nos query params
+      const queryToken = searchParams.get('access_token');
+      const queryType = searchParams.get('type');
+      
+      if (queryToken && queryType === 'recovery') {
+        return { token: queryToken, type: 'access_token', code: null };
       }
 
-      // Remove o # inicial e parseia os parâmetros
-      const params = new URLSearchParams(hash.substring(1));
-      const token = params.get('access_token');
-      const type = params.get('type');
-
-      // Valida se é um token de recuperação válido
-      if (token && type === 'recovery') {
-        return token;
+      // 2b. Verifica se há code (PKCE flow)
+      const code = searchParams.get('code');
+      if (code) {
+        return { token: null, type: 'code', code };
       }
 
-      return null;
+      return { token: null, type: null, code: null };
     } catch (error) {
       console.error('[RESET] Error extracting recovery token:', error);
-      return null;
+      return { token: null, type: null, code: null };
+    }
+  }
+
+  /**
+   * Troca o code PKCE por uma sessão válida
+   * Necessário quando o link de recuperação usa o fluxo PKCE
+   * 
+   * @param code - Code PKCE da URL
+   * @returns Objeto com erro (null se sucesso)
+   */
+  static async exchangeCodeForSession(code: string): Promise<{ error: string | null }> {
+    try {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (error) {
+        console.error('[RESET] Error exchanging code for session:', error);
+        
+        if (error.message.includes('expired')) {
+          return { error: "O link de recuperação expirou. Solicite um novo." };
+        }
+        if (error.message.includes('invalid')) {
+          return { error: "Link de recuperação inválido. Solicite um novo." };
+        }
+        
+        return { error: "Erro ao validar link de recuperação. Tente novamente." };
+      }
+
+      console.log('[RESET] Code exchanged successfully');
+      return { error: null };
+    } catch (error) {
+      console.error('[RESET] Unexpected error exchanging code:', error);
+      return { error: "Erro interno no sistema. Tente novamente mais tarde." };
     }
   }
 

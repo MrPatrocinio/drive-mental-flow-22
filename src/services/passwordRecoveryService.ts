@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { AppUrlService } from "./appUrlService";
 
 /**
  * PasswordRecoveryService - Serviço de recuperação de senha
@@ -16,8 +17,13 @@ export class PasswordRecoveryService {
    */
   static async sendPasswordResetEmail(email: string): Promise<{ error: string | null }> {
     try {
+      // Usa AppUrlService para garantir URL correta em todos os ambientes
+      const redirectUrl = AppUrlService.buildUrl('/reset-password');
+      
+      console.log('[RECOVERY] Sending reset email with redirect:', redirectUrl);
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
+        redirectTo: redirectUrl
       });
 
       if (error) {

@@ -55,6 +55,7 @@ import { InscricaoPage } from '@/pages/InscricaoPage';
 import { ObrigadoPage } from '@/pages/ObrigadoPage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import AuthCallbackPage from '@/pages/AuthCallbackPage';
 
 // Create a single client instance outside of the component
 const queryClient = new QueryClient({
@@ -129,6 +130,9 @@ const AppContent: React.FC = () => {
       
       {/* Rota de Redefinição de Senha */}
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      
+      {/* Rota de Callback de Autenticação (fallback para diferentes formatos de token) */}
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       {/* Rotas de Usuários Protegidas */}
       <Route path="/dashboard" element={

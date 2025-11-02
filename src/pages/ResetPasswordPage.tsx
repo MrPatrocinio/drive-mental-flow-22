@@ -18,24 +18,60 @@ const ResetPasswordPage = () => {
   const [hasToken, setHasToken] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Verifica se há token de recuperação na URL (hash, query ou code PKCE)
   useEffect(() => {
-    // Verifica se há token de recuperação na URL
-    const token = ResetPasswordService.extractRecoveryToken();
-    
-    if (!token) {
+    const processToken = async () => {
+      const { token, type, code } = ResetPasswordService.extractRecoveryToken();
+
+      // Se encontrou code PKCE, precisa fazer exchange primeiro
+      if (code && type === 'code') {
+        console.log('[RESET PAGE] Processing PKCE code');
+        setIsLoading(true);
+        
+        const { error } = await ResetPasswordService.exchangeCodeForSession(code);
+        
+        if (error) {
+          toast({
+            title: "Link inválido",
+            description: error,
+            variant: "destructive"
+          });
+          
+          setTimeout(() => {
+            navigate("/forgot-password");
+          }, 2000);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Code trocado com sucesso, agora pode redefinir senha
+        setHasToken(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // Se encontrou access_token (hash ou query), está pronto
+      if (token && type === 'access_token') {
+        console.log('[RESET PAGE] Found access_token');
+        setHasToken(true);
+        return;
+      }
+
+      // Nenhum token válido encontrado
+      console.warn('[RESET PAGE] No valid token found');
+      setHasToken(false);
       toast({
-        variant: "destructive",
         title: "Link inválido",
-        description: "O link de recuperação é inválido ou expirou.",
+        description: "O link de recuperação é inválido ou expirou. Solicite um novo.",
+        variant: "destructive"
       });
       
-      // Redireciona para página de recuperação após 2 segundos
       setTimeout(() => {
         navigate("/forgot-password");
       }, 2000);
-    } else {
-      setHasToken(true);
-    }
+    };
+
+    processToken();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
