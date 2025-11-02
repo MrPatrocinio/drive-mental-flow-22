@@ -21,7 +21,9 @@ const ResetPasswordPage = () => {
   // Verifica se há token de recuperação na URL (hash, query ou code PKCE)
   useEffect(() => {
     const processToken = async () => {
+      console.log('[RESET PASSWORD] URL:', window.location.href);
       const { token, type, code } = ResetPasswordService.extractRecoveryToken();
+      console.log('[RESET PASSWORD] Extracted:', { token: token?.substring(0, 20) + '...', type, code: code?.substring(0, 20) });
 
       // Se encontrou code PKCE, precisa fazer exchange primeiro
       if (code && type === 'code') {

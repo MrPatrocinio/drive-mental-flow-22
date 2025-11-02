@@ -14,7 +14,9 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const processCallback = async () => {
+      console.log('[AUTH CALLBACK] URL:', window.location.href);
       const { token, type, code } = ResetPasswordService.extractRecoveryToken();
+      console.log('[AUTH CALLBACK] Extracted:', { token: token?.substring(0, 20) + '...', type, code: code?.substring(0, 20) });
 
       // Se encontrou access_token, redireciona para reset-password com o hash
       if (token && type === 'access_token') {
