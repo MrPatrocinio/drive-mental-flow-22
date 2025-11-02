@@ -5,13 +5,19 @@
  */
 export class AppUrlService {
   /**
+   * Domínio canônico de produção
+   * Garante que emails de recuperação sempre usem o domínio principal
+   */
+  private static readonly CANONICAL_BASE_URL = "https://app.drivemental.com.br";
+
+  /**
    * Retorna a URL base da aplicação
-   * Usa window.location.origin para garantir que sempre aponte para o ambiente correto
+   * Sempre retorna o domínio canônico para garantir consistência
    * 
-   * @returns URL base completa (ex: https://drive-mental-flow-65.lovable.app)
+   * @returns URL base completa (https://app.drivemental.com.br)
    */
   static getBaseUrl(): string {
-    return window.location.origin;
+    return this.CANONICAL_BASE_URL;
   }
 
   /**
