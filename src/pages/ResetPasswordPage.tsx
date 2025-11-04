@@ -18,52 +18,57 @@ const ResetPasswordPage = () => {
   const [hasToken, setHasToken] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Verifica se há token de recuperação na URL (hash, query ou code PKCE)
+  // PKCE idempotente: processa ?code= OU verifica sessão existente
   useEffect(() => {
     const processToken = async () => {
       console.log('[RESET PASSWORD] URL:', window.location.href);
-      const { token, type, code } = ResetPasswordService.extractRecoveryToken();
-      console.log('[RESET PASSWORD] Extracted:', { token: token?.substring(0, 20) + '...', type, code: code?.substring(0, 20) });
 
-      // Se encontrou code PKCE, precisa fazer exchange primeiro
-      if (code && type === 'code') {
-        console.log('[RESET PAGE] Processing PKCE code');
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+
+      // 1) Veio com ?code= (PKCE) → troca o código por sessão AQUI
+      if (code) {
+        console.log('[RESET] Processing PKCE code');
         setIsLoading(true);
         
-        const { error } = await ResetPasswordService.exchangeCodeForSession(code);
-        
-        if (error) {
-          toast({
-            title: "Link inválido",
-            description: error,
-            variant: "destructive"
-          });
+        try {
+          const { error } = await ResetPasswordService.exchangeCodeForSession(code);
           
-          setTimeout(() => {
-            navigate("/forgot-password");
-          }, 2000);
+          if (error) {
+            toast({
+              title: "Link inválido",
+              description: error,
+              variant: "destructive"
+            });
+            
+            setTimeout(() => {
+              navigate("/forgot-password");
+            }, 2000);
+            return;
+          }
+          
+          console.log('[RESET] Session established via PKCE');
+          setHasToken(true);
+        } finally {
           setIsLoading(false);
-          return;
         }
-        
-        // Code trocado com sucesso, agora pode redefinir senha
-        setHasToken(true);
-        setIsLoading(false);
         return;
       }
 
-      // Se encontrou access_token (hash ou query), está pronto
-      if (token && type === 'access_token') {
-        console.log('[RESET PAGE] Found access_token');
+      // 2) Sem ?code= → verifica se já existe sessão (ex.: usuário clicou 2x no link)
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        console.log('[RESET] Session already present', { userId: session.user.id });
         setHasToken(true);
         return;
       }
 
-      // Nenhum token válido encontrado
-      console.warn('[RESET PAGE] No valid token found');
-      setHasToken(false);
+      // 3) Nem code nem session → link inválido
+      console.warn('[RESET] No code and no session');
       toast({
-        title: "Link inválido",
+        title: "Link expirado",
         description: "O link de recuperação é inválido ou expirou. Solicite um novo.",
         variant: "destructive"
       });

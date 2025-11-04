@@ -18,8 +18,8 @@ export class PasswordRecoveryService {
   static async sendPasswordResetEmail(email: string): Promise<{ error: string | null }> {
     try {
       // Usa AppUrlService para garantir URL correta em todos os ambientes
-      // Redireciona para /auth/callback que processa o token e redireciona para /reset-password
-      const redirectUrl = AppUrlService.buildUrl('/auth/callback');
+      // PKCE correto: redireciona direto para /reset-password (sem intermediário)
+      const redirectUrl = AppUrlService.buildUrl('/reset-password');
       
       console.log('[RECOVERY] Sending reset email with redirect:', redirectUrl);
 
