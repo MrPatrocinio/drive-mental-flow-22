@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,65 +17,38 @@ const ResetPasswordPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [hasToken, setHasToken] = useState(false);
   const [success, setSuccess] = useState(false);
+  const ranOnceRef = useRef(false);
 
-  // PKCE idempotente: processa ?code= OU verifica sessão existente
+  // Processa link de recuperação com estratégias múltiplas (PKCE, tokens, fallback)
   useEffect(() => {
+    if (ranOnceRef.current) return;
+    ranOnceRef.current = true;
+
     const processToken = async () => {
       console.log('[RESET PASSWORD] URL:', window.location.href);
+      setIsLoading(true);
 
-      const url = new URL(window.location.href);
-      const code = url.searchParams.get('code');
+      try {
+        const { success, error } = await ResetPasswordService.establishSessionFromUrl();
 
-      // 1) Veio com ?code= (PKCE) → troca o código por sessão AQUI
-      if (code) {
-        console.log('[RESET] Processing PKCE code');
-        setIsLoading(true);
-        
-        try {
-          const { error } = await ResetPasswordService.exchangeCodeForSession(code);
-          
-          if (error) {
-            toast({
-              title: "Link inválido",
-              description: error,
-              variant: "destructive"
-            });
-            
-            setTimeout(() => {
-              navigate("/forgot-password");
-            }, 2000);
-            return;
-          }
-          
-          console.log('[RESET] Session established via PKCE');
+        if (success) {
+          console.log('[RESET] Session established successfully');
           setHasToken(true);
-        } finally {
-          setIsLoading(false);
+        } else {
+          console.warn('[RESET] Failed to establish session:', error);
+          toast({
+            title: "Link inválido ou expirado",
+            description: error || "Solicite um novo link de recuperação.",
+            variant: "destructive",
+          });
+          
+          setTimeout(() => {
+            navigate("/forgot-password");
+          }, 1600);
         }
-        return;
+      } finally {
+        setIsLoading(false);
       }
-
-      // 2) Sem ?code= → verifica se já existe sessão (ex.: usuário clicou 2x no link)
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        console.log('[RESET] Session already present', { userId: session.user.id });
-        setHasToken(true);
-        return;
-      }
-
-      // 3) Nem code nem session → link inválido
-      console.warn('[RESET] No code and no session');
-      toast({
-        title: "Link expirado",
-        description: "O link de recuperação é inválido ou expirou. Solicite um novo.",
-        variant: "destructive"
-      });
-      
-      setTimeout(() => {
-        navigate("/forgot-password");
-      }, 2000);
     };
 
     processToken();
