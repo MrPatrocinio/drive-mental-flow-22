@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { ResetPasswordService } from "@/services/resetPasswordService";
+import { supabase } from "@/integrations/supabase/client";
 import { Eye, EyeOff, Lock, CheckCircle2 } from "lucide-react";
 
 const ResetPasswordPage = () => {
@@ -24,27 +25,48 @@ const ResetPasswordPage = () => {
     if (ranOnceRef.current) return;
     ranOnceRef.current = true;
 
+    console.log('[RESET PASSWORD] URL:', window.location.href);
+
+    // 1) Listener de eventos do Supabase (pega casos onde token é processado automaticamente)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[RESET AUTH EVENT]', event, !!session?.user);
+      
+      // Eventos que indicam recuperação de senha bem-sucedida
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session?.user)) {
+        console.log('[RESET] Session detected via auth event');
+        setHasToken(true);
+        setIsLoading(false);
+      }
+    });
+
+    // 2) Tenta estabelecer sessão manualmente (múltiplas estratégias)
     const processToken = async () => {
-      console.log('[RESET PASSWORD] URL:', window.location.href);
       setIsLoading(true);
 
       try {
         const { success, error } = await ResetPasswordService.establishSessionFromUrl();
 
         if (success) {
-          console.log('[RESET] Session established successfully');
+          console.log('[RESET] Session established via service');
           setHasToken(true);
         } else {
           console.warn('[RESET] Failed to establish session:', error);
-          toast({
-            title: "Link inválido ou expirado",
-            description: error || "Solicite um novo link de recuperação.",
-            variant: "destructive",
-          });
           
-          setTimeout(() => {
-            navigate("/forgot-password");
-          }, 1600);
+          // Aguarda 500ms para dar chance ao listener pegar o evento
+          await new Promise(r => setTimeout(r, 500));
+          
+          // Se ainda não tem token após o timeout, mostra erro
+          if (!hasToken) {
+            toast({
+              title: "Link inválido ou expirado",
+              description: error || "Solicite um novo link de recuperação.",
+              variant: "destructive",
+            });
+            
+            setTimeout(() => {
+              navigate("/forgot-password");
+            }, 1600);
+          }
         }
       } finally {
         setIsLoading(false);
@@ -52,7 +74,10 @@ const ResetPasswordPage = () => {
     };
 
     processToken();
-  }, [navigate]);
+
+    // Cleanup: desinscrever do listener ao desmontar
+    return () => subscription.unsubscribe();
+  }, [navigate, hasToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

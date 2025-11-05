@@ -30,6 +30,11 @@ export class ResetPasswordService {
    */
   static extractRecoveryToken(): ExtractResult {
     const url = new URL(window.location.href);
+    
+    // LOGS DE DEBUG
+    console.log('[EXTRACT] Full href:', url.href);
+    console.log('[EXTRACT] Search params:', url.search);
+    console.log('[EXTRACT] Hash:', url.hash);
 
     // 1) Hash fragment (fluxo antigo): #access_token=...&refresh_token=...
     const hashParams = this.toParams(url.hash);
@@ -135,6 +140,13 @@ export class ResetPasswordService {
    */
   static async establishSessionFromUrl(): Promise<{ success: boolean; error?: string }> {
     const { accessToken, refreshToken, code } = this.extractRecoveryToken();
+    
+    // LOG DE DEBUG
+    console.log('[ESTABLISH] Extracted tokens/code:', { 
+      hasAccessToken: !!accessToken, 
+      hasRefreshToken: !!refreshToken, 
+      hasCode: !!code 
+    });
 
     // 1) access_token + refresh_token (hash ou query)
     if (accessToken && refreshToken) {
