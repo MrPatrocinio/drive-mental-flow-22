@@ -93,7 +93,7 @@ export const UserProtectedRoute = ({
             
             <div className="space-y-3">
               <Button 
-                onClick={() => navigate('/subscription')}
+                onClick={() => navigate('/assinatura')}
                 className="w-full"
                 size="lg"
               >
