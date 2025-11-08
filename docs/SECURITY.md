@@ -3,6 +3,7 @@
 ## 📋 Índice
 - [Falsos Positivos Confirmados](#-falsos-positivos-confirmados)
 - [Correções Críticas Implementadas](#-correções-críticas-implementadas)
+- [Warnings de Infraestrutura](#-warnings-de-infraestrutura-requerem-ação-manual)
 - [Arquitetura de Roles](#-arquitetura-de-roles)
 - [Validações de Segurança](#-validações-de-segurança)
 
@@ -122,6 +123,111 @@ CREATE UNIQUE INDEX idx_subscribers_user_id ON public.subscribers(user_id);
 - ✅ Impossível criar assinatura sem `user_id` válido
 - ✅ Um usuário = uma assinatura (índice único)
 - ✅ Sem bypass por email
+
+---
+
+## ⚠️ Warnings de Infraestrutura (Requerem Ação Manual)
+
+Os seguintes warnings **não podem ser corrigidos via SQL** e requerem configuração manual no dashboard do Supabase:
+
+### 1. Auth OTP Long Expiry 🕒
+**Nível**: WARN  
+**Status**: ⚠️ Requer ação do administrador
+
+**Problema**:
+O tempo de expiração dos códigos OTP (One-Time Password) excede o threshold recomendado de segurança.
+
+**Riscos**:
+- Janela maior para ataques de força bruta
+- Códigos OTP válidos por muito tempo após envio
+- Maior risco de interceptação e uso malicioso
+
+**Como Corrigir**:
+1. Acesse o [Dashboard do Supabase → Authentication → Settings](https://supabase.com/dashboard/project/ipdzkzlrcyrcfwvhiulc/settings/auth)
+2. Navegue até **Email** ou **Phone** settings
+3. Ajuste **OTP Expiry** para:
+   - **Email OTP**: 10-15 minutos (máximo recomendado)
+   - **Phone OTP**: 5-10 minutos (máximo recomendado)
+4. Salve as configurações
+
+**Referência**: [Supabase Going to Production - Security](https://supabase.com/docs/guides/platform/going-into-prod#security)
+
+---
+
+### 2. Leaked Password Protection Disabled 🔓
+**Nível**: WARN  
+**Status**: ⚠️ Requer ação do administrador
+
+**Problema**:
+A proteção contra senhas vazadas (leaked password protection) está desabilitada. Esta feature verifica se a senha do usuário aparece em bancos de dados de senhas vazadas publicamente (ex: HaveIBeenPwned).
+
+**Riscos**:
+- Usuários podem usar senhas já comprometidas
+- Maior vulnerabilidade a credential stuffing attacks
+- Contas podem ser comprometidas mais facilmente
+
+**Como Corrigir**:
+1. Acesse o [Dashboard do Supabase → Authentication → Settings](https://supabase.com/dashboard/project/ipdzkzlrcyrcfwvhiulc/settings/auth)
+2. Navegue até **Password Settings**
+3. Habilite **"Enable leaked password protection"**
+4. Configure o nível de severidade (recomendado: **Medium** ou **High**)
+
+**Benefícios**:
+- ✅ Verifica senhas contra +800M senhas vazadas
+- ✅ Previne uso de credenciais comprometidas
+- ✅ Protege usuários que reutilizam senhas
+
+**Referência**: [Supabase Password Security Guide](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)
+
+---
+
+### 3. Postgres Version Has Security Patches Available 🐘
+**Nível**: WARN  
+**Status**: ⚠️ Requer ação do administrador
+
+**Problema**:
+A versão atual do PostgreSQL possui patches de segurança disponíveis que ainda não foram aplicados.
+
+**Riscos**:
+- Vulnerabilidades conhecidas não corrigidas
+- Exploits públicos podem estar disponíveis
+- Não conformidade com melhores práticas de segurança
+
+**Como Corrigir**:
+1. Acesse o [Dashboard do Supabase → Settings → General](https://supabase.com/dashboard/project/ipdzkzlrcyrcfwvhiulc/settings/general)
+2. Na seção **Infrastructure**, localize **Database Version**
+3. Se disponível, clique em **"Upgrade"** para aplicar patches
+4. Agende um horário de baixo tráfego para upgrade (pode causar downtime breve)
+
+**Importante**:
+- ⚠️ O upgrade pode causar **downtime de 5-10 minutos**
+- ✅ Faça backup antes do upgrade
+- ✅ Teste em ambiente staging primeiro (se disponível)
+- ✅ Notifique usuários sobre janela de manutenção
+
+**Referência**: [Supabase Platform Upgrading Guide](https://supabase.com/docs/guides/platform/upgrading)
+
+---
+
+### 4. Security Definer View (Falso Positivo)
+**Nível**: ERROR  
+**Status**: ✅ Seguro - Mitigação implementada
+
+**Já documentado na seção "Falsos Positivos Confirmados" acima.**
+
+---
+
+## 📋 Checklist de Ações Manuais
+
+Para o administrador do projeto completar:
+
+- [ ] **OTP Expiry**: Ajustar para 10-15 min (email) e 5-10 min (phone)
+- [ ] **Leaked Password Protection**: Habilitar com nível Medium/High
+- [ ] **Postgres Version**: Agendar upgrade em janela de manutenção
+- [ ] **Backup**: Criar backup completo antes do upgrade do Postgres
+- [ ] **Notificação**: Avisar usuários sobre janela de manutenção (se upgrade)
+
+**Tempo estimado**: 15-30 minutos (excluindo downtime de upgrade)
 
 ---
 
@@ -251,6 +357,40 @@ ORDER BY policyname;
 
 ---
 
+## 🎯 Priorização de Ações
+
+### 🔴 CRÍTICO (Corrigido)
+- ✅ **pending_subscriptions RLS**: Políticas DENY implementadas
+- ✅ **subscribers validação**: Fallback por email removido
+- ✅ **user_roles isolamento**: Proteção contra escalação de privilégios
+
+### 🟡 IMPORTANTE (Requer Ação Manual)
+- ⚠️ **Leaked Password Protection**: Habilitar no dashboard
+- ⚠️ **Auth OTP Expiry**: Reduzir para 10-15 minutos
+- ⚠️ **Postgres Upgrade**: Agendar upgrade de segurança
+
+### 🟢 MONITORAMENTO CONTÍNUO
+- ✅ RLS policies funcionando corretamente
+- ✅ Logs de auditoria de acesso a `subscribers`
+- ✅ Falsos positivos documentados e justificados
+
+---
+
 **Última atualização**: 2025-01-07  
 **Responsável**: Equipe Drive Mental  
-**Status**: ✅ Todas as vulnerabilidades críticas corrigidas
+**Status Geral**: ✅ Vulnerabilidades críticas corrigidas | ⚠️ 3 ações manuais pendentes
+
+---
+
+## 📞 Suporte e Referências
+
+### Links Úteis de Configuração
+- [Dashboard de Autenticação](https://supabase.com/dashboard/project/ipdzkzlrcyrcfwvhiulc/settings/auth)
+- [Configurações de Infraestrutura](https://supabase.com/dashboard/project/ipdzkzlrcyrcfwvhiulc/settings/general)
+- [Logs de Auditoria](https://supabase.com/dashboard/project/ipdzkzlrcyrcfwvhiulc/logs/edge-logs)
+
+### Documentação Oficial
+- [Supabase RLS Guide](https://supabase.com/docs/guides/auth/row-level-security)
+- [Security Best Practices](https://supabase.com/docs/guides/platform/going-into-prod#security)
+- [Password Security](https://supabase.com/docs/guides/auth/password-security)
+- [Database Upgrading](https://supabase.com/docs/guides/platform/upgrading)
