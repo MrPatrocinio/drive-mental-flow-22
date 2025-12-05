@@ -104,5 +104,28 @@ export const leadService = {
       console.error('Erro interno ao verificar email:', err);
       return { exists: false, error: 'Erro interno do servidor' };
     }
+  },
+
+  /**
+   * Verificar se telefone já existe
+   */
+  async checkPhoneExists(phone: string): Promise<{ exists: boolean; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('phone', phone)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erro ao verificar telefone:', error);
+        return { exists: false, error: error.message };
+      }
+
+      return { exists: !!data, error: null };
+    } catch (err) {
+      console.error('Erro interno ao verificar telefone:', err);
+      return { exists: false, error: 'Erro interno do servidor' };
+    }
   }
 };

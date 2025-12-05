@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Shield, Brain, Zap, Target, Heart, Clock, ChevronDown, Headphones, Sparkles, X, Crown } from 'lucide-react';
+import { Check, Shield, Brain, Zap, Target, Heart, Clock, ChevronDown, Headphones, Sparkles, X, Crown, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { WhatsAppLeadForm } from '@/components/WhatsAppLeadForm';
 
 const LpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -228,8 +229,30 @@ const LpPage: React.FC = () => {
         </div>
       </section>
 
+      {/* Teste Grátis Section */}
+      <section className="py-24 bg-background">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <div className="text-center p-10 md:p-12 rounded-3xl bg-gradient-to-br from-primary/10 via-card to-accent/10 border border-primary/20 shadow-xl shadow-primary/5">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 mb-6">
+              <Gift className="w-8 h-8 text-primary" />
+            </div>
+            
+            <h2 className="text-2xl md:text-4xl font-bold mb-4">
+              Quer experimentar{' '}
+              <span className="text-primary">antes de decidir</span>?
+            </h2>
+            
+            <p className="text-muted-foreground text-lg mb-8">
+              Digite seu WhatsApp e acesse uma <strong className="text-foreground">amostra grátis</strong> do Drive Mental agora mesmo.
+            </p>
+            
+            <WhatsAppLeadForm className="max-w-sm mx-auto" />
+          </div>
+        </div>
+      </section>
+
       {/* Preços Section */}
-      <section id="precos" className="py-24 bg-background">
+      <section id="precos" className="py-24 bg-card/50">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">
