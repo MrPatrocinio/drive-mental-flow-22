@@ -55,6 +55,7 @@ import { InscricaoPage } from '@/pages/InscricaoPage';
 import { ObrigadoPage } from '@/pages/ObrigadoPage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import LpPage from '@/pages/LpPage';
 
 // Create a single client instance outside of the component
 const queryClient = new QueryClient({
@@ -101,6 +102,7 @@ const AppContent: React.FC = () => {
     <Routes>
       {/* Rotas Públicas */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/lp" element={<LpPage />} />
       <Route path="/demo" element={<DemoPage />} />
       <Route path="/assinatura" element={<SubscriptionPage />} />
       <Route path="/assinatura/processando" element={<PaymentProcessingPage />} />
