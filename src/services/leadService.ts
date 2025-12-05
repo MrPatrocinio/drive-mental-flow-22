@@ -40,21 +40,20 @@ export const leadService = {
    */
   async createLead(leadData: CreateLeadData): Promise<{ data: Lead | null; error: string | null }> {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('leads')
         .insert([{
           ...leadData,
-          source: 'inscricao_page'
-        }])
-        .select()
-        .single();
+          source: leadData.phone ? 'lp_whatsapp_demo' : 'inscricao_page'
+        }]);
 
       if (error) {
         console.error('Erro ao criar lead:', error);
         return { data: null, error: error.message };
       }
 
-      return { data, error: null };
+      // Retorna dados básicos sem SELECT (RLS bloqueia SELECT para não-admins)
+      return { data: { ...leadData, source: leadData.phone ? 'lp_whatsapp_demo' : 'inscricao_page' } as Lead, error: null };
     } catch (err) {
       console.error('Erro interno ao criar lead:', err);
       return { data: null, error: 'Erro interno do servidor' };
