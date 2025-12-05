@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Shield, Brain, Zap, Target, Heart, Clock, ChevronDown, Headphones, Sparkles } from 'lucide-react';
+import { Check, Shield, Brain, Zap, Target, Heart, Clock, ChevronDown, Headphones, Sparkles, X, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const LpPage: React.FC = () => {
@@ -228,8 +228,211 @@ const LpPage: React.FC = () => {
         </div>
       </section>
 
+      {/* Preços Section */}
+      <section id="precos" className="py-24 bg-background">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Escolha seu plano de{' '}
+              <span className="text-primary">transformação</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Investimento menor que uma pizza por semana para mudar sua vida
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+            {/* Plano Básico */}
+            <div className="relative p-8 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold mb-2">Mensal</h3>
+                <p className="text-muted-foreground text-sm">Para experimentar</p>
+              </div>
+              
+              <div className="mb-6">
+                <span className="text-4xl font-bold">R$ 47</span>
+                <span className="text-muted-foreground">/mês</span>
+              </div>
+              
+              <ul className="space-y-3 mb-8">
+                {[
+                  { included: true, text: 'Acesso à plataforma' },
+                  { included: true, text: 'Áudios de reprogramação' },
+                  { included: true, text: 'Suporte por email' },
+                  { included: false, text: 'Conteúdos exclusivos' },
+                  { included: false, text: 'Comunidade VIP' },
+                  { included: false, text: 'Sessões ao vivo' },
+                ].map((item, idx) => (
+                  <li key={idx} className="flex items-center gap-3">
+                    {item.included ? (
+                      <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                    ) : (
+                      <X className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
+                    )}
+                    <span className={item.included ? 'text-foreground' : 'text-muted-foreground/50'}>
+                      {item.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              
+              <Button 
+                variant="outline" 
+                className="w-full py-6"
+                onClick={handleCTA}
+              >
+                Começar agora
+              </Button>
+            </div>
+            
+            {/* Plano Recomendado */}
+            <div className="relative p-8 rounded-2xl bg-gradient-to-b from-primary/10 to-background border-2 border-primary shadow-xl shadow-primary/10 scale-105 z-10">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <span className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                  <Crown className="w-4 h-4" />
+                  Mais popular
+                </span>
+              </div>
+              
+              <div className="mb-6 pt-2">
+                <h3 className="text-xl font-bold mb-2">Anual</h3>
+                <p className="text-muted-foreground text-sm">Melhor custo-benefício</p>
+              </div>
+              
+              <div className="mb-6">
+                <span className="text-4xl font-bold">R$ 29</span>
+                <span className="text-muted-foreground">/mês</span>
+                <p className="text-sm text-primary mt-1">Economia de 38%</p>
+              </div>
+              
+              <ul className="space-y-3 mb-8">
+                {[
+                  { included: true, text: 'Acesso à plataforma' },
+                  { included: true, text: 'Áudios de reprogramação' },
+                  { included: true, text: 'Suporte prioritário' },
+                  { included: true, text: 'Conteúdos exclusivos' },
+                  { included: true, text: 'Comunidade VIP' },
+                  { included: false, text: 'Sessões ao vivo' },
+                ].map((item, idx) => (
+                  <li key={idx} className="flex items-center gap-3">
+                    {item.included ? (
+                      <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                    ) : (
+                      <X className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
+                    )}
+                    <span className={item.included ? 'text-foreground' : 'text-muted-foreground/50'}>
+                      {item.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              
+              <Button 
+                className="w-full py-6 bg-gradient-to-r from-primary to-accent"
+                onClick={handleCTA}
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Escolher plano anual
+              </Button>
+            </div>
+            
+            {/* Plano Premium */}
+            <div className="relative p-8 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold mb-2">Vitalício</h3>
+                <p className="text-muted-foreground text-sm">Acesso para sempre</p>
+              </div>
+              
+              <div className="mb-6">
+                <span className="text-4xl font-bold">R$ 497</span>
+                <span className="text-muted-foreground"> único</span>
+              </div>
+              
+              <ul className="space-y-3 mb-8">
+                {[
+                  { included: true, text: 'Acesso à plataforma' },
+                  { included: true, text: 'Áudios de reprogramação' },
+                  { included: true, text: 'Suporte VIP' },
+                  { included: true, text: 'Conteúdos exclusivos' },
+                  { included: true, text: 'Comunidade VIP' },
+                  { included: true, text: 'Sessões ao vivo' },
+                ].map((item, idx) => (
+                  <li key={idx} className="flex items-center gap-3">
+                    {item.included ? (
+                      <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                    ) : (
+                      <X className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
+                    )}
+                    <span className={item.included ? 'text-foreground' : 'text-muted-foreground/50'}>
+                      {item.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              
+              <Button 
+                variant="outline" 
+                className="w-full py-6"
+                onClick={handleCTA}
+              >
+                Acesso vitalício
+              </Button>
+            </div>
+          </div>
+          
+          {/* Comparativo rápido */}
+          <div className="mt-16 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-4 px-4 font-medium text-muted-foreground">Comparativo</th>
+                  <th className="text-center py-4 px-4 font-medium">Mensal</th>
+                  <th className="text-center py-4 px-4 font-medium text-primary">Anual</th>
+                  <th className="text-center py-4 px-4 font-medium">Vitalício</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { feature: 'Áudios ilimitados', mensal: true, anual: true, vitalicio: true },
+                  { feature: 'Novos conteúdos mensais', mensal: true, anual: true, vitalicio: true },
+                  { feature: 'Conteúdos exclusivos', mensal: false, anual: true, vitalicio: true },
+                  { feature: 'Comunidade VIP', mensal: false, anual: true, vitalicio: true },
+                  { feature: 'Sessões ao vivo', mensal: false, anual: false, vitalicio: true },
+                  { feature: 'Suporte prioritário', mensal: false, anual: true, vitalicio: true },
+                ].map((row, idx) => (
+                  <tr key={idx} className="border-b border-border/50">
+                    <td className="py-4 px-4 text-foreground">{row.feature}</td>
+                    <td className="py-4 px-4 text-center">
+                      {row.mensal ? (
+                        <Check className="w-5 h-5 text-primary mx-auto" />
+                      ) : (
+                        <X className="w-5 h-5 text-muted-foreground/30 mx-auto" />
+                      )}
+                    </td>
+                    <td className="py-4 px-4 text-center bg-primary/5">
+                      {row.anual ? (
+                        <Check className="w-5 h-5 text-primary mx-auto" />
+                      ) : (
+                        <X className="w-5 h-5 text-muted-foreground/30 mx-auto" />
+                      )}
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      {row.vitalicio ? (
+                        <Check className="w-5 h-5 text-primary mx-auto" />
+                      ) : (
+                        <X className="w-5 h-5 text-muted-foreground/30 mx-auto" />
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       {/* Garantia Section */}
-      <section className="py-24 bg-background">
+      <section className="py-24 bg-card/50">
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="text-center p-12 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20">
             <Shield className="w-16 h-16 text-primary mx-auto mb-6" />
