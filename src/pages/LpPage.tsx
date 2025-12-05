@@ -241,52 +241,9 @@ const LpPage: React.FC = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            {/* Plano Básico */}
-            <div className="relative p-8 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all">
-              <div className="mb-6">
-                <h3 className="text-xl font-bold mb-2">Mensal</h3>
-                <p className="text-muted-foreground text-sm">Para experimentar</p>
-              </div>
-              
-              <div className="mb-6">
-                <span className="text-4xl font-bold">R$ 47</span>
-                <span className="text-muted-foreground">/mês</span>
-              </div>
-              
-              <ul className="space-y-3 mb-8">
-                {[
-                  { included: true, text: 'Acesso à plataforma' },
-                  { included: true, text: 'Áudios de reprogramação' },
-                  { included: true, text: 'Suporte por email' },
-                  { included: false, text: 'Conteúdos exclusivos' },
-                  { included: false, text: 'Comunidade VIP' },
-                  { included: false, text: 'Sessões ao vivo' },
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-center gap-3">
-                    {item.included ? (
-                      <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                    ) : (
-                      <X className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
-                    )}
-                    <span className={item.included ? 'text-foreground' : 'text-muted-foreground/50'}>
-                      {item.text}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              
-              <Button 
-                variant="outline" 
-                className="w-full py-6"
-                onClick={handleCTA}
-              >
-                Começar agora
-              </Button>
-            </div>
-            
-            {/* Plano Recomendado */}
-            <div className="relative p-8 rounded-2xl bg-gradient-to-b from-primary/10 to-background border-2 border-primary shadow-xl shadow-primary/10 scale-105 z-10">
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
+            {/* Plano Anual */}
+            <div className="relative p-8 rounded-2xl bg-gradient-to-b from-primary/10 to-background border-2 border-primary shadow-xl shadow-primary/10">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <span className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium">
                   <Crown className="w-4 h-4" />
@@ -300,29 +257,22 @@ const LpPage: React.FC = () => {
               </div>
               
               <div className="mb-6">
-                <span className="text-4xl font-bold">R$ 29</span>
-                <span className="text-muted-foreground">/mês</span>
-                <p className="text-sm text-primary mt-1">Economia de 38%</p>
+                <span className="text-4xl font-bold">R$ 97</span>
+                <span className="text-muted-foreground">/ano</span>
+                <p className="text-sm text-primary mt-1">Apenas R$ 8,08/mês</p>
               </div>
               
               <ul className="space-y-3 mb-8">
                 {[
-                  { included: true, text: 'Acesso à plataforma' },
-                  { included: true, text: 'Áudios de reprogramação' },
-                  { included: true, text: 'Suporte prioritário' },
-                  { included: true, text: 'Conteúdos exclusivos' },
-                  { included: true, text: 'Comunidade VIP' },
-                  { included: false, text: 'Sessões ao vivo' },
+                  { included: true, text: 'Acesso completo à plataforma' },
+                  { included: true, text: 'Todos os áudios de reprogramação' },
+                  { included: true, text: 'Novos conteúdos mensais' },
+                  { included: true, text: 'Suporte por email' },
+                  { included: true, text: 'Garantia de 7 dias' },
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-center gap-3">
-                    {item.included ? (
-                      <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                    ) : (
-                      <X className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
-                    )}
-                    <span className={item.included ? 'text-foreground' : 'text-muted-foreground/50'}>
-                      {item.text}
-                    </span>
+                    <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-foreground">{item.text}</span>
                   </li>
                 ))}
               </ul>
@@ -332,11 +282,11 @@ const LpPage: React.FC = () => {
                 onClick={handleCTA}
               >
                 <Zap className="w-4 h-4 mr-2" />
-                Escolher plano anual
+                Começar por R$ 97/ano
               </Button>
             </div>
             
-            {/* Plano Premium */}
+            {/* Plano Vitalício */}
             <div className="relative p-8 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all">
               <div className="mb-6">
                 <h3 className="text-xl font-bold mb-2">Vitalício</h3>
@@ -344,28 +294,22 @@ const LpPage: React.FC = () => {
               </div>
               
               <div className="mb-6">
-                <span className="text-4xl font-bold">R$ 497</span>
+                <span className="text-4xl font-bold">R$ 197</span>
                 <span className="text-muted-foreground"> único</span>
+                <p className="text-sm text-muted-foreground mt-1">Pagamento único</p>
               </div>
               
               <ul className="space-y-3 mb-8">
                 {[
-                  { included: true, text: 'Acesso à plataforma' },
-                  { included: true, text: 'Áudios de reprogramação' },
-                  { included: true, text: 'Suporte VIP' },
-                  { included: true, text: 'Conteúdos exclusivos' },
-                  { included: true, text: 'Comunidade VIP' },
-                  { included: true, text: 'Sessões ao vivo' },
+                  { included: true, text: 'Tudo do plano Anual' },
+                  { included: true, text: 'Acesso vitalício' },
+                  { included: true, text: 'Todas as atualizações futuras' },
+                  { included: true, text: 'Suporte prioritário' },
+                  { included: true, text: 'Garantia de 7 dias' },
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-center gap-3">
-                    {item.included ? (
-                      <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                    ) : (
-                      <X className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
-                    )}
-                    <span className={item.included ? 'text-foreground' : 'text-muted-foreground/50'}>
-                      {item.text}
-                    </span>
+                    <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                    <span className="text-foreground">{item.text}</span>
                   </li>
                 ))}
               </ul>
@@ -375,40 +319,32 @@ const LpPage: React.FC = () => {
                 className="w-full py-6"
                 onClick={handleCTA}
               >
-                Acesso vitalício
+                Acesso vitalício por R$ 197
               </Button>
             </div>
           </div>
           
           {/* Comparativo rápido */}
-          <div className="mt-16 overflow-x-auto">
+          <div className="mt-16 overflow-x-auto max-w-3xl mx-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-4 px-4 font-medium text-muted-foreground">Comparativo</th>
-                  <th className="text-center py-4 px-4 font-medium">Mensal</th>
                   <th className="text-center py-4 px-4 font-medium text-primary">Anual</th>
                   <th className="text-center py-4 px-4 font-medium">Vitalício</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { feature: 'Áudios ilimitados', mensal: true, anual: true, vitalicio: true },
-                  { feature: 'Novos conteúdos mensais', mensal: true, anual: true, vitalicio: true },
-                  { feature: 'Conteúdos exclusivos', mensal: false, anual: true, vitalicio: true },
-                  { feature: 'Comunidade VIP', mensal: false, anual: true, vitalicio: true },
-                  { feature: 'Sessões ao vivo', mensal: false, anual: false, vitalicio: true },
-                  { feature: 'Suporte prioritário', mensal: false, anual: true, vitalicio: true },
+                  { feature: 'Áudios ilimitados', anual: true, vitalicio: true },
+                  { feature: 'Novos conteúdos mensais', anual: true, vitalicio: true },
+                  { feature: 'Suporte por email', anual: true, vitalicio: true },
+                  { feature: 'Suporte prioritário', anual: false, vitalicio: true },
+                  { feature: 'Atualizações futuras', anual: true, vitalicio: true },
+                  { feature: 'Acesso vitalício', anual: false, vitalicio: true },
                 ].map((row, idx) => (
                   <tr key={idx} className="border-b border-border/50">
                     <td className="py-4 px-4 text-foreground">{row.feature}</td>
-                    <td className="py-4 px-4 text-center">
-                      {row.mensal ? (
-                        <Check className="w-5 h-5 text-primary mx-auto" />
-                      ) : (
-                        <X className="w-5 h-5 text-muted-foreground/30 mx-auto" />
-                      )}
-                    </td>
                     <td className="py-4 px-4 text-center bg-primary/5">
                       {row.anual ? (
                         <Check className="w-5 h-5 text-primary mx-auto" />
