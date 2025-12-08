@@ -30,7 +30,7 @@ const LpPage: React.FC = () => {
         
         <div className="relative z-10 container mx-auto px-4 text-center max-w-4xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
-            <img src={driveMentalIcon} alt="Drive Mental" className="w-6 h-6" />
+            <img src={driveMentalIcon} alt="Drive Mental" className="w-8 h-8" />
             <span className="text-sm font-medium text-primary">Transformação em 21 dias</span>
           </div>
           
