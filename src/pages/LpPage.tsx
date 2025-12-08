@@ -301,10 +301,12 @@ const LpPage: React.FC = () => {
               
               <Button 
                 className="w-full py-6 bg-gradient-to-r from-primary to-accent"
-                onClick={handleCTA}
+                asChild
               >
-                <Zap className="w-4 h-4 mr-2" />
-                Começar por R$ 97/ano
+                <a href="https://pay.kiwify.com.br/8fHhCZq" target="_blank" rel="noopener noreferrer">
+                  <Zap className="w-4 h-4 mr-2" />
+                  Começar por R$ 97/ano
+                </a>
               </Button>
             </div>
             
