@@ -11,7 +11,7 @@ const LpPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleCTA = () => {
-    navigate('/assinatura');
+    scrollToSection('precos');
   };
 
   const scrollToSection = (id: string) => {
