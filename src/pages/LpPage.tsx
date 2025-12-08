@@ -59,18 +59,20 @@ const LpPage: React.FC = () => {
 
           <p className="text-base md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
             Você já tentou mudar isso antes — mas sempre volta pro mesmo ponto.
-            <br /><br />
-            A culpa não é sua. É da <strong className="text-foreground">programação mental que você repete há anos sem perceber.</strong>
           </p>
           
           <Button 
             size="lg" 
             onClick={handleCTA}
-            className="text-sm md:text-lg px-6 md:px-10 py-5 md:py-7 rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-2xl shadow-primary/25 max-w-full"
+            className="text-sm md:text-lg px-6 md:px-10 py-5 md:py-7 rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-2xl shadow-primary/25 max-w-full mb-6"
           >
             <Brain className="w-5 h-5 mr-2 flex-shrink-0" />
             <span className="whitespace-normal text-center">REPROGRAMAR MINHA MENTE</span>
           </Button>
+          
+          <p className="text-base md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
+            A culpa não é sua. É da <strong className="text-foreground">programação mental que você repete há anos sem perceber.</strong>
+          </p>
           
           <div className="mt-12 flex flex-col items-center gap-2 text-muted-foreground animate-bounce">
             <span className="text-sm">Descubra como funciona</span>
