@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Loader2, Check, ExternalLink } from "lucide-react";
+import { MessageCircle, Loader2, Check, Copy, ExternalLink } from "lucide-react";
 import { useLeadCapture } from "@/hooks/useLeadCapture";
 import { toast } from "sonner";
 
@@ -78,6 +78,17 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
     }
   };
 
+  const demoLink = "https://www.drivemental.com.br/demo";
+  
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(demoLink);
+      toast.success("Link copiado! Cole no seu navegador para acessar.");
+    } catch {
+      toast.error("Não foi possível copiar. Link: " + demoLink);
+    }
+  };
+
   // Estado de sucesso - mostra botão grande para abrir WhatsApp
   if (isSuccess && whatsappUrl) {
     return (
@@ -88,7 +99,7 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
             <span className="font-semibold text-lg">Número cadastrado!</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Clique no botão abaixo para receber o link de acesso no seu WhatsApp:
+            Clique no botão abaixo para receber o link no WhatsApp:
           </p>
         </div>
         
@@ -102,9 +113,24 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
           📲 Receber link no WhatsApp
         </a>
         
-        <p className="text-xs text-muted-foreground text-center">
-          Ao clicar, o WhatsApp abrirá com uma mensagem pronta. Basta enviar!
-        </p>
+        {/* Fallback: copiar link diretamente */}
+        <div className="text-center space-y-2 pt-2 border-t border-border">
+          <p className="text-xs text-muted-foreground">
+            WhatsApp bloqueado? Copie o link de acesso:
+          </p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleCopyLink}
+            className="gap-2"
+          >
+            <Copy className="w-4 h-4" />
+            Copiar link de acesso
+          </Button>
+          <p className="text-xs text-muted-foreground/70">
+            {demoLink}
+          </p>
+        </div>
       </div>
     );
   }
