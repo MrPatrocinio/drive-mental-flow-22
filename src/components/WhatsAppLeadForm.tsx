@@ -4,10 +4,9 @@
  */
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Loader2, Check } from "lucide-react";
+import { MessageCircle, Loader2, Check, ExternalLink } from "lucide-react";
 import { useLeadCapture } from "@/hooks/useLeadCapture";
 import { toast } from "sonner";
 
@@ -41,7 +40,7 @@ const isValidPhone = (phone: string): boolean => {
 
 export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
   const [phone, setPhone] = useState("");
-  const navigate = useNavigate();
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const { isLoading, isSuccess, error, submitLead, clearError } = useLeadCapture();
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,18 +57,27 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
       return;
     }
 
+    const phoneNumber = phone.replace(/\D/g, "");
+    
     const result = await submitLead({
       name: "Lead WhatsApp",
-      email: `whatsapp_${phone.replace(/\D/g, "")}@lead.temp`,
-      phone: phone.replace(/\D/g, ""),
+      email: `whatsapp_${phoneNumber}@lead.temp`,
+      phone: phoneNumber,
       interest_field: "demo_gratuita",
     });
 
     if (result.success) {
-      toast.success("Pronto! Redirecionando para seu teste gratuito...");
-      setTimeout(() => {
-        navigate("/demo");
-      }, 1500);
+      // Construir URL do WhatsApp com mensagem pré-preenchida
+      const message = encodeURIComponent(
+        "🎉 Aqui está seu acesso gratuito ao Drive Mental:\n\nhttps://www.drivemental.com.br/demo\n\n👆 Clique no link acima para começar!"
+      );
+      const url = `https://wa.me/55${phoneNumber}?text=${message}`;
+      setWhatsappUrl(url);
+      
+      toast.success("Abrindo seu WhatsApp... Clique em Enviar para receber o link!");
+      
+      // Abrir WhatsApp em nova aba
+      window.open(url, "_blank");
     }
   };
 
@@ -106,7 +114,7 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
         ) : isSuccess ? (
           <>
             <Check className="mr-2 h-5 w-5" />
-            Acesso liberado!
+            Link enviado! ✓
           </>
         ) : (
           <>
@@ -116,9 +124,29 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
         )}
       </Button>
       
-      <p className="text-xs text-muted-foreground text-center">
-        🔒 Seus dados estão seguros. Não enviamos spam.
-      </p>
+      {/* Fallback link caso o WhatsApp não abra automaticamente */}
+      {isSuccess && whatsappUrl && (
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Não abriu? Clique abaixo para abrir manualmente:
+          </p>
+          <a 
+            href={whatsappUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Abrir WhatsApp
+          </a>
+        </div>
+      )}
+      
+      {!isSuccess && (
+        <p className="text-xs text-muted-foreground text-center">
+          📱 Você receberá o link de acesso diretamente no seu WhatsApp
+        </p>
+      )}
     </form>
   );
 };
