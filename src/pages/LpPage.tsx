@@ -33,14 +33,14 @@ const LpPage: React.FC = () => {
             <span className="text-sm font-medium text-primary">Transformação em 21 dias</span>
           </div>
           
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+          <h1 className="text-3xl md:text-6xl lg:text-7xl font-bold mb-4 leading-tight">
             Se você não controla sua mente,{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
               ela controla você.
             </span>
           </h1>
           
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
             Padrões de autossabotagem. Procrastinação disfarçada de cansaço. Falta de foco que destrói seus dias e seus sonhos.
           </p>
 
