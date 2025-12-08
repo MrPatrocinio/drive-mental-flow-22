@@ -63,10 +63,10 @@ const LpPage: React.FC = () => {
           <Button 
             size="lg" 
             onClick={handleCTA}
-            className="text-lg px-10 py-7 rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-2xl shadow-primary/25"
+            className="text-sm md:text-lg px-6 md:px-10 py-5 md:py-7 rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-2xl shadow-primary/25 max-w-full"
           >
-            <Brain className="w-5 h-5 mr-2" />
-            QUERO REPROGRAMAR MINHA MENTE
+            <Brain className="w-5 h-5 mr-2 flex-shrink-0" />
+            <span className="whitespace-normal text-center">QUERO REPROGRAMAR MINHA MENTE</span>
           </Button>
           
           <div className="mt-12 flex flex-col items-center gap-2 text-muted-foreground animate-bounce">
@@ -423,9 +423,9 @@ const LpPage: React.FC = () => {
             <Button 
               size="lg" 
               onClick={handleCTA}
-              className="text-lg px-10 py-7 rounded-full bg-gradient-to-r from-primary to-accent"
+              className="text-sm md:text-lg px-6 md:px-10 py-5 md:py-7 rounded-full bg-gradient-to-r from-primary to-accent max-w-full"
             >
-              ATIVAR MEU DRIVE MENTAL AGORA
+              <span className="whitespace-normal text-center">ATIVAR MEU DRIVE MENTAL AGORA</span>
             </Button>
           </div>
         </div>
@@ -449,10 +449,10 @@ const LpPage: React.FC = () => {
           <Button 
             size="lg" 
             onClick={handleCTA}
-            className="text-lg px-12 py-8 rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-2xl shadow-primary/25"
+            className="text-sm md:text-lg px-6 md:px-12 py-5 md:py-8 rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-2xl shadow-primary/25 max-w-full"
           >
-            <Zap className="w-5 h-5 mr-2" />
-            QUERO EXPERIMENTAR AGORA
+            <Zap className="w-5 h-5 mr-2 flex-shrink-0" />
+            <span className="whitespace-normal text-center">QUERO EXPERIMENTAR AGORA</span>
           </Button>
         </div>
       </section>
