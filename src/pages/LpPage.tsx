@@ -333,42 +333,65 @@ const LpPage: React.FC = () => {
               </Button>
             </div>
             
-            {/* Plano Vitalício */}
-            <div className="relative p-8 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all">
-              <div className="mb-6">
-                <h3 className="text-xl font-bold mb-2">Vitalício</h3>
-                <p className="text-muted-foreground text-sm">Acesso para sempre</p>
+            {/* Plano Vitalício - Destaque */}
+            <div className="relative p-8 rounded-2xl bg-gradient-to-br from-emerald-950/80 to-emerald-900/40 border-2 border-emerald-500/50 hover:border-emerald-400 transition-all shadow-2xl shadow-emerald-500/20 transform hover:scale-[1.02]">
+              {/* Badge Melhor Valor */}
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <div className="px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 text-emerald-950 text-sm font-bold shadow-lg">
+                  <Crown className="w-4 h-4 inline mr-1" />
+                  Melhor Valor
+                </div>
+              </div>
+              
+              {/* Ícone decorativo */}
+              <div className="absolute top-4 right-4 w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <Gift className="w-6 h-6 text-emerald-400" />
+              </div>
+              
+              <div className="mb-6 mt-4">
+                <h3 className="text-2xl font-bold mb-2 text-emerald-300">Vitalício</h3>
+                <p className="text-emerald-400/80 text-sm">Acesso para sempre</p>
               </div>
               
               <div className="mb-6">
-                <span className="text-4xl font-bold">R$ 197</span>
-                <span className="text-muted-foreground"> único</span>
-                <p className="text-sm text-muted-foreground mt-1">Pagamento único</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold text-white">R$ 197</span>
+                  <span className="text-emerald-400/80">único</span>
+                </div>
+                <p className="text-sm text-emerald-400/60 mt-1">Pagamento único • Sem mensalidades</p>
               </div>
               
               <ul className="space-y-3 mb-8">
                 {[
-                  { included: true, text: 'Tudo do plano Anual' },
-                  { included: true, text: 'Acesso vitalício' },
-                  { included: true, text: 'Todas as atualizações futuras' },
-                  { included: true, text: 'Suporte prioritário' },
-                  { included: true, text: 'Garantia de 7 dias' },
+                  { text: 'Tudo do plano Anual' },
+                  { text: 'Acesso vitalício garantido' },
+                  { text: 'Todas as atualizações futuras' },
+                  { text: 'Suporte prioritário VIP' },
+                  { text: 'Garantia incondicional de 7 dias' },
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-center gap-3">
-                    <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-emerald-400" />
+                    </div>
                     <span className="text-foreground">{item.text}</span>
                   </li>
                 ))}
               </ul>
               
               <Button 
-                className="w-full py-6 bg-gradient-to-r from-primary to-accent"
+                className="w-full py-6 bg-gradient-to-r from-emerald-500 to-emerald-400 text-emerald-950 font-bold hover:from-emerald-400 hover:to-emerald-300 shadow-lg shadow-emerald-500/30 transition-all"
                 asChild
               >
                 <a href="https://kiwify.app/k62J0ED" target="_blank" rel="noopener noreferrer">
+                  <Crown className="w-4 h-4 mr-2" />
                   Acesso vitalício por R$ 197
                 </a>
               </Button>
+              
+              {/* Selo de economia */}
+              <div className="mt-4 text-center">
+                <span className="text-xs text-emerald-400/70">Economize R$ 97/ano para sempre</span>
+              </div>
             </div>
           </div>
           
