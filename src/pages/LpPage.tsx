@@ -3,6 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Check, Shield, Brain, Zap, Target, Heart, Clock, ChevronDown, Headphones, Sparkles, X, Crown, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { WhatsAppLeadForm } from '@/components/WhatsAppLeadForm';
+import testimonialRafael from '@/assets/testimonial-rafael.jpg';
+import testimonialLivia from '@/assets/testimonial-livia.jpg';
+import testimonialDaniel from '@/assets/testimonial-daniel.jpg';
 
 const LpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -207,17 +210,20 @@ const LpPage: React.FC = () => {
               {
                 quote: 'No terceiro dia, eu já senti diferença. Tinha clareza mental, menos ansiedade. Hoje sou outra pessoa.',
                 author: 'Rafael',
-                role: 'Designer, 31 anos'
+                role: 'Designer, 31 anos',
+                image: testimonialRafael
               },
               {
                 quote: 'Acordo, coloco o fone e o Drive Mental já muda meu estado. Foco, presença e vontade de agir.',
                 author: 'Lívia',
-                role: 'Arquiteta, 28 anos'
+                role: 'Arquiteta, 28 anos',
+                image: testimonialLivia
               },
               {
                 quote: 'Foi o primeiro método que realmente funcionou pra mim. E olha que eu já tentei de tudo.',
                 author: 'Daniel',
-                role: 'Empreendedor, 34 anos'
+                role: 'Empreendedor, 34 anos',
+                image: testimonialDaniel
               }
             ].map((testimonial, index) => (
               <div 
@@ -229,9 +235,11 @@ const LpPage: React.FC = () => {
                   "{testimonial.quote}"
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold">
-                    {testimonial.author[0]}
-                  </div>
+                  <img 
+                    src={testimonial.image} 
+                    alt={testimonial.author}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-primary/30"
+                  />
                   <div>
                     <p className="font-bold">{testimonial.author}</p>
                     <p className="text-sm text-muted-foreground">{testimonial.role}</p>
