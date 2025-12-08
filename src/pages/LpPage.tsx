@@ -69,7 +69,7 @@ const LpPage: React.FC = () => {
             className="text-sm md:text-lg px-6 md:px-10 py-5 md:py-7 rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-2xl shadow-primary/25 max-w-full"
           >
             <Brain className="w-5 h-5 mr-2 flex-shrink-0" />
-            <span className="whitespace-normal text-center">QUERO REPROGRAMAR MINHA MENTE</span>
+            <span className="whitespace-normal text-center">REPROGRAMAR MINHA MENTE</span>
           </Button>
           
           <div className="mt-12 flex flex-col items-center gap-2 text-muted-foreground animate-bounce">
