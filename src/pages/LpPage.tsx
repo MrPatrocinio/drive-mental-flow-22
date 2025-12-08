@@ -57,7 +57,7 @@ const LpPage: React.FC = () => {
             </div>
           </div>
 
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
             Você já tentou mudar isso antes — mas sempre volta pro mesmo ponto.
             <br /><br />
             A culpa não é sua. É da <strong className="text-foreground">programação mental que você repete há anos sem perceber.</strong>
