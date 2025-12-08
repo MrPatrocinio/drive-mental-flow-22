@@ -45,7 +45,7 @@ const LpPage: React.FC = () => {
           <div className="mb-8 max-w-3xl mx-auto">
             <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-primary/20 border border-border">
               <iframe
-                src="https://www.youtube.com/embed/VIDEO_ID_AQUI"
+                src="https://www.youtube.com/embed/GfIS7sZR3Q0"
                 title="Drive Mental - Instale e Prospere"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
