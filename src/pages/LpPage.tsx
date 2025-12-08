@@ -339,11 +339,12 @@ const LpPage: React.FC = () => {
               </ul>
               
               <Button 
-                variant="outline" 
-                className="w-full py-6"
-                onClick={handleCTA}
+                className="w-full py-6 bg-gradient-to-r from-primary to-accent"
+                asChild
               >
-                Acesso vitalício por R$ 197
+                <a href="https://kiwify.app/k62J0ED" target="_blank" rel="noopener noreferrer">
+                  Acesso vitalício por R$ 197
+                </a>
               </Button>
             </div>
           </div>
