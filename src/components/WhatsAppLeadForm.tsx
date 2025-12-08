@@ -74,12 +74,40 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
       const url = `https://wa.me/55${phoneNumber}?text=${message}`;
       setWhatsappUrl(url);
       
-      toast.success("Abrindo seu WhatsApp... Clique em Enviar para receber o link!");
-      
-      // Abrir WhatsApp em nova aba
-      window.open(url, "_blank");
+      toast.success("Número cadastrado! Clique no botão verde para receber seu link.");
     }
   };
+
+  // Estado de sucesso - mostra botão grande para abrir WhatsApp
+  if (isSuccess && whatsappUrl) {
+    return (
+      <div className={`space-y-4 ${className}`}>
+        <div className="text-center space-y-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+          <div className="flex items-center justify-center gap-2 text-green-600">
+            <Check className="w-6 h-6" />
+            <span className="font-semibold text-lg">Número cadastrado!</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Clique no botão abaixo para receber o link de acesso no seu WhatsApp:
+          </p>
+        </div>
+        
+        <a 
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-3 w-full h-14 text-lg font-bold bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-lg hover:shadow-xl"
+        >
+          <MessageCircle className="w-6 h-6" />
+          📲 Receber link no WhatsApp
+        </a>
+        
+        <p className="text-xs text-muted-foreground text-center">
+          Ao clicar, o WhatsApp abrirá com uma mensagem pronta. Basta enviar!
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className={`space-y-4 ${className}`}>
@@ -91,7 +119,7 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
           value={phone}
           onChange={handlePhoneChange}
           className="pl-10 h-12 text-lg bg-background border-border"
-          disabled={isLoading || isSuccess}
+          disabled={isLoading}
           maxLength={16}
         />
       </div>
@@ -104,17 +132,12 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
         type="submit" 
         size="lg" 
         className="w-full h-12 text-lg font-semibold"
-        disabled={isLoading || isSuccess || !isValidPhone(phone)}
+        disabled={isLoading || !isValidPhone(phone)}
       >
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Enviando...
-          </>
-        ) : isSuccess ? (
-          <>
-            <Check className="mr-2 h-5 w-5" />
-            Link enviado! ✓
           </>
         ) : (
           <>
@@ -124,29 +147,9 @@ export const WhatsAppLeadForm = ({ className = "" }: WhatsAppLeadFormProps) => {
         )}
       </Button>
       
-      {/* Fallback link caso o WhatsApp não abra automaticamente */}
-      {isSuccess && whatsappUrl && (
-        <div className="text-center space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Não abriu? Clique abaixo para abrir manualmente:
-          </p>
-          <a 
-            href={whatsappUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-          >
-            <ExternalLink className="w-4 h-4" />
-            Abrir WhatsApp
-          </a>
-        </div>
-      )}
-      
-      {!isSuccess && (
-        <p className="text-xs text-muted-foreground text-center">
-          📱 Você receberá o link de acesso diretamente no seu WhatsApp
-        </p>
-      )}
+      <p className="text-xs text-muted-foreground text-center">
+        📱 Você receberá o link de acesso diretamente no seu WhatsApp
+      </p>
     </form>
   );
 };
