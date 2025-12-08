@@ -512,9 +512,9 @@ const LpPage: React.FC = () => {
           <Button 
             size="lg" 
             onClick={handleCTA}
-            className="text-lg px-10 py-7 rounded-full"
+            className="text-sm md:text-lg px-6 md:px-10 py-5 md:py-7 rounded-full max-w-full"
           >
-            COMEÇAR MINHA TRANSFORMAÇÃO
+            <span className="whitespace-normal text-center">COMEÇAR MINHA TRANSFORMAÇÃO</span>
           </Button>
           <p className="mt-4 text-sm text-muted-foreground">
             Garantia de 7 dias • Acesso imediato • Suporte incluído
